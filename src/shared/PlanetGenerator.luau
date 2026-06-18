@@ -125,6 +125,114 @@ function PlanetGenerator.generatePlanetDescriptor(seed, options)
 	}
 end
 
+-- Deterministic surface generation using COHERENT NOISE over the sphere, so
+-- land forms connected continents/islands instead of disconnected blobs.
+--
+-- Returns an array of tiles, each a small flat patch the builder lays tangent
+-- on the surface:  { dir = Vector3 (unit normal), size = number, color, kind }.
+--
+-- How it works:
+--  * A latitude/longitude grid is walked, with fewer longitude cells near the
+--    poles (roughly equal-area) so tiles are evenly spaced.
+--  * For each cell we sample two layers of `math.noise`: a low-frequency
+--    CONTINENT layer (few big shapes) plus a higher-frequency DETAIL layer.
+--    Cells above a water-derived threshold become land; connected land cells
+--    overlap into coherent continents.
+--  * `math.noise` isn't seedable, so we shift the sample domain by a large
+--    per-seed offset — that's what makes each world unique yet deterministic.
+function PlanetGenerator.generateSurface(descriptor)
+	local radius = descriptor.radius
+	local tiles = {}
+
+	-- Per-seed domain offsets (deterministic from the seed)
+	local rng = Random.new(descriptor.seed)
+	local function offset()
+		return Vector3.new(rng:NextNumber(-400, 400), rng:NextNumber(-400, 400), rng:NextNumber(-400, 400))
+	end
+	local contOff, detailOff, cloudOff = offset(), offset(), offset()
+
+	local CONTINENT_FREQ = 1.4 -- low => a few big continents
+	local DETAIL_FREQ = 3.3
+	local DETAIL_AMP = 0.4
+	local CLOUD_FREQ = 2.1
+
+	-- More water => higher land threshold => less land
+	local landThreshold = (descriptor.waterCoverage - 0.5) * 0.5
+
+	local function landValue(d)
+		local cont = math.noise(d.X * CONTINENT_FREQ + contOff.X, d.Y * CONTINENT_FREQ + contOff.Y, d.Z * CONTINENT_FREQ + contOff.Z)
+		local detail = math.noise(d.X * DETAIL_FREQ + detailOff.X, d.Y * DETAIL_FREQ + detailOff.Y, d.Z * DETAIL_FREQ + detailOff.Z)
+		return cont + detail * DETAIL_AMP
+	end
+
+	local function shade(color, factor)
+		return Color3.new(
+			math.clamp(color.R * factor, 0, 1),
+			math.clamp(color.G * factor, 0, 1),
+			math.clamp(color.B * factor, 0, 1)
+		)
+	end
+
+	local function dirFromLatLon(lat, lon)
+		local cosLat = math.cos(lat)
+		return Vector3.new(cosLat * math.cos(lon), math.sin(lat), cosLat * math.sin(lon))
+	end
+
+	local GRID_LAT = 16
+	local BASE_LON = 34
+	local POLAR_LAT = math.rad(64)
+	local LAND_TILE = radius * 0.24
+	local ICE_TILE = radius * 0.26
+
+	for li = 0, GRID_LAT - 1 do
+		local lat = -math.pi / 2 + math.pi * (li + 0.5) / GRID_LAT
+		local cosLat = math.cos(lat)
+		local lonCount = math.max(math.floor(BASE_LON * cosLat + 0.5), 4)
+		for lo = 0, lonCount - 1 do
+			local lon = 2 * math.pi * (lo + 0.5) / lonCount
+			local dir = dirFromLatLon(lat, lon)
+
+			if math.abs(lat) > POLAR_LAT and descriptor.iceCoverage > 0.04 then
+				table.insert(tiles, { dir = dir, size = ICE_TILE, color = Color3.fromRGB(238, 246, 255), kind = "ice" })
+			else
+				local v = landValue(dir)
+				if v > landThreshold then
+					-- Higher above the waterline => lighter "highland" shade
+					local elev = math.clamp((v - landThreshold) * 2.5, 0, 1)
+					table.insert(tiles, {
+						dir = dir,
+						size = LAND_TILE,
+						color = shade(descriptor.landColor, 0.92 + elev * 0.32),
+						kind = "land",
+					})
+				end
+			end
+		end
+	end
+
+	-- Sparse, coarse cloud layer — hints at weather without hiding the world
+	if descriptor.cloudCoverage > 0.05 then
+		local CLOUD_LAT = 11
+		local CLOUD_LON = 20
+		local cloudThreshold = 0.42 - descriptor.cloudCoverage * 0.45
+		for li = 0, CLOUD_LAT - 1 do
+			local lat = -math.pi / 2 + math.pi * (li + 0.5) / CLOUD_LAT
+			local cosLat = math.cos(lat)
+			local lonCount = math.max(math.floor(CLOUD_LON * cosLat + 0.5), 3)
+			for lo = 0, lonCount - 1 do
+				local lon = 2 * math.pi * (lo + 0.5) / lonCount
+				local dir = dirFromLatLon(lat, lon)
+				local cv = math.noise(dir.X * CLOUD_FREQ + cloudOff.X, dir.Y * CLOUD_FREQ + cloudOff.Y, dir.Z * CLOUD_FREQ + cloudOff.Z)
+				if cv > cloudThreshold then
+					table.insert(tiles, { dir = dir, size = radius * 0.30, color = descriptor.cloudColor, kind = "cloud" })
+				end
+			end
+		end
+	end
+
+	return tiles
+end
+
 -- Optional dev helper: returns a one-line summary string for printing.
 function PlanetGenerator.debugDescriptor(descriptor)
 	return string.format(

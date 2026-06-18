@@ -14,10 +14,12 @@ WorldConfig.HOME_PLANET_ID = "home"
 WorldConfig.HOME_PLANET_NAME = "HomePlanet"          -- internal instance name
 WorldConfig.HOME_PLANET_DISPLAY_NAME = "Origin World" -- player-facing name
 
--- Spawn composition (kept in sync with WorldBuilder + SpaceMovement)
-WorldConfig.HOME_PLANET_POS = Vector3.new(0, 0, -180)
-WorldConfig.RETURN_HOME_POS = Vector3.new(0, 20, -90)
-WorldConfig.INSPECT_DISTANCE = 100
+-- Spawn composition. The home planet sits further out so it reads as a distinct
+-- world ahead of spawn rather than filling the screen. Each player's planet is
+-- placed at this base position (offset per player by PlayerPlanetService).
+WorldConfig.HOME_PLANET_POS = Vector3.new(0, 0, -260)
+WorldConfig.RETURN_HOME_POS = Vector3.new(0, 20, -150)
+WorldConfig.INSPECT_DISTANCE = 110
 
 -- Seeding for the home planet. "UserId" later derives a per-player seed;
 -- until then WorldBuilder uses FALLBACK_HOME_PLANET_SEED so both devs match.

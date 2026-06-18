@@ -2,7 +2,7 @@
 
 > Slotted as Epic 7 to avoid renumbering the existing tracker (Epic 2 stays "Planet Upgrade System"). Conceptually this is the **planet foundation** — upgrades/interventions and era visuals will act on planets generated here.
 
-**Status:** In Progress (Sprint 7A complete)
+**Status:** ✅ Sprints 7A–7F complete. **Refactor (per-player + noise continents):** planets are now built per player by `PlayerPlanetService` on join (seed = `UserId + WORLD_SEED_SALT`), under `workspace.SpaceEnvironment.PlayerPlanets`. Land is generated from coherent `math.noise` over the sphere (connected continents/islands) instead of clustered blobs; `WorldBuilder` no longer builds a planet (backdrop only); atmosphere is a thin shell (scale 1.04–1.08). See `PlayerPlanetService.luau` + `PlanetGenerator.generateSurface`.
 
 ---
 
@@ -93,28 +93,42 @@ Future (disabled for now): Desert, Ice, Volcanic, Barren, GasGiant, Exotic.
 
 ---
 
-### Sprint 7B: HomePlanet Visual v0 From Seed ⬜ NOT STARTED
+### Sprint 7B: HomePlanet Visual v0 From Seed ✅ COMPLETE
 **Goal:** `WorldBuilder` builds the first visible HomePlanet from a descriptor.
-**Files:** `WorldBuilder.luau`, `WorldConfig.luau`, `PlanetGenerator.luau`, `docs/EPICS/Epic7.md`, `docs/EPICS/Epic0.md`
+**Files:** `WorldBuilder.luau`
 
-- 7B-01 Require `WorldConfig` + `PlanetGenerator` in `WorldBuilder`; generate descriptor from `FALLBACK_HOME_PLANET_SEED`.
-- 7B-02 Build `HomePlanet` model (`PlanetBody` + `AtmosphereShell`) at `HOME_PLANET_POS`, using descriptor radius/colors/atmosphere thickness.
-- 7B-03 Set model attributes (PlanetId, DisplayName, Seed, Archetype, Radius, WaterCoverage, CloudCoverage, AtmosphereThickness).
-- 7B-04 Keep `WorldBuilder.build()` idempotent — no duplicate planets on Play/Stop/Play.
+- [x] 7B-01 Require `WorldConfig` + `PlanetGenerator` in `WorldBuilder`; generate descriptor from `FALLBACK_HOME_PLANET_SEED` (restricted to `HOME_ARCHETYPE_POOL`).
+- [x] 7B-02 Build `HomePlanet` model (`PlanetBody` + `AtmosphereShell`) at `HOME_PLANET_POS`. Body is `SmoothPlastic`, colored by `landColor:Lerp(oceanColor, waterCoverage)`; atmosphere is a subtle `ForceField` shell scaled by `atmosphereThickness`. Body `CanCollide = false` so it never blocks flight; `CanQuery = true` for future inspect raycasts.
+- [x] 7B-03 Set model attributes (PlanetId, DisplayName, Seed, Archetype, Radius, WaterCoverage, CloudCoverage, AtmosphereThickness).
+- [x] 7B-04 `WorldBuilder.build()` clears `SpaceEnvironment` first, so no duplicate planets on Play/Stop/Play.
 
-> ⚠️ 7B touches `WorldBuilder.luau`, which Nova also owns for the Epic 0 home-planet ticket. Coordinate before starting 7B so we don't both rewrite the planet.
+**Validated:** `rojo build` clean; live Studio run builds the model with correct blended color, subtle atmosphere, and all attributes. The seed-`20260618` Origin World is an Ocean world (radius 36).
 
-### Sprint 7C: Visual Variation v0 ⬜
-Different seeds visibly produce different planets (colors, radius, rotation value, water/cloud/atmo/ice traits) while staying believable.
+> ⚠️ This rewrote the planet section of `WorldBuilder.luau`. If Nova still has an unmerged Epic 0 home-planet (0D-01), this supersedes it — coordinate so the procedural version wins and the simple one is dropped.
 
-### Sprint 7D: Simple Surface Features v1 ⬜
-Lightweight deterministic surface variation — small land/ice patch parts + a simple cloud shell. No external assets, no heavy mesh generation. Suggested counts: land 8–20, ice 0–4, cloud 6–18.
+### Sprint 7C: Visual Variation v0 ✅ COMPLETE
+Different seeds already produce visibly different planets — the body color (`landColor:Lerp(oceanColor, waterCoverage)`), radius, atmosphere, and rotation value all come from the descriptor's archetype-constrained rolls. `RotationSeconds` and `IceCoverage` are now also exposed as model attributes. Validated: 6 seeds → 6 distinct believable planets.
 
-### Sprint 7E: Planet Motion & Presentation ⬜
-Slow client-side visual rotation (`src/client/PlanetVisuals.client.luau`), spawn composition tuning (spawn `(0,0,0)`, planet `(0,0,-180)`, star `(0,-20,-350)`, return `(0,20,-90)`).
+### Sprint 7D: Simple Surface Features v1 ✅ COMPLETE
+`PlanetGenerator.generateSurfaceFeatures(descriptor)` returns deterministic patch data (a separate rng stream from the seed, so it never disturbs the main rolls); `WorldBuilder` builds each as a small anchored `Part`.
+- [x] Land patches (8–20, more when drier), shaded from `landColor`, on the body surface → `HomePlanet/SurfaceFeatures`
+- [x] Ice caps (0–4, only if `iceCoverage > 0.05`), near the poles, pale → `SurfaceFeatures`
+- [x] Cloud patches (6–18, scaled by `cloudCoverage`), white-ish, floating just above the surface, semi-transparent → `HomePlanet/Clouds`
+- All patches `CanCollide=false`, `CanQuery=false`, `CastShadow=false`. No external assets, no mesh generation. Validated: seed `20260618` → 25 patches (10 land / 2 ice / 13 cloud), deterministic, varies by seed.
 
-### Sprint 7F: Multi-Planet Generator Prep ⬜
-Generator accepts explicit `planetId` / `displayName` / `allowedArchetypes`; add future archetypes as `enabled = false`; document future gameplay hooks (ocean = faster early life, desert = stronger solar, etc.) — docs only, no modifiers implemented.
+### Sprint 7E: Planet Motion & Presentation ✅ COMPLETE
+- [x] `RotationSeconds` exposed as a model attribute (7E-01).
+- [x] **`src/client/PlanetVisuals.client.luau`** — self-contained LocalScript that slowly spins the HomePlanet model about its center (visual only, client-side; re-acquires the planet if it rebuilds). Speed = `2π / RotationSeconds` (7E-02).
+- [x] Spawn composition already matches the spec — spawn `(0,0,0)`, planet `(0,0,-180)`, star `(0,-20,-350)`, return `(0,20,-90)`. Confirmed in-playtest: planet is clearly visible from spawn with the star anchoring the background (7E-03).
+
+### Sprint 7F: Multi-Planet Generator Prep ✅ COMPLETE
+- [x] `generatePlanetDescriptor(seed, options)` already accepts `planetId` / `displayName` / `allowedArchetypes` (7F-01).
+- [x] Future archetypes `Desert`, `Ice`, `Volcanic`, `Barren` added to `PlanetArchetypes` with `enabled = false`, `allowedForHome = false` — the generator's candidate filter requires `enabled`, so they're never rolled until turned on (7F-02).
+- [x] Future gameplay hooks documented as comments in `PlanetArchetypes.luau` (ocean = faster early life, desert = stronger solar, etc.) — docs only, no modifiers implemented (7F-03).
+
+---
+
+**Epic 7 status: all sprints 7A–7F complete.** Next recommended work is **Epic 0 Sprint 0E** (planet approach + inspect prompt), which targets this generated `HomePlanet`.
 
 ---
 

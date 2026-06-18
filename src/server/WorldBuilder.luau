@@ -1,9 +1,10 @@
--- Builds the entire space environment from source: zero gravity, dark void
+-- Builds the static space environment from source: zero gravity, dark void
 -- lighting, a glowing centerpiece star, and a scattered star field.
 --
--- Everything here is set from script (not saved in the .rbxl) so the world is
--- fully reproducible from source. A blank baseplate place will become the
--- correct space environment on server start, so any dev can clone + serve.
+-- Per-player planets are NOT built here — see PlayerPlanetService. WorldBuilder
+-- owns only the shared, static backdrop. Everything is set from script (not
+-- saved in the .rbxl) so a blank baseplate place becomes the correct space
+-- environment on server start.
 
 local Lighting = game:GetService("Lighting")
 
@@ -14,14 +15,16 @@ local BRIGHTNESS     = 2
 local AMBIENT        = Color3.fromRGB(80, 80, 110)
 local OUTDOOR_AMBIENT = Color3.fromRGB(20, 20, 40)
 
--- Stars
+-- Stars (pushed far out + small so they read as distant background, not eyesores)
 local STAR_SEED        = 20260618 -- fixed seed => both devs see the same field
-local STAR_COUNT       = 200
-local STAR_FIELD_RADIUS = 900     -- studs; how far stars scatter from origin
-local STAR_MIN_DIST    = 150      -- keep stars away from spawn so they read as distant
+local STAR_COUNT       = 160
+local STAR_FIELD_RADIUS = 1700    -- studs; how far stars scatter from origin
+local STAR_MIN_DIST    = 450      -- keep stars well away so they read as distant
 
-local CENTERPIECE_POS    = Vector3.new(0, -20, -350)
-local CENTERPIECE_RADIUS = 60
+-- Centerpiece "sun": the central focal point — far behind + slightly above the
+-- home planet so it anchors the scene without being an in-your-face eyesore.
+local CENTERPIECE_POS    = Vector3.new(0, 140, -900)
+local CENTERPIECE_RADIUS = 58
 
 local WorldBuilder = {}
 
@@ -96,7 +99,7 @@ local function buildCenterpiece(parent)
 
 	local light = Instance.new("PointLight")
 	light.Brightness = 4
-	light.Range = 600
+	light.Range = 1600
 	light.Color = Color3.fromRGB(255, 210, 150)
 	light.Parent = star
 end
@@ -107,7 +110,7 @@ local function buildStarField(parent)
 	field.Name = "StarField"
 	field.Parent = parent
 
-	for i = 1, STAR_COUNT do
+	for _ = 1, STAR_COUNT do
 		-- Random point in a sphere shell between STAR_MIN_DIST and STAR_FIELD_RADIUS
 		local dir = rng:NextUnitVector()
 		local dist = rng:NextNumber(STAR_MIN_DIST, STAR_FIELD_RADIUS)
@@ -115,7 +118,7 @@ local function buildStarField(parent)
 		local star = Instance.new("Part")
 		star.Name = "Star"
 		star.Shape = Enum.PartType.Ball
-		star.Size = Vector3.one * rng:NextNumber(1.5, 5)
+		star.Size = Vector3.one * rng:NextNumber(0.5, 1.8)
 		star.Position = dir * dist
 		star.Anchored = true
 		star.CanCollide = false
@@ -150,6 +153,7 @@ function WorldBuilder.build()
 
 	buildCenterpiece(root)
 	buildStarField(root)
+	-- Player planets are added under this folder by PlayerPlanetService.
 end
 
 return WorldBuilder
