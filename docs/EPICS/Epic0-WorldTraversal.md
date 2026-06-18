@@ -80,9 +80,31 @@ CENTERPIECE_RADIUS = 60
 
 ---
 
-## Sprint 0C: Motion Feel Polish (NOT STARTED)
+## Sprint 0C: Soaring Pose + Banking ✅ COMPLETE
 
-Planned scope:
-- Tilt/bank the character in the direction of travel so they look like they're soaring
-- Optional subtle camera FOV kick when accelerating
-- Silence footstep sounds
+**Goal:** Make the character look like it's flying (Superman-style) instead of sliding around upright.
+
+**File:** `src/client/SpaceMovement.client.luau` (orientation block added to the `RenderStepped` loop)
+
+- [x] While moving, pitch the body 90° into a horizontal head-first flight pose facing the travel direction
+- [x] Bank (roll) into turns, proportional to how fast the heading is changing
+- [x] Smoothly ease the bank in/out so it doesn't snap
+- [x] Return to an upright hover (facing camera) when nearly stopped
+- [x] Handle near-vertical flight without `lookAt` gimbal flipping (camera-forward up hint)
+
+**How it works:**
+- `CFrame.lookAt(pos, pos + moveDir) * CFrame.Angles(-pi/2, 0, 0)` → upright-facing-travel, then pitched forward into the dive pose. After the pitch, the body's local Y axis points along travel, so `CFrame.Angles(0, bank, 0)` rolls it into the turn.
+- Turn rate is measured frame-to-frame via the signed angle between the previous and current horizontal heading (`atan2` of cross/dot).
+- Orientation is applied by lerping `rootPart.CFrame` toward the target pose each frame (position preserved — physics still drives translation via `AssemblyLinearVelocity`).
+
+**Tuning constants** (top of `SpaceMovement.client.luau`):
+```lua
+ORIENT_SMOOTH    = 9
+POSE_MIN_SPEED   = 3
+BANK_SENSITIVITY = 0.18
+BANK_SMOOTH      = 6
+MAX_BANK         = math.rad(55)
+```
+> If banking rolls the *wrong* way, flip the sign on `BANK_SENSITIVITY`.
+
+**Still out of scope:** an actual flying *animation* (limbs are held in the default pose). That needs an uploaded animation asset — defer until we have a rig/anim pipeline.
