@@ -2,6 +2,8 @@
 
 Working title is **Grow A [X]** (final name TBD). Developed by **Bread** and **Nova**.
 
+> 📋 **Starting a session? Read [`HANDOFF.md`](HANDOFF.md) first** — current state, which files are safe to touch, which are shared coordination points, and what's NOT in source control.
+
 ---
 
 ## Game Concept
