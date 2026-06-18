@@ -22,6 +22,18 @@ local function setupCharacter(char)
 	humanoid.JumpPower   = 0
 	humanoid.AutoRotate  = false
 
+	-- Hand all physics control to this script; prevent Humanoid Freefall from fighting us
+	humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+	humanoid.StateChanged:Connect(function(_, newState)
+		if newState ~= Enum.HumanoidStateType.Physics then
+			humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+		end
+	end)
+
+	-- Kill any spawn velocity so the character doesn't drift
+	rootPart.AssemblyLinearVelocity  = Vector3.zero
+	rootPart.AssemblyAngularVelocity = Vector3.zero
+
 	currentVelocity = Vector3.zero
 end
 
