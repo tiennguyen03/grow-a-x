@@ -5,6 +5,13 @@
 -- Built from script (not placed in the .rbxl) so the world is reproducible
 -- from source and Nova gets it automatically on pull.
 
+local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage  = game:GetService("ReplicatedStorage")
+local GameConfig         = require(ReplicatedStorage.GameConfig)
+
+local DUST_TAG  = "DustParticle"
+local DUST_SEED = 20260619 -- fixed seed => reproducible dust layout
+
 local STAR_SEED        = 20260618 -- fixed seed => both devs see the same field
 local STAR_COUNT       = 200
 local STAR_FIELD_RADIUS = 900     -- studs; how far stars scatter from origin
@@ -87,6 +94,54 @@ local function buildStarField(parent)
 	end
 end
 
+-- A random point within a sphere of radius DUST_SPAWN_RADIUS, kept a little
+-- away from the exact origin so motes aren't piled on top of spawn.
+local function randomDustPosition(rng)
+	local dir  = rng:NextUnitVector()
+	local dist = rng:NextNumber(60, GameConfig.DUST_SPAWN_RADIUS)
+	return dir * dist
+end
+
+-- Collectible dust motes: small warm glowing balls scattered through the void.
+-- Tagged "DustParticle" so PlayerManager can detect collection; each stores its
+-- un-bobbed home position so the client animator can bob it and the server can
+-- respawn it cleanly.
+local function buildDust(parent)
+	local rng = Random.new(DUST_SEED)
+	local field = Instance.new("Folder")
+	field.Name = "Dust"
+	field.Parent = parent
+
+	for _ = 1, GameConfig.DUST_PARTICLE_COUNT do
+		local pos = randomDustPosition(rng)
+
+		local mote = Instance.new("Part")
+		mote.Name = "Dust"
+		mote.Shape = Enum.PartType.Ball
+		mote.Size = Vector3.one * rng:NextNumber(0.6, 1.0)
+		mote.Position = pos
+		mote.Anchored = true
+		mote.CanCollide = false
+		mote.CanQuery = false
+		mote.CastShadow = false
+		mote.Material = Enum.Material.Neon
+		mote.Color = Color3.fromRGB(255, 224, 150) -- warm gold
+
+		mote:SetAttribute("BasePosition", pos)
+		mote:SetAttribute("Collected", false)
+		mote:SetAttribute("BobPhase", rng:NextNumber(0, math.pi * 2))
+
+		local light = Instance.new("PointLight")
+		light.Brightness = 2
+		light.Range = 14
+		light.Color = Color3.fromRGB(255, 220, 150)
+		light.Parent = mote
+
+		mote.Parent = field
+		CollectionService:AddTag(mote, DUST_TAG)
+	end
+end
+
 function WorldBuilder.build()
 	-- Clear any previous build (so re-running Studio doesn't stack duplicates)
 	local existing = workspace:FindFirstChild("SpaceEnvironment")
@@ -98,6 +153,7 @@ function WorldBuilder.build()
 
 	buildCenterpiece(root)
 	buildStarField(root)
+	buildDust(root)
 end
 
 return WorldBuilder
