@@ -79,7 +79,8 @@ All systems are ModuleScripts with an `.init()` function. Entry points (`Main.se
 
 ```
 src/server/Main.server.luau          → requires and inits all server systems
-src/server/WorldBuilder.luau         → builds centerpiece star + star field from script on server start
+src/server/WorldBuilder.luau         → builds the static backdrop (lighting, centerpiece star, star field)
+src/server/PlayerPlanetService.luau  → builds one deterministic procedural planet per player on join (Epic 7)
 src/server/PlayerManager.luau        → player profiles, influence tick, remote firing
 src/client/Main.client.luau          → requires and inits all client systems
 src/client/InfluenceUI.luau          → builds HUD, listens to InfluenceUpdate remote
@@ -289,6 +290,7 @@ Ship via PR: `https://github.com/tiennguyen03/grow-a-x/pull/new/<your-branch>`
 | Epic 4: Events & Disasters | `docs/EPICS/Epic4.md` | Not Started |
 | Epic 5: DataStore / Saving | `docs/EPICS/Epic5.md` | Not Started |
 | Epic 6: Multi-Planet Expansion | `docs/EPICS/Epic6.md` | Not Started |
+| Epic 7: Procedural Planet Generation | `docs/EPICS/Epic7.md` | In Progress |
 
 ### Documentation convention (keep this consistent)
 

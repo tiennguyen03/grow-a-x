@@ -1,7 +1,7 @@
 # Handoff / Current State
 
-**Last updated:** 2026-06-18 by Bread (+ Claude)
-**Active branches:** Bread → `bread/world-feel` · Nova → his own `nova/*` branch · both merge to `main` via PR.
+**Last updated:** 2026-06-18 by Tien (+ Claude)
+**Active branches:** Tien → `feature/7a-planet-generator-foundation` · Nova → his own `nova/*` branch · both merge to `main` via PR.
 
 This is the "where are we right now" doc. Read this first, then `CLAUDE.md` for architecture and `docs/EPICS/` for detail.
 
@@ -24,13 +24,14 @@ rojo serve         # keep running; connect the Rojo Studio plugin to localhost:3
 
 | Sprint | What | Status |
 |---|---|---|
-| 1A | Influence generates +1/sec, shown on a HUD | ✅ Done |
-| 0A | Void environment + floaty 6-axis movement | ✅ Done |
-| 0B | Centerpiece star + 200-star field (motion reference) | ✅ Done |
-| 0C | Soaring flight pose + banking into turns | ✅ Done |
-| — | Footstep sound muted | ✅ Done |
+| 1A | Influence generates +1/sec, shown on a HUD | ✅ Done (in `main`) |
+| 0A | Void environment + floaty 6-axis movement | ✅ Done (in `main`) |
+| 0B | Centerpiece star + 200-star field (motion reference) | ✅ Done (in `main`) |
+| 0C | Soaring flight pose + banking into turns | ✅ Done (in `main`) |
+| 0D | Boost, look-based 3D flight, FOV, boost VFX, return-home | ✅ Done (in `main`) |
+| 7A | Procedural planet **descriptor** foundation (data only) | ✅ Done (on `feature/7a-planet-generator-foundation`) |
 
-Nothing is mid-edit. All files below are committed and stable — safe to build on.
+**Still pending:** Nova's Epic 0 home-planet (0D-01) is **not** in `main` yet. Note Epic 7 (Sprint 7B) will build the planet procedurally in `WorldBuilder.luau` — coordinate so it doesn't collide with Nova's 0D-01 planet.
 
 ---
 
@@ -46,6 +47,10 @@ Nothing is mid-edit. All files below are committed and stable — safe to build 
 | `src/client/InfluenceUI.luau` | Builds HUD, listens to `InfluenceUpdate` | ✅ Safe — owns the Influence UI |
 | `src/shared/GameConfig.luau` | Shared tuning constants | ⚠️ **Shared** — append new keys, don't reorganize, to avoid conflicts |
 | `src/shared/Remotes.luau` | Defines all RemoteEvents | ⚠️ **Shared** — add new remotes here; coordinate |
+| `src/shared/WorldConfig.luau` | World/home-planet constants (Epic 7) | ⚠️ **Shared** — used by WorldBuilder + future planet scripts; append, don't reorganize |
+| `src/shared/PlanetArchetypes.luau` | Planet archetype defs + trait ranges (Epic 7) | ✅ Safe — owned by planet-generation work |
+| `src/shared/PlanetGenerator.luau` | Pure deterministic descriptor + surface/biome generator (Epic 7) | ✅ Safe — pure data, no Instances; don't reorder its rng calls |
+| `src/server/PlayerPlanetService.luau` | Builds one per-player planet on join + spins it server-side (Epic 7) | ✅ Safe — owns per-player planets; rotation lives here (authoritative, no client spin) |
 
 **Rule of thumb:** the ✅ files are owned by one feature and safe to work in solo. The ⚠️ files are coordination points — tell each other before restructuring them.
 
