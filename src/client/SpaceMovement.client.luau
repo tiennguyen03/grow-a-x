@@ -39,6 +39,12 @@ local function setupCharacter(char)
 		end
 	end)
 
+	-- Mute the default footstep sound — we're floating, not walking
+	local running = rootPart:FindFirstChild("Running")
+	if running and running:IsA("Sound") then
+		running.Volume = 0
+	end
+
 	-- Kill any spawn velocity so the character doesn't drift
 	rootPart.AssemblyLinearVelocity  = Vector3.zero
 	rootPart.AssemblyAngularVelocity = Vector3.zero

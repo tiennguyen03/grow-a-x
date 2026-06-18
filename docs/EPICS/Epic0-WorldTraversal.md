@@ -76,7 +76,7 @@ CENTERPIECE_POS    = Vector3.new(0, -20, -350)
 CENTERPIECE_RADIUS = 60
 ```
 
-**Known cosmetic issue:** Humanoid still occasionally plays footstep sounds on spawn. Harmless; will be silenced when/if we move to a fully custom rig.
+**Footstep sound:** Muted in `SpaceMovement.client.luau` setup by setting the default `Running` Sound's `Volume = 0` (we're floating, not walking).
 
 ---
 
