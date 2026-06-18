@@ -145,8 +145,11 @@ RETURN_HOME_POS = Vector3.new(0, 20, -90)
 ### Controls after 0D
 | Input | Action |
 |---|---|
-| W/A/S/D | Move (camera-relative) |
-| Space | Up |
-| Left Ctrl | Down |
+| W/S | Fly toward / away from where the camera looks (full 3D — look down to descend, up to climb) |
+| A/D | Strafe horizontally |
+| Space | World-up (fine altitude control) |
+| Left Ctrl | World-down (fine altitude control) |
 | Left Shift | Boost |
 | R | Return near home planet |
+
+> **Flight model (added after first 0D playtest):** W/S use the camera's **full** look vector, not a flattened one. Pointing the camera down and holding W now descends (previously movement was locked to the horizontal plane and the only way down was Left Ctrl). Space/Ctrl remain as world-vertical strafing on top. Zero gravity means releasing input hovers — there is intentionally no auto-fall.

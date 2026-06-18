@@ -128,25 +128,30 @@ RunService.RenderStepped:Connect(function(dt)
 		verticalInput = -1
 	end
 
-	-- Project W/S/A/D onto camera's horizontal plane
-	local camCF      = camera.CFrame
-	local camForward = Vector3.new(camCF.LookVector.X,  0, camCF.LookVector.Z)
+	-- Movement directions from the camera.
+	-- W/S follow the FULL look vector (including pitch) so looking down flies you
+	-- down and looking up climbs — real 3D flight. A/D strafe horizontally.
+	-- Space / Left Ctrl add world-vertical on top for fine altitude control.
+	local camCF    = camera.CFrame
+	local camLook  = camCF.LookVector
+	local camForward = Vector3.new(camLook.X, 0, camLook.Z)              -- flattened, used by the pose/idle code below
 	local camRight   = Vector3.new(camCF.RightVector.X, 0, camCF.RightVector.Z)
 
+	if camLook.Magnitude    > 0.001 then camLook    = camLook.Unit    end
 	if camForward.Magnitude > 0.001 then camForward = camForward.Unit end
 	if camRight.Magnitude   > 0.001 then camRight   = camRight.Unit   end
 
-	local horizontal = camForward * (-inputDir.Z) + camRight * inputDir.X
-	local hasHorizontal = horizontal.Magnitude > 0.001
+	local moveDir = camLook * (-inputDir.Z) + camRight * inputDir.X
+	local hasMoveInput = moveDir.Magnitude > 0.001
 
-	-- Boost only applies when actually moving horizontally
-	local isBoosting   = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and hasHorizontal
+	-- Boost only applies when there's directional input
+	local isBoosting   = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and hasMoveInput
 	local moveSpeed    = isBoosting and BOOST_SPEED or MOVE_SPEED
 	local accel        = isBoosting and BOOST_ACCELERATION or ACCELERATION
 
 	local desiredVelocity = Vector3.zero
-	if hasHorizontal then
-		desiredVelocity = horizontal.Unit * moveSpeed
+	if hasMoveInput then
+		desiredVelocity = moveDir.Unit * moveSpeed
 	end
 	desiredVelocity += Vector3.new(0, verticalInput * VERTICAL_SPEED, 0)
 
