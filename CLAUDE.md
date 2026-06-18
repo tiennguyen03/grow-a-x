@@ -289,6 +289,7 @@ Ship via PR: `https://github.com/tiennguyen03/grow-a-x/pull/new/<your-branch>`
 | Epic 4: Events & Disasters | `docs/EPICS/Epic4.md` | Not Started |
 | Epic 5: DataStore / Saving | `docs/EPICS/Epic5.md` | Not Started |
 | Epic 6: Multi-Planet Expansion | `docs/EPICS/Epic6.md` | Not Started |
+| Epic 7: Procedural Planet Generation | `docs/EPICS/Epic7.md` | In Progress |
 
 ### Documentation convention (keep this consistent)
 
