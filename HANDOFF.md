@@ -49,7 +49,8 @@ rojo serve         # keep running; connect the Rojo Studio plugin to localhost:3
 | `src/shared/Remotes.luau` | Defines all RemoteEvents | ⚠️ **Shared** — add new remotes here; coordinate |
 | `src/shared/WorldConfig.luau` | World/home-planet constants (Epic 7) | ⚠️ **Shared** — used by WorldBuilder + future planet scripts; append, don't reorganize |
 | `src/shared/PlanetArchetypes.luau` | Planet archetype defs + trait ranges (Epic 7) | ✅ Safe — owned by planet-generation work |
-| `src/shared/PlanetGenerator.luau` | Pure deterministic descriptor generator (Epic 7) | ✅ Safe — pure data, no Instances; don't reorder its rng calls |
+| `src/shared/PlanetGenerator.luau` | Pure deterministic descriptor + surface/biome generator (Epic 7) | ✅ Safe — pure data, no Instances; don't reorder its rng calls |
+| `src/server/PlayerPlanetService.luau` | Builds one per-player planet on join + spins it server-side (Epic 7) | ✅ Safe — owns per-player planets; rotation lives here (authoritative, no client spin) |
 
 **Rule of thumb:** the ✅ files are owned by one feature and safe to work in solo. The ⚠️ files are coordination points — tell each other before restructuring them.
 

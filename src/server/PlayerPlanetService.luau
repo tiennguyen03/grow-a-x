@@ -10,6 +10,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local WorldConfig = require(ReplicatedStorage.WorldConfig)
 local PlanetGenerator = require(ReplicatedStorage.PlanetGenerator)
@@ -17,8 +18,11 @@ local PlanetGenerator = require(ReplicatedStorage.PlanetGenerator)
 local PlayerPlanetService = {}
 
 local PLANET_SPACING = 800 -- studs between players' planets so they never overlap
+local DEFAULT_ROTATION_SECONDS = 160 -- fallback if a descriptor lacks RotationSeconds
 
-local planets = {}   -- userId -> { model = Model, slot = number }
+-- userId -> { model, slot, center = Vector3, angle = number, speed = rad/sec }
+-- `angle` accumulates forever (never reset) so the spin is continuous.
+local planets = {}
 local usedSlots = {} -- slot -> true
 
 local function ensurePlayerPlanetsFolder()
@@ -62,7 +66,9 @@ local function buildTile(parent, center, radius, tile)
 	local isCloud = tile.kind == "cloud"
 	local size = tile.size
 	local thickness = math.max(0.5, size * 0.16)
-	local dist = isCloud and (radius + radius * 0.025) or (radius - thickness * 0.5)
+	-- Land sits flush; mountains add `raise` so highlands read as raised terrain.
+	local dist = isCloud and (radius + radius * 0.025)
+		or (radius - thickness * 0.5 + (tile.raise or 0))
 	local pos = center + tile.dir * dist
 
 	-- up hint avoids a degenerate lookAt when a tile sits near the poles
@@ -74,14 +80,18 @@ local function buildTile(parent, center, radius, tile)
 	part.CanCollide = false
 	part.CanQuery = false
 	part.CastShadow = false
-	part.Material = Enum.Material.SmoothPlastic
+	-- Biomes can request a material (e.g. Slate for rocky mountains); default clean.
+	part.Material = tile.material or Enum.Material.SmoothPlastic
 	part.Color = tile.color
 
 	if isCloud then
 		part.Name = "Cloud"
 		part.Transparency = 0.5
+	elseif tile.kind == "ice" then
+		part.Name = "IceTile"
 	else
-		part.Name = (tile.kind == "ice") and "IceTile" or "LandTile"
+		-- Name land tiles by biome so future scripts can read the surface makeup.
+		part.Name = (tile.biome and (tile.biome:sub(1, 1):upper() .. tile.biome:sub(2)) or "Land") .. "Tile"
 	end
 	part.Parent = parent
 end
@@ -165,7 +175,15 @@ local function spawnPlanet(player)
 
 	local model = buildPlanetModel(descriptor, position, player.UserId)
 	model.Parent = ensurePlayerPlanetsFolder()
-	planets[player.UserId] = { model = model, slot = slot }
+
+	local rotationSeconds = descriptor.rotationSeconds or DEFAULT_ROTATION_SECONDS
+	planets[player.UserId] = {
+		model = model,
+		slot = slot,
+		center = position,                       -- fixed pivot point to spin about
+		angle = 0,                               -- accumulates forever, never reset
+		speed = (2 * math.pi) / rotationSeconds, -- rad/sec for one full turn / rotationSeconds
+	}
 end
 
 local function removePlanet(player)
@@ -180,6 +198,25 @@ local function removePlanet(player)
 	planets[player.UserId] = nil
 end
 
+-- Continuous, authoritative planet rotation.
+--
+-- This MUST run on the server: the planet parts are anchored and server-owned,
+-- so the server is the source of truth for their CFrames. The previous version
+-- spun them from a LocalScript, but the server kept re-replicating the original
+-- anchored CFrames over the client's changes — so the planet rotated a little
+-- and then snapped back. Accumulating the angle here and pivoting the whole
+-- model about its stored center means the authority itself is rotating, so the
+-- spin is smooth and never resets.
+local function stepRotation(dt)
+	for _, entry in planets do
+		local model = entry.model
+		if model and model.Parent and model.PrimaryPart then
+			entry.angle += entry.speed * dt
+			model:PivotTo(CFrame.new(entry.center) * CFrame.Angles(0, entry.angle, 0))
+		end
+	end
+end
+
 function PlayerPlanetService.init()
 	ensurePlayerPlanetsFolder()
 	Players.PlayerAdded:Connect(spawnPlanet)
@@ -187,6 +224,7 @@ function PlayerPlanetService.init()
 	for _, player in Players:GetPlayers() do
 		spawnPlanet(player)
 	end
+	RunService.Heartbeat:Connect(stepRotation)
 end
 
 return PlayerPlanetService

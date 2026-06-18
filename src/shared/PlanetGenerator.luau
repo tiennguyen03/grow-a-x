@@ -125,39 +125,68 @@ function PlanetGenerator.generatePlanetDescriptor(seed, options)
 	}
 end
 
+-- Biome base colors (shared across archetypes; temperate keeps the archetype's
+-- own landColor so each world still has its palette identity). Tuned to the
+-- "habitable Earth-like" target: muted green / sandy tan / rocky grey / pale
+-- tundra. See biomeFor() below for the climate logic that places them.
+local DESERT_COLOR   = Color3.fromRGB(206, 178, 122) -- sandy tan
+local MOUNTAIN_COLOR = Color3.fromRGB(126, 122, 118) -- rocky grey
+local TUNDRA_COLOR   = Color3.fromRGB(214, 224, 232) -- pale white-blue
+
+-- Climate thresholds. Kept generous toward "temperate" so the starting world
+-- reads as habitable rather than a patchwork of extremes.
+local MOUNTAIN_ELEV = 0.64 -- top elevations become rocky highlands
+local COLD_TEMP     = 0.20 -- below this (cold, high latitude) => tundra
+local HOT_TEMP      = 0.56 -- above this (hot, low latitude) ...
+local DRY_MOISTURE  = 0.42 -- ... AND drier than this => desert
+
 -- Deterministic surface generation using COHERENT NOISE over the sphere, so
--- land forms connected continents/islands instead of disconnected blobs.
+-- land forms connected continents/islands instead of disconnected blobs, and
+-- biomes follow believable climate bands rather than random coloring.
 --
 -- Returns an array of tiles, each a small flat patch the builder lays tangent
--- on the surface:  { dir = Vector3 (unit normal), size = number, color, kind }.
+-- on the surface:
+--   { dir = Vector3 (unit normal), size, color, kind, biome?, material?, raise? }
 --
 -- How it works:
 --  * A latitude/longitude grid is walked, with fewer longitude cells near the
 --    poles (roughly equal-area) so tiles are evenly spaced.
---  * For each cell we sample two layers of `math.noise`: a low-frequency
---    CONTINENT layer (few big shapes) plus a higher-frequency DETAIL layer.
---    Cells above a water-derived threshold become land; connected land cells
---    overlap into coherent continents.
---  * `math.noise` isn't seedable, so we shift the sample domain by a large
---    per-seed offset — that's what makes each world unique yet deterministic.
+--  * Land vs ocean: a low-frequency CONTINENT noise layer (few big shapes) plus
+--    a higher-frequency DETAIL layer. Cells above a water-derived threshold are
+--    land; connected land cells overlap into coherent continents.
+--  * Biome of each land cell comes from COHERENT climate fields, not random
+--    color: ELEVATION noise (high => mountains), TEMPERATURE from latitude minus
+--    altitude (poles/highlands cold => tundra), and MOISTURE noise (hot + dry =>
+--    desert). Everything else stays temperate, which dominates by design.
+--  * `math.noise` isn't seedable, so we shift each field's sample domain by a
+--    large per-seed offset — that's what makes each world unique yet deterministic.
 function PlanetGenerator.generateSurface(descriptor)
 	local radius = descriptor.radius
 	local tiles = {}
 
-	-- Per-seed domain offsets (deterministic from the seed)
+	-- Per-seed domain offsets (deterministic from the seed). One independent
+	-- offset per noise field so the fields don't correlate into stripes.
 	local rng = Random.new(descriptor.seed)
 	local function offset()
 		return Vector3.new(rng:NextNumber(-400, 400), rng:NextNumber(-400, 400), rng:NextNumber(-400, 400))
 	end
-	local contOff, detailOff, cloudOff = offset(), offset(), offset()
+	local contOff, detailOff, cloudOff, elevOff, moistOff =
+		offset(), offset(), offset(), offset(), offset()
 
 	local CONTINENT_FREQ = 1.4 -- low => a few big continents
 	local DETAIL_FREQ = 3.3
 	local DETAIL_AMP = 0.4
 	local CLOUD_FREQ = 2.1
+	local ELEV_FREQ = 1.9   -- coherent mountain ranges, not speckle
+	local MOIST_FREQ = 1.6  -- coherent humid / arid regions
 
 	-- More water => higher land threshold => less land
 	local landThreshold = (descriptor.waterCoverage - 0.5) * 0.5
+
+	-- math.noise returns roughly -1..1; sampleField remaps a field to 0..1.
+	local function sampleField(d, freq, off)
+		return (math.noise(d.X * freq + off.X, d.Y * freq + off.Y, d.Z * freq + off.Z) + 1) * 0.5
+	end
 
 	local function landValue(d)
 		local cont = math.noise(d.X * CONTINENT_FREQ + contOff.X, d.Y * CONTINENT_FREQ + contOff.Y, d.Z * CONTINENT_FREQ + contOff.Z)
@@ -171,6 +200,35 @@ function PlanetGenerator.generateSurface(descriptor)
 			math.clamp(color.G * factor, 0, 1),
 			math.clamp(color.B * factor, 0, 1)
 		)
+	end
+
+	-- Decide a land cell's biome from coherent climate fields.
+	--   dir        : surface normal
+	--   lat        : latitude (poles -> cold)
+	--   landMargin : 0..1, how far inland/above the waterline (drives green depth)
+	local function biomeFor(dir, lat, landMargin)
+		local elevation = sampleField(dir, ELEV_FREQ, elevOff)
+		local moisture = sampleField(dir, MOIST_FREQ, moistOff)
+		-- Warm at the equator, cold at the poles; high ground is colder too.
+		local temperature = (1 - math.abs(math.sin(lat))) - elevation * 0.3
+
+		if elevation > MOUNTAIN_ELEV then
+			-- Rocky highland: grey, lighter toward the peaks, and raised slightly.
+			local peak = math.clamp((elevation - MOUNTAIN_ELEV) / (1 - MOUNTAIN_ELEV), 0, 1)
+			return {
+				biome = "mountain",
+				color = shade(MOUNTAIN_COLOR, 0.9 + peak * 0.45),
+				material = Enum.Material.Slate,
+				raise = radius * (0.015 + peak * 0.03),
+			}
+		elseif temperature < COLD_TEMP then
+			return { biome = "tundra", color = TUNDRA_COLOR }
+		elseif temperature > HOT_TEMP and moisture < DRY_MOISTURE then
+			return { biome = "desert", color = shade(DESERT_COLOR, 0.94 + moisture * 0.16) }
+		else
+			-- Temperate grassland: the archetype's own green, deeper inland.
+			return { biome = "temperate", color = shade(descriptor.landColor, 0.9 + landMargin * 0.3) }
+		end
 	end
 
 	local function dirFromLatLon(lat, lon)
@@ -197,13 +255,16 @@ function PlanetGenerator.generateSurface(descriptor)
 			else
 				local v = landValue(dir)
 				if v > landThreshold then
-					-- Higher above the waterline => lighter "highland" shade
-					local elev = math.clamp((v - landThreshold) * 2.5, 0, 1)
+					local landMargin = math.clamp((v - landThreshold) * 2.5, 0, 1)
+					local b = biomeFor(dir, lat, landMargin)
 					table.insert(tiles, {
 						dir = dir,
 						size = LAND_TILE,
-						color = shade(descriptor.landColor, 0.92 + elev * 0.32),
+						color = b.color,
 						kind = "land",
+						biome = b.biome,
+						material = b.material,
+						raise = b.raise,
 					})
 				end
 			end

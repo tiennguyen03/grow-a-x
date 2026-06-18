@@ -2,7 +2,7 @@
 
 > Slotted as Epic 7 to avoid renumbering the existing tracker (Epic 2 stays "Planet Upgrade System"). Conceptually this is the **planet foundation** — upgrades/interventions and era visuals will act on planets generated here.
 
-**Status:** ✅ Sprints 7A–7F complete. **Refactor (per-player + noise continents):** planets are now built per player by `PlayerPlanetService` on join (seed = `UserId + WORLD_SEED_SALT`), under `workspace.SpaceEnvironment.PlayerPlanets`. Land is generated from coherent `math.noise` over the sphere (connected continents/islands) instead of clustered blobs; `WorldBuilder` no longer builds a planet (backdrop only); atmosphere is a thin shell (scale 1.04–1.08). See `PlayerPlanetService.luau` + `PlanetGenerator.generateSurface`.
+**Status:** ✅ Sprints 7A–7G complete. **Refactor (per-player + noise continents):** planets are built per player by `PlayerPlanetService` on join (seed = `UserId + WORLD_SEED_SALT`), under `workspace.SpaceEnvironment.PlayerPlanets`. Land is generated from coherent `math.noise` over the sphere (connected continents/islands) instead of clustered blobs; `WorldBuilder` no longer builds a planet (backdrop only); atmosphere is a thin shell (scale 1.04–1.08). See `PlayerPlanetService.luau` + `PlanetGenerator.generateSurface`. **Sprint 7G** added climate-based biomes (temperate/desert/mountain/tundra), moved planet rotation to the server (fixing the snap-back bug), and rebalanced the planet/star composition.
 
 ---
 
@@ -118,17 +118,26 @@ Different seeds already produce visibly different planets — the body color (`l
 
 ### Sprint 7E: Planet Motion & Presentation ✅ COMPLETE
 - [x] `RotationSeconds` exposed as a model attribute (7E-01).
-- [x] **`src/client/PlanetVisuals.client.luau`** — self-contained LocalScript that slowly spins the HomePlanet model about its center (visual only, client-side; re-acquires the planet if it rebuilds). Speed = `2π / RotationSeconds` (7E-02).
-- [x] Spawn composition already matches the spec — spawn `(0,0,0)`, planet `(0,0,-180)`, star `(0,-20,-350)`, return `(0,20,-90)`. Confirmed in-playtest: planet is clearly visible from spawn with the star anchoring the background (7E-03).
+- [x] Planet rotation. **Superseded by 7G:** rotation is now server-side in `PlayerPlanetService` (see below). The old `src/client/PlanetVisuals.client.luau` was removed.
+- [x] Spawn composition — spawn `(0,0,0)`, planet `(0,0,-260)`, star far behind on the X=0 center line. Rebalanced in 7G.
 
 ### Sprint 7F: Multi-Planet Generator Prep ✅ COMPLETE
 - [x] `generatePlanetDescriptor(seed, options)` already accepts `planetId` / `displayName` / `allowedArchetypes` (7F-01).
 - [x] Future archetypes `Desert`, `Ice`, `Volcanic`, `Barren` added to `PlanetArchetypes` with `enabled = false`, `allowedForHome = false` — the generator's candidate filter requires `enabled`, so they're never rolled until turned on (7F-02).
 - [x] Future gameplay hooks documented as comments in `PlanetArchetypes.luau` (ocean = faster early life, desert = stronger solar, etc.) — docs only, no modifiers implemented (7F-03).
 
+### Sprint 7G: Rotation fix, biomes & composition polish ✅ COMPLETE
+**Files:** `PlayerPlanetService.luau`, `PlanetGenerator.luau`, `WorldBuilder.luau`; removed `client/PlanetVisuals.client.luau`.
+
+- [x] **7G-01 Rotation bug fixed at the source.** The planet was spun from a client LocalScript, but its parts are anchored and server-owned — the server kept re-replicating their authoritative CFrames over the client's rotation, so the planet turned a little then snapped back. Rotation now runs on the **server** in `PlayerPlanetService` (a `RunService.Heartbeat` loop), accumulating a persistent `angle` per planet and `PivotTo`-ing the whole model about its stored `center`. The authority itself rotates → smooth, continuous, never resets. Speed = `2π / RotationSeconds`.
+- [x] **7G-02 Climate-based biomes.** `PlanetGenerator.generateSurface` now assigns each land cell a biome from coherent climate fields, not random color: ELEVATION noise (high → **mountain**, grey Slate, raised), TEMPERATURE from latitude − altitude (cold → **tundra**, pale), MOISTURE noise (hot **and** dry → **desert**, tan). Everything else is **temperate** (the archetype's green), which dominates by design so the home world reads as habitable. Deterministic: each field uses its own per-seed `math.noise` domain offset. Land tiles are named `<Biome>Tile`. Ocean is still the planet body color.
+- [x] **7G-03 Composition + bigger star.** Centerpiece star ~2× larger (radius 58 → 116), pushed to `(0, 250, -1300)` — on the same X=0 vertical line as the planet, lifted to clear it. Light range widened (1600 → 2400) and brightness trimmed (4 → 3.5) so the larger neon sun lights the planet without over-blooming. Planet base position `(0, 0, -260)`.
+
+**Determinism note:** the biome fields add three more `offset()` calls inside `generateSurface`'s own rng stream (continent/detail/cloud/elevation/moisture). This is a separate stream from `generatePlanetDescriptor`, so descriptor rolls are untouched; same seed → same biome map.
+
 ---
 
-**Epic 7 status: all sprints 7A–7F complete.** Next recommended work is **Epic 0 Sprint 0E** (planet approach + inspect prompt), which targets this generated `HomePlanet`.
+**Epic 7 status: all sprints 7A–7G complete.** Next recommended work is **Epic 0 Sprint 0E** (planet approach + inspect prompt), which targets these generated planets.
 
 ---
 

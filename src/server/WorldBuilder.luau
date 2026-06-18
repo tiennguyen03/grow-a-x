@@ -21,10 +21,14 @@ local STAR_COUNT       = 160
 local STAR_FIELD_RADIUS = 1700    -- studs; how far stars scatter from origin
 local STAR_MIN_DIST    = 450      -- keep stars well away so they read as distant
 
--- Centerpiece "sun": the central focal point — far behind + slightly above the
--- home planet so it anchors the scene without being an in-your-face eyesore.
-local CENTERPIECE_POS    = Vector3.new(0, 140, -900)
-local CENTERPIECE_RADIUS = 58
+-- Centerpiece "sun": the system anchor. Composition reads, from the player's
+-- spawn at the origin looking down -Z:  player -> home planet ahead (0,0,-260)
+-- -> sun far behind on the SAME vertical center line (X = 0), lifted just enough
+-- to clear the planet so both are clearly visible and the planet looks like it
+-- belongs to this star. Pushed further out (-1300) so the now-larger star frames
+-- the scene instead of crowding it.
+local CENTERPIECE_POS    = Vector3.new(0, 250, -1300)
+local CENTERPIECE_RADIUS = 116 -- ~2x the previous 58 (bigger, more impressive sun)
 
 local WorldBuilder = {}
 
@@ -97,9 +101,11 @@ local function buildCenterpiece(parent)
 	halo.CastShadow = false
 	halo.Parent = star
 
+	-- Bigger sun sits further away, so widen the light range to keep the planet
+	-- lit; trim brightness slightly so the larger neon ball doesn't over-bloom.
 	local light = Instance.new("PointLight")
-	light.Brightness = 4
-	light.Range = 1600
+	light.Brightness = 3.5
+	light.Range = 2400
 	light.Color = Color3.fromRGB(255, 210, 150)
 	light.Parent = star
 end
