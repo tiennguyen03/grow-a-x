@@ -1,0 +1,17 @@
+# Rojo build output
+build/
+*.rbxl
+*.rbxlx
+
+# Rokit local binaries
+.rokit/
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
