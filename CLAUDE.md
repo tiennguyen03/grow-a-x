@@ -1,8 +1,31 @@
 # Grow A [X] — Claude Code Context
 
-Working title is **Grow A [X]** (final name TBD). Developed by **Bread** and **Nova**.
+Working title is **Grow A [X]** (final name TBD). Developed by **Tien** and **Nova**.
 
 > 📋 **Starting a session? Read [`HANDOFF.md`](HANDOFF.md) first** — current state, which files are safe to touch, which are shared coordination points, and what's NOT in source control.
+
+---
+
+## Claude Operating Rules
+
+Claude should behave like a senior engineer on a two-person Roblox/Rojo project. Writing code is only part of the job — Claude must also preserve project context, reduce merge conflicts, and leave the next developer with a clean starting point.
+
+**Before starting any task:**
+
+1. Read `HANDOFF.md`.
+2. Check the relevant epic doc in `docs/EPICS/`.
+3. Identify the current sprint and the exact ticket/task being worked on.
+4. Identify which developer owns the task: **Tien** or **Nova**.
+5. Identify the files that are safe to edit.
+6. Identify files that are shared coordination points or conflict-prone.
+7. Avoid touching shared coordination files unless the task explicitly requires it.
+8. Confirm what is explicitly out of scope.
+9. Keep the implementation small and aligned with the current sprint.
+10. Leave the next developer with a clean starting point.
+
+**When finishing any task**, provide a handoff summary (see [Required Handoff Summary Format](#required-handoff-summary-format)) covering: what changed, files touched, how to test in Roblox Studio, known issues / unfinished work, what Tien or Nova should do next, and whether `HANDOFF.md`, an epic doc, or `AI_CONTEXT.md` (if present) needs updating.
+
+Handoff context is **mandatory after every implementation task** — Claude should not wait for the user to ask for it. If the task is unclear, ask for clarification before editing shared or high-risk files; if it's clear and low-risk, proceed without over-planning.
 
 ---
 
@@ -96,6 +119,8 @@ All remotes are defined in `src/shared/Remotes.luau`. Server creates them on loa
 
 > To change the look, edit the constants at the top of `WorldBuilder.luau` (`GRAVITY`, `BRIGHTNESS`, `AMBIENT`, etc.) — don't set Lighting in Studio, it'll be overwritten on the next Play.
 
+> **WorldBuilder is the source of truth for the environment.** If a visual/environment change is needed, edit `WorldBuilder.luau`; do not manually place objects or change Lighting in Studio unless explicitly prototyping. Studio-side changes are overwritten by `WorldBuilder.luau` on Play.
+
 ---
 
 ## Design Principles
@@ -103,9 +128,111 @@ All remotes are defined in `src/shared/Remotes.luau`. Server creates them on loa
 - **One small thing at a time.** Don't build ahead of the current sprint.
 - **No saving yet** until a DataStore epic is explicitly started.
 - **No planet visuals yet** until the planet era epic is started.
-- **No upgrades yet** until Epic 2.
+- **No generic upgrade shop yet.** The first spend mechanic should be framed as a planet *intervention* (e.g. "First Intervention — Guide Evolution"), not a generic upgrade system. The mechanic can still be *Cost: 10 Influence → Effect: +1 Influence/sec*, but the fantasy is "the player spends Influence to guide early life toward complexity," not "buys a +1/sec upgrade."
 - Server is the source of truth for all player data. Client only receives and displays.
 - Movement is client-side prototype only — no server-authoritative movement yet.
+- **A task is not done until the next developer can continue from it without asking what happened.**
+- **Every completed task should end with a clear handoff summary** (see "Required Handoff Summary Format").
+
+---
+
+## File Touch Rules
+
+Classify a file before editing it.
+
+### Safe Solo Files
+Feature-specific files owned by the current ticket are usually safe to edit. Only one developer should own a feature-specific file at a time.
+```text
+src/client/SpaceMovement.client.luau   (Tien — traversal)
+src/server/WorldBuilder.luau           (Nova — environment)
+src/server/PlayerManager.luau          (Influence server logic)
+src/client/InfluenceUI.luau            (Influence UI)
+```
+
+### Shared Coordination Files
+Conflict-prone. Only edit if the current ticket explicitly requires it, and **call it out in the handoff summary**:
+```text
+src/server/Main.server.luau
+src/client/Main.client.luau
+src/shared/Remotes.luau
+src/shared/GameConfig.luau
+default.project.json
+CLAUDE.md
+HANDOFF.md
+docs/AI_CONTEXT.md   (if present)
+```
+
+### Forbidden Unless Explicitly Asked
+Do not add or modify these unless the task explicitly asks:
+```text
+DataStore / saving
+monetization
+admin commands
+large refactors
+new epics
+new game systems outside the current sprint
+server-authoritative movement
+complex multiplayer systems
+```
+
+### Conflict Prevention
+Before coding, know: who owns this task, which branch is in use, which files are allowed, which are forbidden, and which could cause merge conflicts.
+
+---
+
+## Session Startup Checklist
+
+At the start of a coding session, answer these internally before making changes:
+
+- What sprint/ticket are we working on?
+- Is this task owned by Tien or Nova?
+- What files are allowed for this task?
+- What files are conflict-prone?
+- What is explicitly out of scope?
+- What does "done" mean for this task?
+- What should the other developer know after this task?
+- Do any docs need updating after this task?
+
+If the task is unclear, ask for clarification before editing shared or high-risk files. If it's clear and low-risk, proceed without over-planning.
+
+---
+
+## Required Handoff Summary Format
+
+At the end of every implementation task, output this handoff block:
+
+```markdown
+## Handoff Summary
+
+### Completed
+-
+
+### Files Changed
+-
+
+### How To Test
+-
+
+### Known Issues / Unfinished Work
+-
+
+### Safe Next Tasks
+-
+
+### Do Not Touch Yet
+-
+
+### Docs To Update
+-
+```
+
+Rules:
+- Keep it specific to the task that was just completed.
+- Mention exact file paths.
+- Mention exact Roblox Studio test steps.
+- If no docs need updating, write `None`.
+- If another developer should continue, say exactly where they should start.
+- If a file is conflict-prone, explicitly warn the next developer.
 
 ---
 
@@ -125,10 +252,12 @@ rojo serve
 
 ## Collaboration & Git Workflow
 
-Two devs (**Bread** and **Nova**) run separate Rojo instances. To avoid clobbering each other's history, **never commit straight to `main`** — each dev works on a personal branch and merges to `main` via PR.
+Two devs (**Tien** and **Nova**) run separate Rojo instances. To avoid clobbering each other's history, **never commit straight to `main`** — each dev works on a personal branch and merges to `main` via PR.
 
-- **Bread:** `bread/world-feel`
+- **Tien:** `tien/<topic>`
 - **Nova:** `nova/<topic>` (e.g. `nova/influence-upgrades`)
+
+> Some existing branches predate this naming: `feature/0d-boost-movement` (active sprint work) and `bread/world-feel`. New branches should follow `tien/<topic>` / `nova/<topic>`.
 
 > Git branches don't affect Rojo — each dev serves their own files from their own branch. Branching only separates commit history.
 
