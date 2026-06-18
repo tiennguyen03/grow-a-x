@@ -1,7 +1,18 @@
-local MOVE_SPEED     = 40
-local VERTICAL_SPEED = 35
-local ACCELERATION   = 8
-local DECELERATION   = 10
+-- Movement
+local MOVE_SPEED        = 40
+local BOOST_SPEED       = 95
+local VERTICAL_SPEED    = 35
+local ACCELERATION      = 8
+local BOOST_ACCELERATION = 6
+local DECELERATION      = 10
+
+-- Camera feel
+local NORMAL_FOV = 70
+local BOOST_FOV  = 84
+local FOV_SMOOTH = 8
+
+-- Return-home safety teleport (placed in front of + above Nova's HomePlanet at (0,0,-180))
+local RETURN_HOME_POS = Vector3.new(0, 20, -90)
 
 -- Soaring / banking feel
 local ORIENT_SMOOTH    = 9              -- how fast the body rotates toward its target pose
@@ -21,6 +32,7 @@ local character, rootPart
 local currentVelocity = Vector3.zero
 local currentBank     = 0       -- current smoothed roll angle
 local prevHeading     = nil     -- last horizontal travel direction, for measuring turn rate
+local boostParticles  = nil     -- ParticleEmitter, recreated per character
 
 local function setupCharacter(char)
 	character = char
@@ -45,17 +57,58 @@ local function setupCharacter(char)
 		running.Volume = 0
 	end
 
+	-- Boost VFX: a particle trail that only emits while boosting.
+	-- Parented to the new rootPart, so the old one is cleaned up with the old character.
+	local boostAttachment = Instance.new("Attachment")
+	boostAttachment.Name = "BoostVFXAttachment"
+	boostAttachment.Parent = rootPart
+
+	boostParticles = Instance.new("ParticleEmitter")
+	boostParticles.Name = "BoostParticles"
+	boostParticles.Enabled = false
+	boostParticles.Rate = 40
+	boostParticles.Lifetime = NumberRange.new(0.25, 0.45)
+	boostParticles.Speed = NumberRange.new(8, 14)
+	boostParticles.SpreadAngle = Vector2.new(15, 15)
+	boostParticles.LightEmission = 0.8
+	boostParticles.Color = ColorSequence.new(Color3.fromRGB(150, 200, 255))
+	boostParticles.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1.4),
+		NumberSequenceKeypoint.new(1, 0),
+	})
+	boostParticles.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.2),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	boostParticles.Parent = boostAttachment
+
 	-- Kill any spawn velocity so the character doesn't drift
 	rootPart.AssemblyLinearVelocity  = Vector3.zero
 	rootPart.AssemblyAngularVelocity = Vector3.zero
 
 	currentVelocity = Vector3.zero
+
+	-- Don't leave the camera stuck at boost FOV after a respawn
+	if camera then
+		camera.FieldOfView = NORMAL_FOV
+	end
 end
 
 player.CharacterAdded:Connect(setupCharacter)
 if player.Character then
 	setupCharacter(player.Character)
 end
+
+-- Return-home key: edge-triggered, so it fires once per press (not every frame held)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.R and rootPart then
+		rootPart.AssemblyLinearVelocity  = Vector3.zero
+		rootPart.AssemblyAngularVelocity = Vector3.zero
+		rootPart.CFrame = CFrame.new(RETURN_HOME_POS)
+		currentVelocity = Vector3.zero
+	end
+end)
 
 RunService.RenderStepped:Connect(function(dt)
 	if not rootPart or not character or not character.Parent then return end
@@ -67,39 +120,61 @@ RunService.RenderStepped:Connect(function(dt)
 	if UserInputService:IsKeyDown(Enum.KeyCode.A) then inputDir += Vector3.new(-1, 0,  0) end
 	if UserInputService:IsKeyDown(Enum.KeyCode.D) then inputDir += Vector3.new( 1, 0,  0) end
 
-	-- Read vertical input
+	-- Read vertical input — Space up, Left Ctrl down (Left Shift is boost now, not descend)
 	local verticalInput = 0
 	if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
 		verticalInput = 1
-	elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
-		or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+	elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
 		verticalInput = -1
 	end
 
-	-- Project W/S/A/D onto camera's horizontal plane
-	local camCF      = camera.CFrame
-	local camForward = Vector3.new(camCF.LookVector.X,  0, camCF.LookVector.Z)
+	-- Movement directions from the camera.
+	-- W/S follow the FULL look vector (including pitch) so looking down flies you
+	-- down and looking up climbs — real 3D flight. A/D strafe horizontally.
+	-- Space / Left Ctrl add world-vertical on top for fine altitude control.
+	local camCF    = camera.CFrame
+	local camLook  = camCF.LookVector
+	local camForward = Vector3.new(camLook.X, 0, camLook.Z)              -- flattened, used by the pose/idle code below
 	local camRight   = Vector3.new(camCF.RightVector.X, 0, camCF.RightVector.Z)
 
+	if camLook.Magnitude    > 0.001 then camLook    = camLook.Unit    end
 	if camForward.Magnitude > 0.001 then camForward = camForward.Unit end
 	if camRight.Magnitude   > 0.001 then camRight   = camRight.Unit   end
 
-	local horizontal = camForward * (-inputDir.Z) + camRight * inputDir.X
-	local desiredVelocity = Vector3.zero
+	local moveDir = camLook * (-inputDir.Z) + camRight * inputDir.X
+	local hasMoveInput = moveDir.Magnitude > 0.001
 
-	if horizontal.Magnitude > 0.001 then
-		desiredVelocity = horizontal.Unit * MOVE_SPEED
+	-- Boost only applies when there's directional input
+	local isBoosting   = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and hasMoveInput
+	local moveSpeed    = isBoosting and BOOST_SPEED or MOVE_SPEED
+	local accel        = isBoosting and BOOST_ACCELERATION or ACCELERATION
+
+	local desiredVelocity = Vector3.zero
+	if hasMoveInput then
+		desiredVelocity = moveDir.Unit * moveSpeed
 	end
 	desiredVelocity += Vector3.new(0, verticalInput * VERTICAL_SPEED, 0)
 
 	-- Smooth acceleration / deceleration
 	local isMoving    = desiredVelocity.Magnitude > 0.001
 	local smoothAlpha = isMoving
-		and (1 - math.exp(-ACCELERATION * dt))
+		and (1 - math.exp(-accel * dt))
 		or  (1 - math.exp(-DECELERATION * dt))
 
 	currentVelocity = currentVelocity:Lerp(desiredVelocity, smoothAlpha)
 	rootPart.AssemblyLinearVelocity = currentVelocity
+
+	-- Camera FOV: widen smoothly while boosting, ease back when not
+	if camera then
+		local targetFov = isBoosting and BOOST_FOV or NORMAL_FOV
+		local fovAlpha  = math.clamp(FOV_SMOOTH * dt, 0, 1)
+		camera.FieldOfView += (targetFov - camera.FieldOfView) * fovAlpha
+	end
+
+	-- Boost VFX toggles with boost state
+	if boostParticles then
+		boostParticles.Enabled = isBoosting
+	end
 
 	-- Orientation: bank into a soaring flight pose --------------------------------
 	local pos   = rootPart.Position
