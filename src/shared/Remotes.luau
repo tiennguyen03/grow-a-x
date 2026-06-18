@@ -24,5 +24,5 @@ local function get(name, className)
 end
 
 return {
-	InfluenceUpdate = get("InfluenceUpdate", "RemoteEvent"),
+	MatterUpdate = get("MatterUpdate", "RemoteEvent"),
 }

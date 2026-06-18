@@ -1,3 +1,3 @@
 return {
-	BASE_INFLUENCE_PER_SEC = 1,
+	BASE_MATTER_PER_SEC = 1,
 }

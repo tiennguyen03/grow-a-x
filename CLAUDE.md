@@ -10,7 +10,7 @@ Working title is **Grow A [X]** (final name TBD). Developed by **Bread** and **N
 
 An idle/progression + civilization management game on Roblox. The player is a **Universe Architect** — a godlike entity who floats through space and guides the evolution of life and civilizations across planets.
 
-The player is NOT a colonist or creature. They act from above, spending **Influence** to push civilizations forward through eras.
+The player is NOT a colonist or creature. They act from above, spending **Matter** to push civilizations forward through eras.
 
 **Core fantasy:** Help tiny organisms evolve from primitive life into spacefaring societies that eventually build Dyson spheres.
 
@@ -19,13 +19,13 @@ The player is NOT a colonist or creature. They act from above, spending **Influe
 ## Core Loop
 
 1. Player joins and receives a personal planet/system.
-2. The planet passively generates **Influence** over time.
-3. Player spends Influence on interventions: Guide Evolution, Stabilize Climate, Inspire Discovery, etc.
+2. The planet passively generates **Matter** over time.
+3. Player spends Matter on interventions: Guide Evolution, Stabilize Climate, Inspire Discovery, etc.
 4. Interventions raise planet stats: Life, Technology, Stability.
 5. Planet visually evolves through eras:
    - Barren Planet → Primitive Life → Early Civilization → Industrial Civilization → Space Age → Interplanetary Expansion
 6. Random events occur: climate shifts, asteroid threats, plagues, wars, solar storms.
-7. Player uses Influence to help civilizations survive events.
+7. Player uses Matter to help civilizations survive events.
 8. Late game: civilizations expand to moons/other planets, build Dyson Swarms/Spheres.
 
 ---
@@ -57,11 +57,11 @@ All systems are ModuleScripts with an `.init()` function. Entry points (`Main.se
 ```
 src/server/Main.server.luau          → requires and inits all server systems
 src/server/WorldBuilder.luau         → builds centerpiece star + star field from script on server start
-src/server/PlayerManager.luau        → player profiles, influence tick, remote firing
+src/server/PlayerManager.luau        → player profiles, matter tick, remote firing
 src/client/Main.client.luau          → requires and inits all client systems
-src/client/InfluenceUI.luau          → builds HUD, listens to InfluenceUpdate remote
+src/client/InfluenceUI.luau          → builds HUD, listens to MatterUpdate remote
 src/client/SpaceMovement.client.luau → standalone LocalScript; floaty space movement (no module pattern — runs itself)
-src/shared/GameConfig.luau           → shared constants (BASE_INFLUENCE_PER_SEC, etc.)
+src/shared/GameConfig.luau           → shared constants (BASE_MATTER_PER_SEC, etc.)
 src/shared/Remotes.luau              → creates RemoteEvents server-side, waits client-side
 ```
 
@@ -72,7 +72,7 @@ All remotes are defined in `src/shared/Remotes.luau`. Server creates them on loa
 
 | Remote | Direction | Payload |
 |---|---|---|
-| `InfluenceUpdate` | Server → Client | `{ influence: number, influencePerSec: number }` |
+| `MatterUpdate` | Server → Client | `{ matter: number, matterPerSec: number }` |
 
 ---
 
@@ -125,7 +125,7 @@ rojo serve
 
 | Epic | Status |
 |---|---|
-| Epic 1: Core Influence Loop | In Progress |
+| Epic 1: Core Matter Loop | In Progress |
 | Epic 2: Planet Upgrade System | Not Started |
 | Epic 3: Planet Era Visuals | Not Started |
 | Epic 4: Events & Disasters | Not Started |

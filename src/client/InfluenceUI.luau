@@ -2,11 +2,11 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Remotes = require(ReplicatedStorage.Remotes)
 
-local InfluenceUI = {}
+local MatterUI = {}
 
 local function buildGui(playerGui)
 	local screenGui = Instance.new("ScreenGui")
-	screenGui.Name = "InfluenceGui"
+	screenGui.Name = "MatterGui"
 	screenGui.ResetOnSpawn = false
 	screenGui.Parent = playerGui
 
@@ -28,17 +28,17 @@ local function buildGui(playerGui)
 	padding.PaddingBottom = UDim.new(0, 8)
 	padding.Parent = frame
 
-	local influenceLabel = Instance.new("TextLabel")
-	influenceLabel.Name = "InfluenceLabel"
-	influenceLabel.Size = UDim2.new(1, 0, 0.55, 0)
-	influenceLabel.Position = UDim2.new(0, 0, 0, 0)
-	influenceLabel.BackgroundTransparency = 1
-	influenceLabel.TextColor3 = Color3.fromRGB(210, 190, 255)
-	influenceLabel.TextXAlignment = Enum.TextXAlignment.Left
-	influenceLabel.Text = "Influence: 0"
-	influenceLabel.Font = Enum.Font.GothamBold
-	influenceLabel.TextSize = 18
-	influenceLabel.Parent = frame
+	local matterLabel = Instance.new("TextLabel")
+	matterLabel.Name = "MatterLabel"
+	matterLabel.Size = UDim2.new(1, 0, 0.55, 0)
+	matterLabel.Position = UDim2.new(0, 0, 0, 0)
+	matterLabel.BackgroundTransparency = 1
+	matterLabel.TextColor3 = Color3.fromRGB(210, 190, 255)
+	matterLabel.TextXAlignment = Enum.TextXAlignment.Left
+	matterLabel.Text = "Matter: 0"
+	matterLabel.Font = Enum.Font.GothamBold
+	matterLabel.TextSize = 18
+	matterLabel.Parent = frame
 
 	local rateLabel = Instance.new("TextLabel")
 	rateLabel.Name = "RateLabel"
@@ -52,18 +52,18 @@ local function buildGui(playerGui)
 	rateLabel.TextSize = 14
 	rateLabel.Parent = frame
 
-	return influenceLabel, rateLabel
+	return matterLabel, rateLabel
 end
 
-function InfluenceUI.init()
+function MatterUI.init()
 	local player = Players.LocalPlayer
 	local playerGui = player:WaitForChild("PlayerGui")
-	local influenceLabel, rateLabel = buildGui(playerGui)
+	local matterLabel, rateLabel = buildGui(playerGui)
 
-	Remotes.InfluenceUpdate.OnClientEvent:Connect(function(data)
-		influenceLabel.Text = string.format("Influence: %d", math.floor(data.influence))
-		rateLabel.Text = string.format("+%g / sec", data.influencePerSec)
+	Remotes.MatterUpdate.OnClientEvent:Connect(function(data)
+		matterLabel.Text = string.format("Matter: %d", math.max(0, math.floor(data.matter)))
+		rateLabel.Text = string.format("+%g / sec", data.matterPerSec)
 	end)
 end
 
-return InfluenceUI
+return MatterUI

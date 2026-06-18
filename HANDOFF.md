@@ -24,7 +24,7 @@ rojo serve         # keep running; connect the Rojo Studio plugin to localhost:3
 
 | Sprint | What | Status |
 |---|---|---|
-| 1A | Influence generates +1/sec, shown on a HUD | ✅ Done |
+| 1A | Matter generates +1/sec, shown on a HUD | ✅ Done |
 | 0A | Void environment + floaty 6-axis movement | ✅ Done |
 | 0B | Centerpiece star + 200-star field (motion reference) | ✅ Done |
 | 0C | Soaring flight pose + banking into turns | ✅ Done |
@@ -40,10 +40,10 @@ Nothing is mid-edit. All files below are committed and stable — safe to build 
 |---|---|---|
 | `src/server/Main.server.luau` | Server entry point; calls each system's init/build | ⚠️ **Shared** — both of us edit this when adding a system. Coordinate / expect merge conflicts. Keep edits to single lines. |
 | `src/server/WorldBuilder.luau` | Builds centerpiece star + star field from script | ✅ Safe — self-contained |
-| `src/server/PlayerManager.luau` | Player profiles + influence tick + fires `InfluenceUpdate` | ✅ Safe — owns the Influence server logic |
+| `src/server/PlayerManager.luau` | Player profiles + matter tick + fires `MatterUpdate` | ✅ Safe — owns the Matter server logic |
 | `src/client/Main.client.luau` | Client entry point; inits client systems | ⚠️ **Shared** — same as server Main |
 | `src/client/SpaceMovement.client.luau` | Floaty movement + soaring pose + banking | ✅ Safe — self-contained LocalScript |
-| `src/client/InfluenceUI.luau` | Builds HUD, listens to `InfluenceUpdate` | ✅ Safe — owns the Influence UI |
+| `src/client/InfluenceUI.luau` | Builds HUD, listens to `MatterUpdate` | ✅ Safe — owns the Matter UI |
 | `src/shared/GameConfig.luau` | Shared tuning constants | ⚠️ **Shared** — append new keys, don't reorganize, to avoid conflicts |
 | `src/shared/Remotes.luau` | Defines all RemoteEvents | ⚠️ **Shared** — add new remotes here; coordinate |
 
@@ -76,7 +76,7 @@ These were set directly in Studio via MCP and live in the **.rbxl place file**, 
 To stay out of each other's files:
 
 - **Bread's lane (traversal/world feel):** Sprint 0 polish — flying animation, dash/boost, camera FOV kick. Files: `SpaceMovement.client.luau`, `WorldBuilder.luau`.
-- **Open lane for Nova (Influence systems):** Sprint 1B — spend Influence to buy an upgrade that raises `influencePerSec`. Files: `PlayerManager.luau`, `InfluenceUI.luau`, plus one new remote in `Remotes.luau` and one constant in `GameConfig.luau`.
+- **Open lane for Nova (Matter systems):** Sprint 1B — spend Matter to buy an upgrade that raises `matterPerSec`. Files: `PlayerManager.luau`, `InfluenceUI.luau`, plus one new remote in `Remotes.luau` and one constant in `GameConfig.luau`.
 
 Both lanes only collide in the ⚠️ shared files (`Remotes`, `GameConfig`, the two `Main` files) — a quick "hey I'm adding X" message avoids any conflict.
 

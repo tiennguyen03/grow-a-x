@@ -7,11 +7,23 @@ local PlayerManager = {}
 
 local profiles = {}
 
+local function fireUpdate(player, profile)
+	Remotes.MatterUpdate:FireClient(player, {
+		matter = profile.matter,
+		matterPerSec = profile.matterPerSec,
+	})
+end
+
 local function createProfile(player)
-	profiles[player.UserId] = {
-		influence = 0,
-		influencePerSec = GameConfig.BASE_INFLUENCE_PER_SEC,
+	local profile = {
+		matter = 0,
+		matterPerSec = GameConfig.BASE_MATTER_PER_SEC,
 	}
+	profiles[player.UserId] = profile
+
+	-- Push initial state immediately so the HUD shows "Matter: 0"
+	-- right away instead of waiting for the first tick.
+	fireUpdate(player, profile)
 end
 
 local function removeProfile(player)
@@ -22,13 +34,10 @@ local function runTick()
 	while true do
 		task.wait(1)
 		for userId, profile in profiles do
-			profile.influence += profile.influencePerSec
+			profile.matter += profile.matterPerSec
 			local player = Players:GetPlayerByUserId(userId)
 			if player then
-				Remotes.InfluenceUpdate:FireClient(player, {
-					influence = profile.influence,
-					influencePerSec = profile.influencePerSec,
-				})
+				fireUpdate(player, profile)
 			end
 		end
 	end
