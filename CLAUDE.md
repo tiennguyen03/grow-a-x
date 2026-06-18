@@ -54,6 +54,7 @@ All systems are ModuleScripts with an `.init()` function. Entry points (`Main.se
 
 ```
 src/server/Main.server.luau          → requires and inits all server systems
+src/server/WorldBuilder.luau         → builds centerpiece star + star field from script on server start
 src/server/PlayerManager.luau        → player profiles, influence tick, remote firing
 src/client/Main.client.luau          → requires and inits all client systems
 src/client/InfluenceUI.luau          → builds HUD, listens to InfluenceUpdate remote
@@ -88,6 +89,8 @@ These are set directly in Studio via MCP (not managed by Rojo — Studio owns th
 | `Lighting.Bloom` | Intensity 0.4, Threshold 0.95 | Subtle space glow |
 | Baseplate | Deleted | No ground in space |
 | SpawnLocation | Deleted | Players spawn at origin |
+
+> **Visual reference objects** (`workspace.SpaceEnvironment`: centerpiece star + star field) are NOT placed in the .rbxl — they are built from `src/server/WorldBuilder.luau` on server start so they stay reproducible from source. Star field uses a fixed seed (`20260618`) so both devs see an identical layout.
 
 ---
 

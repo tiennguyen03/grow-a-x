@@ -54,9 +54,35 @@ DECELERATION   = 10
 
 ---
 
-## Sprint 0B: Star Field (NOT STARTED)
+## Sprint 0B: Centerpiece + Star Field ✅ COMPLETE
+
+**Goal:** Give the player visual reference points so motion through the void is perceptible (empty void = can't tell you're moving).
+
+**File:** `src/server/WorldBuilder.luau` (built from script, called by `Main.server.luau`)
+
+- [x] Centerpiece "star": neon ball at `(0, -20, -350)`, radius 60, with a ForceField halo shell and a `PointLight` (range 600) so it lights the player
+- [x] Star field: 200 anchored neon balls scattered in a spherical shell (150–900 studs from origin)
+- [x] Star colors: ~75% white, 15% blue, 10% warm
+- [x] Fixed RNG seed `20260618` so both devs see the same layout
+- [x] `WorldBuilder.build()` clears any prior `SpaceEnvironment` folder first (no duplicates on re-run)
+
+**Tuning constants** (top of `WorldBuilder.luau`):
+```lua
+STAR_SEED         = 20260618
+STAR_COUNT        = 200
+STAR_FIELD_RADIUS = 900
+STAR_MIN_DIST     = 150
+CENTERPIECE_POS    = Vector3.new(0, -20, -350)
+CENTERPIECE_RADIUS = 60
+```
+
+**Known cosmetic issue:** Humanoid still occasionally plays footstep sounds on spawn. Harmless; will be silenced when/if we move to a fully custom rig.
+
+---
+
+## Sprint 0C: Motion Feel Polish (NOT STARTED)
 
 Planned scope:
-- Scatter small anchored neon Part dots across the void as background stars
-- Or use a ParticleEmitter approach
-- Keep star density low — this is ambiance, not gameplay
+- Tilt/bank the character in the direction of travel so they look like they're soaring
+- Optional subtle camera FOV kick when accelerating
+- Silence footstep sounds
