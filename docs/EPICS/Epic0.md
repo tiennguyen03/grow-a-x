@@ -116,7 +116,7 @@ MAX_BANK         = math.rad(55)
 
 **Goal:** Make floating feel faster, clearer, and harder to get lost in.
 
-Split across two owners / branches (see `Epic0-Sprint0D-BoostSpeedFeelHomeAnchor.md` spec):
+Split across two owners / branches:
 
 ### Tien — movement (`feature/0d-boost-movement`, `src/client/SpaceMovement.client.luau`) ✅ DONE
 - [x] **0D-02 Boost:** Left Shift is now boost (no longer descend); Left Ctrl is the only descend key. Boost raises horizontal speed and only applies while moving horizontally.
@@ -153,3 +153,26 @@ RETURN_HOME_POS = Vector3.new(0, 20, -90)
 | R | Return near home planet |
 
 > **Flight model (added after first 0D playtest):** W/S use the camera's **full** look vector, not a flattened one. Pointing the camera down and holding W now descends (previously movement was locked to the horizontal plane and the only way down was Left Ctrl). Space/Ctrl remain as world-vertical strafing on top. Zero gravity means releasing input hovers — there is intentionally no auto-fall.
+
+### Definition of Done (Sprint 0D)
+- [x] Boost on Left Shift; Left Ctrl is the only descend key
+- [x] Look-based 3D flight (down/up by aiming)
+- [x] Smooth FOV change while boosting
+- [x] Subtle boost VFX
+- [x] R returns near home and stops the player
+- [x] Soaring pose + banking still work
+- [ ] Home planet appears from `WorldBuilder.luau` (Nova)
+- [ ] Both PRs merged into `main`
+
+---
+
+## Sprint 0E: Planet Approach + Inspect Prompt ⬜ NOT STARTED
+
+**Goal:** When the player approaches the home planet, show a simple interaction prompt and a basic focus/inspect mode.
+
+Possible scope (do not start until 0D feels good):
+- Detect distance to `HomePlanet`
+- Show "Press E to Inspect" near the planet
+- Press E to slow/stop the player and frame the planet with the camera
+- Press E or Backspace to exit focus mode
+- No planet stats yet unless Epic 1 needs them
