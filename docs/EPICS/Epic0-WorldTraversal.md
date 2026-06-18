@@ -109,3 +109,44 @@ MAX_BANK         = math.rad(55)
 > If banking rolls the *wrong* way, flip the sign on `BANK_SENSITIVITY`.
 
 **Still out of scope:** an actual flying *animation* (limbs are held in the default pose). That needs an uploaded animation asset — defer until we have a rig/anim pipeline.
+
+---
+
+## Sprint 0D: Boost + Speed Feel + Home Anchor 🔶 IN PROGRESS
+
+**Goal:** Make floating feel faster, clearer, and harder to get lost in.
+
+Split across two owners / branches (see `Epic0-Sprint0D-BoostSpeedFeelHomeAnchor.md` spec):
+
+### Tien — movement (`feature/0d-boost-movement`, `src/client/SpaceMovement.client.luau`) ✅ DONE
+- [x] **0D-02 Boost:** Left Shift is now boost (no longer descend); Left Ctrl is the only descend key. Boost raises horizontal speed and only applies while moving horizontally.
+- [x] **0D-03 FOV:** camera FOV eases from 70 → 84 while boosting and back; reset to 70 on respawn so it can't stick.
+- [x] **0D-04 Boost VFX:** a blue `ParticleEmitter` on a rootPart `Attachment`, enabled only while boosting; recreated per spawn (no duplicates).
+- [x] **0D-05 Return home (R):** teleports to `(0, 20, -90)` (in front of/above the home planet), zeroes velocity. Edge-triggered via `InputBegan` so it fires once per press.
+- [x] **0D-06 Tuning:** adopted the spec's final constants.
+
+### Nova — environment (`feature/0d-home-planet`, `src/server/WorldBuilder.luau`) ⬜ PENDING
+- [ ] **0D-01 Home planet:** `HomePlanet` sphere + `HomePlanetAtmosphere` shell inside `SpaceEnvironment` at `(0, 0, -180)`, radius 35.
+
+**Movement tuning constants** (top of `SpaceMovement.client.luau`):
+```lua
+MOVE_SPEED         = 40
+BOOST_SPEED        = 95
+VERTICAL_SPEED     = 35
+ACCELERATION       = 8
+BOOST_ACCELERATION = 6
+DECELERATION       = 10
+NORMAL_FOV = 70 ; BOOST_FOV = 84 ; FOV_SMOOTH = 8
+RETURN_HOME_POS = Vector3.new(0, 20, -90)
+```
+
+> **Coordination note:** `RETURN_HOME_POS (0,20,-90)` is positioned relative to Nova's `HOME_PLANET_POS (0,0,-180)`. If Nova moves the planet, update the return point to match.
+
+### Controls after 0D
+| Input | Action |
+|---|---|
+| W/A/S/D | Move (camera-relative) |
+| Space | Up |
+| Left Ctrl | Down |
+| Left Shift | Boost |
+| R | Return near home planet |
