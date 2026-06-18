@@ -151,13 +151,20 @@ Ship via PR: `https://github.com/tiennguyen03/grow-a-x/pull/new/<your-branch>`
 
 ## Epic Tracker
 
-| Epic | Status |
-|---|---|
-| Epic 1: Core Influence Loop | In Progress |
-| Epic 2: Planet Upgrade System | Not Started |
-| Epic 3: Planet Era Visuals | Not Started |
-| Epic 4: Events & Disasters | Not Started |
-| Epic 5: DataStore / Saving | Not Started |
-| Epic 6: Multi-Planet Expansion | Not Started |
+| Epic | Doc | Status |
+|---|---|---|
+| Epic 0: World Traversal | `docs/EPICS/Epic0.md` | In Progress |
+| Epic 1: Core Influence Loop | `docs/EPICS/Epic1.md` | In Progress |
+| Epic 2: Planet Upgrade System | `docs/EPICS/Epic2.md` | Not Started |
+| Epic 3: Planet Era Visuals | `docs/EPICS/Epic3.md` | Not Started |
+| Epic 4: Events & Disasters | `docs/EPICS/Epic4.md` | Not Started |
+| Epic 5: DataStore / Saving | `docs/EPICS/Epic5.md` | Not Started |
+| Epic 6: Multi-Planet Expansion | `docs/EPICS/Epic6.md` | Not Started |
 
-See `docs/EPICS/` for detailed sprint breakdowns.
+### Documentation convention (keep this consistent)
+
+- **One file per epic**, named generally: `docs/EPICS/Epic<N>.md`. Never create a separate file for a sprint or ticket.
+- Each epic doc has an H1 title (`# Epic N: <Name>`) and one `## Sprint <N><letter>` section per sprint, appended in order.
+- When you finish or change a sprint, **update that epic's existing file** — add/append a sprint section, don't spin off a new doc.
+- Keep sprint sections substantive but not bloated: goal, owner/file, checklist, key constants, how-it-works notes. Leave generic process boilerplate (PR templates, one-off AI prompts) out of the epic docs.
+- If a sprint spec arrives as its own file, fold its useful content into the relevant `Epic<N>.md` and delete the standalone file.
