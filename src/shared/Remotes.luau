@@ -3,13 +3,18 @@ local RunService = game:GetService("RunService")
 
 local isServer = RunService:IsServer()
 
+-- The folder name must differ from this ModuleScript's name ("Remotes"), or
+-- the client's WaitForChild("Remotes") finds the ModuleScript instead of the
+-- folder and times out looking for the events inside it.
+local FOLDER_NAME = "RemoteEvents"
+
 local folder
 if isServer then
 	folder = Instance.new("Folder")
-	folder.Name = "Remotes"
+	folder.Name = FOLDER_NAME
 	folder.Parent = ReplicatedStorage
 else
-	folder = ReplicatedStorage:WaitForChild("Remotes", 10)
+	folder = ReplicatedStorage:WaitForChild(FOLDER_NAME, 10)
 end
 
 local function get(name, className)
@@ -24,5 +29,5 @@ local function get(name, className)
 end
 
 return {
-	InfluenceUpdate = get("InfluenceUpdate", "RemoteEvent"),
+	MatterUpdate = get("MatterUpdate", "RemoteEvent"),
 }

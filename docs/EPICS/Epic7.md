@@ -63,7 +63,7 @@ Future (disabled for now): Desert, Ice, Volcanic, Barren, GasGiant, Exotic.
 
 **In scope:** seeded descriptor generation; archetype definitions + constrained ranges; procedural HomePlanet v0 (sphere + atmosphere shell, optional cloud shell + simple surface patches); deterministic from seed; model attributes; docs for expansion.
 
-**Out of scope:** DataStore, planet stats gameplay, Matter/Influence spending, civilization sim, events, multiplayer visiting, terraforming, moons, rings, satellites, city lights, Dyson structures, complex terrain, external-asset textures, runtime-heavy mesh generation.
+**Out of scope:** DataStore, planet stats gameplay, Matter spending, civilization sim, events, multiplayer visiting, terraforming, moons, rings, satellites, city lights, Dyson structures, complex terrain, external-asset textures, runtime-heavy mesh generation.
 
 ---
 
@@ -71,7 +71,7 @@ Future (disabled for now): Desert, Ice, Volcanic, Barren, GasGiant, Exotic.
 
 **New:** `src/shared/WorldConfig.luau`, `src/shared/PlanetArchetypes.luau`, `src/shared/PlanetGenerator.luau`
 **Touch later:** `src/server/WorldBuilder.luau`, `docs/EPICS/Epic7.md`, `CLAUDE.md`, `HANDOFF.md`
-**Avoid (likely Nova's Matter/economy lane):** `PlayerManager.luau`, `GameConfig.luau`, `Remotes.luau`, `InfluenceUI.luau`, both `Main` files, `SpaceMovement.client.luau`
+**Avoid (likely Nova's Matter/economy lane):** `PlayerManager.luau`, `GameConfig.luau`, `Remotes.luau`, `MatterUI.luau`, both `Main` files, `SpaceMovement.client.luau`
 
 ---
 
@@ -151,9 +151,9 @@ Different seeds already produce visibly different planets — the body color (`l
 `feature/7a-planet-generator-foundation`, `feature/7b-home-planet-from-seed`, `feature/7c-…`, etc.
 
 ## Definition of done (Epic 7)
-Planets generate from seeds; same seed → same descriptor; HomePlanet built from procedural data with believable controlled variation and useful attributes; future planet scripts can read it; no Matter/Influence coupling; no DataStore; docs updated; both devs can add future planet types without guessing.
+Planets generate from seeds; same seed → same descriptor; HomePlanet built from procedural data with believable controlled variation and useful attributes; future planet scripts can read it; no Matter coupling; no DataStore; docs updated; both devs can add future planet types without guessing.
 
 ## What comes after
 - **Epic 0 Sprint 0E:** Planet Approach + Inspect Prompt — fly near Origin World → "Press E to Inspect" → camera frames planet.
-- **Epic 1 next:** First Intervention — spend Influence to "Guide Evolution," planet changes slightly.
+- **Epic 1 next:** First Intervention — spend Matter to "Guide Evolution," planet changes slightly.
 - **Epic 3 (Planet Era Visuals):** stage-based overlays on the same generated foundation (microbial tint → vegetation → city lights → industrial haze → satellites → orbital structures).
