@@ -53,13 +53,16 @@ The player is NOT a colonist or creature. They act from above, spending **Influe
 All systems are ModuleScripts with an `.init()` function. Entry points (`Main.server.luau`, `Main.client.luau`) only call `.init()` on each system. Keep systems single-responsibility.
 
 ```
-src/server/Main.server.luau     → requires and inits all server systems
-src/server/PlayerManager.luau   → player profiles, influence tick, remote firing
-src/client/Main.client.luau     → requires and inits all client systems
-src/client/InfluenceUI.luau     → builds HUD, listens to InfluenceUpdate remote
-src/shared/GameConfig.luau      → shared constants (BASE_INFLUENCE_PER_SEC, etc.)
-src/shared/Remotes.luau         → creates RemoteEvents server-side, waits client-side
+src/server/Main.server.luau          → requires and inits all server systems
+src/server/PlayerManager.luau        → player profiles, influence tick, remote firing
+src/client/Main.client.luau          → requires and inits all client systems
+src/client/InfluenceUI.luau          → builds HUD, listens to InfluenceUpdate remote
+src/client/SpaceMovement.client.luau → standalone LocalScript; floaty space movement (no module pattern — runs itself)
+src/shared/GameConfig.luau           → shared constants (BASE_INFLUENCE_PER_SEC, etc.)
+src/shared/Remotes.luau              → creates RemoteEvents server-side, waits client-side
 ```
+
+> **Note:** `SpaceMovement.client.luau` is a self-contained LocalScript, not a module. It does not follow the `Main → require → .init()` pattern because it has no dependencies and needs no coordination with other systems.
 
 ### RemoteEvents
 All remotes are defined in `src/shared/Remotes.luau`. Server creates them on load; client waits for them. Never hardcode remote names elsewhere.
@@ -70,6 +73,24 @@ All remotes are defined in `src/shared/Remotes.luau`. Server creates them on loa
 
 ---
 
+## World / Environment State
+
+These are set directly in Studio via MCP (not managed by Rojo — Studio owns them):
+
+| Setting | Value | Reason |
+|---|---|---|
+| `Workspace.Gravity` | `0` | Players float in space |
+| `Lighting.ClockTime` | `0` | Midnight → dark star sky |
+| `Lighting.Brightness` | `1` | Low but not pitch black |
+| `Lighting.Ambient` | `(5, 5, 15)` | Deep space blue tint |
+| `Lighting.OutdoorAmbient` | `(5, 5, 15)` | Matches ambient |
+| `Lighting.Atmosphere.Density` | `0` | No atmospheric haze |
+| `Lighting.Bloom` | Intensity 0.4, Threshold 0.95 | Subtle space glow |
+| Baseplate | Deleted | No ground in space |
+| SpawnLocation | Deleted | Players spawn at origin |
+
+---
+
 ## Design Principles
 
 - **One small thing at a time.** Don't build ahead of the current sprint.
@@ -77,6 +98,7 @@ All remotes are defined in `src/shared/Remotes.luau`. Server creates them on loa
 - **No planet visuals yet** until the planet era epic is started.
 - **No upgrades yet** until Epic 2.
 - Server is the source of truth for all player data. Client only receives and displays.
+- Movement is client-side prototype only — no server-authoritative movement yet.
 
 ---
 
