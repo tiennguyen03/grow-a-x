@@ -1,0 +1,3 @@
+# Keeps src/gui tracked in git so the StarterGui mapping in
+# default.project.json resolves on a fresh clone. Rojo ignores dotfiles,
+# so this folder syncs as an empty StarterGui until real GUI files are added.

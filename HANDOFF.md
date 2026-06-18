@@ -1,7 +1,7 @@
 # Handoff / Current State
 
 **Last updated:** 2026-06-18 by Bread (+ Claude)
-**Branch:** `main` — clean, everything committed and pushed.
+**Active branches:** Bread → `bread/world-feel` · Nova → his own `nova/*` branch · both merge to `main` via PR.
 
 This is the "where are we right now" doc. Read this first, then `CLAUDE.md` for architecture and `docs/EPICS/` for detail.
 
@@ -77,14 +77,37 @@ See `docs/EPICS/` for the full sprint breakdowns and tuning constants.
 
 ---
 
-## Workflow Reminder
+## Branching — work on your own branch, never commit straight to `main`
+
+We each work on a personal branch so two live Rojo sessions don't fight over the same history. `main` is the integration branch — it only changes via pull request.
+
+- **Bread:** `bread/world-feel`
+- **Nova:** create your own — `git checkout -b nova/<topic>` (e.g. `nova/influence-upgrades`), then `git push -u origin nova/<topic>`
+
+> Git branches don't affect Rojo — each of you serves your own files from your own branch. Branching only separates the commit history.
+
+### Daily workflow (on your own branch)
 
 ```bash
-git pull           # ALWAYS before starting a session
+git checkout bread/world-feel   # make sure you're on YOUR branch, not main
 # ...work...
 git add <files>
 git commit -m "..."
-git push           # so the other person + their Claude has it
+git push                        # goes to your branch
 ```
 
-Update this file's "Last updated" line and the tables whenever you finish a sprint or start working in a new file.
+### Pull in the other person's merged work (do this periodically)
+
+```bash
+git fetch origin
+git merge origin/main           # bring main's latest into your branch; keeps the eventual PR small
+```
+
+### Ship your work to `main`
+
+Open a PR: `https://github.com/tiennguyen03/grow-a-x/pull/new/<your-branch>`.
+The ⚠️ shared files (`Remotes`, `GameConfig`, the two `Main` files) are where conflicts show up — resolve those carefully when merging.
+
+---
+
+> 🛠️ **Maintenance:** update this file's "Last updated" line, the **What's Done** table, and the **File Map** whenever you finish a sprint or start working in a new file.

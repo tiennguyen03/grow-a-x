@@ -123,6 +123,32 @@ rojo serve
 
 ---
 
+## Collaboration & Git Workflow
+
+Two devs (**Bread** and **Nova**) run separate Rojo instances. To avoid clobbering each other's history, **never commit straight to `main`** — each dev works on a personal branch and merges to `main` via PR.
+
+- **Bread:** `bread/world-feel`
+- **Nova:** `nova/<topic>` (e.g. `nova/influence-upgrades`)
+
+> Git branches don't affect Rojo — each dev serves their own files from their own branch. Branching only separates commit history.
+
+```bash
+git checkout <your-branch>   # confirm you're on YOUR branch, not main
+# ...work...
+git add <files>
+git commit -m "..."
+git push                     # goes to your branch
+
+git fetch origin             # periodically pull in the other person's merged work:
+git merge origin/main        # keeps the eventual PR small
+```
+
+Ship via PR: `https://github.com/tiennguyen03/grow-a-x/pull/new/<your-branch>`
+
+**Shared coordination-point files** (conflict-prone — announce edits): `Main.server.luau`, `Main.client.luau`, `shared/Remotes.luau`, `shared/GameConfig.luau`. See `HANDOFF.md` for the full per-file touch-safety map.
+
+---
+
 ## Epic Tracker
 
 | Epic | Status |
