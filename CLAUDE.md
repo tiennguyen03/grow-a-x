@@ -78,21 +78,23 @@ All remotes are defined in `src/shared/Remotes.luau`. Server creates them on loa
 
 ## World / Environment State
 
-These are set directly in Studio via MCP (not managed by Rojo — Studio owns them):
+**All of this is now built from source by `src/server/WorldBuilder.luau` on server start** — gravity, lighting, baseplate cleanup, and the visual objects. A blank baseplate place becomes the correct space environment on Play, so any dev can clone + serve without manual Studio setup.
 
 | Setting | Value | Reason |
 |---|---|---|
 | `Workspace.Gravity` | `0` | Players float in space |
 | `Lighting.ClockTime` | `0` | Midnight → dark star sky |
-| `Lighting.Brightness` | `1` | Low but not pitch black |
-| `Lighting.Ambient` | `(5, 5, 15)` | Deep space blue tint |
-| `Lighting.OutdoorAmbient` | `(5, 5, 15)` | Matches ambient |
-| `Lighting.Atmosphere.Density` | `0` | No atmospheric haze |
-| `Lighting.Bloom` | Intensity 0.4, Threshold 0.95 | Subtle space glow |
-| Baseplate | Deleted | No ground in space |
-| SpawnLocation | Deleted | Players spawn at origin |
+| `Lighting.Brightness` | `2` | Low but character stays visible |
+| `Lighting.Ambient` | `(80, 80, 110)` | Soft blue fill so the avatar reads against the void |
+| `Lighting.OutdoorAmbient` | `(20, 20, 40)` | Darker space-sky tint |
+| `Lighting.Atmosphere.Density/Haze/Glare` | `0` | No atmospheric haze |
+| `Lighting.SunRays` | Disabled | No sun in open space |
+| `Lighting.Bloom` | Intensity 0.4, Size 24, Threshold 0.95 | Subtle space glow |
+| `Lighting.DepthOfField` | Disabled | Keep distant stars crisp |
+| Baseplate / SpawnLocation | Removed at runtime | No ground; players spawn at origin |
+| `workspace.SpaceEnvironment` | Centerpiece star + 200-star field | Motion reference; fixed RNG seed `20260618` so both devs see an identical layout |
 
-> **Visual reference objects** (`workspace.SpaceEnvironment`: centerpiece star + star field) are NOT placed in the .rbxl — they are built from `src/server/WorldBuilder.luau` on server start so they stay reproducible from source. Star field uses a fixed seed (`20260618`) so both devs see an identical layout.
+> To change the look, edit the constants at the top of `WorldBuilder.luau` (`GRAVITY`, `BRIGHTNESS`, `AMBIENT`, etc.) — don't set Lighting in Studio, it'll be overwritten on the next Play.
 
 ---
 

@@ -1,10 +1,20 @@
--- Builds the static space environment: a glowing centerpiece star and a
--- scattered star field. These exist purely as visual reference points so the
--- player can perceive motion while floating through the void.
+-- Builds the entire space environment from source: zero gravity, dark void
+-- lighting, a glowing centerpiece star, and a scattered star field.
 --
--- Built from script (not placed in the .rbxl) so the world is reproducible
--- from source and Nova gets it automatically on pull.
+-- Everything here is set from script (not saved in the .rbxl) so the world is
+-- fully reproducible from source. A blank baseplate place will become the
+-- correct space environment on server start, so any dev can clone + serve.
 
+local Lighting = game:GetService("Lighting")
+
+-- World / lighting
+local GRAVITY        = 0
+local CLOCK_TIME     = 0
+local BRIGHTNESS     = 2
+local AMBIENT        = Color3.fromRGB(80, 80, 110)
+local OUTDOOR_AMBIENT = Color3.fromRGB(20, 20, 40)
+
+-- Stars
 local STAR_SEED        = 20260618 -- fixed seed => both devs see the same field
 local STAR_COUNT       = 200
 local STAR_FIELD_RADIUS = 900     -- studs; how far stars scatter from origin
@@ -14,6 +24,46 @@ local CENTERPIECE_POS    = Vector3.new(0, -20, -350)
 local CENTERPIECE_RADIUS = 60
 
 local WorldBuilder = {}
+
+local function configureWorld()
+	-- Zero gravity so players float
+	workspace.Gravity = GRAVITY
+
+	-- Remove the default baseplate / spawn so there's no ground in space.
+	-- Players then spawn at the origin (0, 0, 0).
+	for _, inst in workspace:GetChildren() do
+		if inst:IsA("SpawnLocation") or (inst:IsA("BasePart") and inst.Name == "Baseplate") then
+			inst:Destroy()
+		end
+	end
+
+	-- Dark void lighting
+	Lighting.ClockTime      = CLOCK_TIME
+	Lighting.Brightness     = BRIGHTNESS
+	Lighting.Ambient        = AMBIENT
+	Lighting.OutdoorAmbient = OUTDOOR_AMBIENT
+
+	-- Kill atmospheric haze and the sun glow (no atmosphere/sun in open space)
+	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+	if atmosphere then
+		atmosphere.Density = 0
+		atmosphere.Haze    = 0
+		atmosphere.Glare   = 0
+	end
+
+	local sunRays = Lighting:FindFirstChildOfClass("SunRaysEffect")
+	if sunRays then sunRays.Enabled = false end
+
+	local bloom = Lighting:FindFirstChildOfClass("BloomEffect")
+	if bloom then
+		bloom.Intensity = 0.4
+		bloom.Size      = 24
+		bloom.Threshold = 0.95
+	end
+
+	local dof = Lighting:FindFirstChildOfClass("DepthOfFieldEffect")
+	if dof then dof.Enabled = false end
+end
 
 local function buildCenterpiece(parent)
 	local star = Instance.new("Part")
@@ -88,6 +138,8 @@ local function buildStarField(parent)
 end
 
 function WorldBuilder.build()
+	configureWorld()
+
 	-- Clear any previous build (so re-running Studio doesn't stack duplicates)
 	local existing = workspace:FindFirstChild("SpaceEnvironment")
 	if existing then existing:Destroy() end

@@ -8,7 +8,8 @@ Establishes the core feel of being a Universe Architect floating through space. 
 
 **Goal:** Player spawns in a dark void and floats freely through space.
 
-### Environment Changes (applied directly in Studio via MCP)
+### Environment Changes (now built from source by `WorldBuilder.luau`)
+> Originally applied directly in Studio via MCP; migrated into `src/server/WorldBuilder.luau` so the world rebuilds from source on every Play.
 - [x] Baseplate deleted
 - [x] SpawnLocation deleted (player spawns at origin)
 - [x] `Workspace.Gravity = 0`

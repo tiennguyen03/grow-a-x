@@ -16,7 +16,7 @@ rokit install      # installs Rojo 7.4.4
 rojo serve         # keep running; connect the Rojo Studio plugin to localhost:34872
 ```
 
-> ⚠️ **Read the "Place-level settings" warning below before you playtest** — a fresh place will look wrong until those are applied.
+> ✅ A blank baseplate place works fine — `WorldBuilder.luau` sets gravity, lighting, and removes the baseplate on Play. Just connect Rojo and hit **Play**.
 
 ---
 
@@ -51,23 +51,16 @@ Nothing is mid-edit. All files below are committed and stable — safe to build 
 
 ---
 
-## ⚠️ Place-level settings NOT in source control
+## ✅ World is fully reproducible from source
 
-These were set directly in Studio via MCP and live in the **.rbxl place file**, not in the Rojo `src/`. A freshly opened place will NOT have them:
+Gravity, lighting, baseplate removal, and all visual objects are built by
+`src/server/WorldBuilder.luau` on server start. There is **no manual Studio
+setup** — clone, `rojo serve`, hit Play, and any place becomes the correct
+space environment.
 
-| Setting | Value |
-|---|---|
-| `Workspace.Gravity` | `0` |
-| `Lighting.ClockTime` | `0` |
-| `Lighting.Brightness` | `2` |
-| `Lighting.Ambient` | `(80, 80, 110)` |
-| `Lighting.OutdoorAmbient` | `(20, 20, 40)` |
-| `Lighting.Atmosphere.Density` | `0` |
-| Baseplate / SpawnLocation | deleted |
-
-**To collaborate safely, both devs must work in the same shared place** (Team Create on placeId `80256981299890`, or open the same saved `.rbxl`). If you serve into a blank baseplate, expect full gravity + bright daylight until these are re-applied.
-
-> 🔧 **Recommended cleanup (not done yet):** move gravity + lighting into `WorldBuilder.luau` so the whole world is reproducible from source. Until then, treat the above as manual setup. Ask Bread's Claude session to do this if it becomes annoying.
+To tweak the look, edit the constants at the top of `WorldBuilder.luau`
+(`GRAVITY`, `BRIGHTNESS`, `AMBIENT`, `OUTDOOR_AMBIENT`, star settings).
+Don't change Lighting in Studio directly — it gets overwritten on the next Play.
 
 ---
 
