@@ -6,6 +6,10 @@
 -- its un-bobbed home position (the "BasePosition" attribute), which is what
 -- collection and respawn use — the bob is purely cosmetic.
 --
+-- A mote being pulled by the collection magnet is flagged "Pulling" by the
+-- server, which drives its position directly — the bob yields to it so the two
+-- don't fight over the mote's position.
+--
 -- Self-contained LocalScript (like SpaceMovement), so it needs no init wiring.
 
 local RunService = game:GetService("RunService")
@@ -19,7 +23,7 @@ RunService.RenderStepped:Connect(function()
 	local t = os.clock()
 	for _, mote in CollectionService:GetTagged(DUST_TAG) do
 		local base = mote:GetAttribute("BasePosition")
-		if base and not mote:GetAttribute("Collected") then
+		if base and not mote:GetAttribute("Collected") and not mote:GetAttribute("Pulling") then
 			local phase = mote:GetAttribute("BobPhase") or 0
 			local offset = math.sin(t * BOB_SPEED + phase) * BOB_AMPLITUDE
 			mote.Position = base + Vector3.new(0, offset, 0)
