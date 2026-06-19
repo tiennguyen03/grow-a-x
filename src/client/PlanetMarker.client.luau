@@ -85,6 +85,13 @@ local function findLocalPlanet()
 end
 
 RunService.RenderStepped:Connect(function()
+	-- Yield to the inspect UI (Epic 4): hide the marker while inspecting or while
+	-- the approach prompt is up, so the marker never overlaps the planet UI.
+	if player:GetAttribute("InspectingPlanet") or player:GetAttribute("PlanetPromptVisible") then
+		gui.Enabled = false
+		return
+	end
+
 	local camera = Workspace.CurrentCamera
 	local planet = findLocalPlanet()
 	local body = planet and planet.PrimaryPart

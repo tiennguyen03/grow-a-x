@@ -300,16 +300,18 @@ When resolving a merge (or reconciling two branches) that touches `CLAUDE.md`, `
 | Epic 1: Core Matter Loop | `docs/EPICS/Epic1.md` | In Progress |
 | Epic 2: Procedural Planet Generation _(formerly Epic 7)_ | `docs/EPICS/Epic2.md` | In Progress |
 | Epic 3: Evolutionary Progression _(formerly Epic 8)_ | `docs/EPICS/Epic3.md` | Not Started |
-| Epic 4: Planet Upgrade System | `docs/EPICS/Epic4.md` | Not Started |
-| Epic 5: Planet Era Visuals | `docs/EPICS/Epic5.md` | Not Started |
-| Epic 6: Events & Disasters | `docs/EPICS/Epic6.md` | Not Started |
-| Epic 7: DataStore / Saving | `docs/EPICS/Epic7.md` | Not Started |
-| Epic 8: Multi-Planet Expansion | `docs/EPICS/Epic8.md` | Not Started |
+| Epic 4: Planet Interaction & Inspection | `docs/EPICS/Epic4.md` | In Progress (4A–4G built; 4H playtest pending) |
+| Epic 5: Planet Upgrade System | `docs/EPICS/Epic5.md` | Not Started |
+| Epic 6: Planet Era Visuals | `docs/EPICS/Epic6.md` | Not Started |
+| Epic 7: Events & Disasters | `docs/EPICS/Epic7.md` | Not Started |
+| Epic 8: DataStore / Saving | `docs/EPICS/Epic8.md` | Not Started |
+| Epic 9: Multi-Planet Expansion | `docs/EPICS/Epic9.md` | Not Started |
 
-> **Numbering note:** epic docs were renumbered to run `0,1,2,3,…` with no gaps. The two built planet epics are now **Epic 2** (was 7) and **Epic 3** (was 8); the previously-reserved planned epics (Upgrade System, Era Visuals, Events, DataStore, Multi-Planet) shifted to **4–8**. Sprint IDs inside the renamed docs keep their original `7x`/`8x` letters to stay aligned with git history.
+> **Numbering note:** epic docs run `0,1,2,3,…` with no gaps. The two built planet epics are **Epic 2** (was 7) and **Epic 3** (was 8); their sprint IDs keep their original `7x`/`8x` letters to stay aligned with git history. **Epic 4 is now the concrete "Planet Interaction & Inspection" spec** (Tien's lane — approach prompt, inspect camera, planet info panel, Matter Converter hook); the previously-reserved planned epics (Upgrade System, Era Visuals, Events, DataStore, Multi-Planet) shifted down one to **5–9**.
 
 ### Documentation convention (keep this consistent)
 
+- **Incoming epic specs → save a reference copy to `docs/PastEpics/` (do this automatically).** When Tien hands you an epic spec — a file (e.g. in `Downloads/`) or pasted text — to work on, always do **both**: (1) place it as the live `docs/EPICS/Epic<N>.md`, and (2) save a verbatim reference snapshot to `docs/PastEpics/Epic<N>.<YYYY-MM-DD>.md` so the original brief is permanently available for context/reference even after the live doc evolves. Then update the Epic Tracker row. Do this without being reminded — it is the standing convention for every epic Tien or Nova sends.
 - **One file per epic**, named generally: `docs/EPICS/Epic<N>.md`. Never create a separate file for a sprint or ticket.
 - Each epic doc has an H1 title (`# Epic N: <Name>`) and one `## Sprint <N><letter>` section per sprint, appended in order.
 - When you finish or change a sprint, **update that epic's existing file** — add/append a sprint section, don't spin off a new doc.

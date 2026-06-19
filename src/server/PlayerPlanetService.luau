@@ -156,6 +156,7 @@ local function buildPlanetModel(descriptor, position, ownerUserId)
 	model:SetAttribute("Archetype", descriptor.archetype)
 	model:SetAttribute("Radius", descriptor.radius)
 	model:SetAttribute("WaterCoverage", descriptor.waterCoverage)
+	model:SetAttribute("CloudCoverage", descriptor.cloudCoverage)
 	model:SetAttribute("AtmosphereThickness", descriptor.atmosphereThickness)
 	model:SetAttribute("RotationSeconds", descriptor.rotationSeconds)
 
