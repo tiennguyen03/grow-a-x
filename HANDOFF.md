@@ -1,7 +1,7 @@
 # Handoff / Current State
 
-**Last updated:** 2026-06-19 by Tien (+ Claude) — Epic 7 planet-generator foundation in `main`; the Matter rework (currency rename + dust-mote collection) is rebased on top. **Sprint 7H (on `tien/integration-matter-planets`):** star-system composition in `WorldConfig`, planets orbit the star, universe-wide dust (`DustField`), planet marker, return-home tracks the orbit. **Epic 4 Sprint 4A (same branch):** new `PlanetInteraction.client.luau` shows an `[E] Inspect <planet>` approach prompt near the local player's own orbiting planet (E stubbed until 4B).
-**Active branches:** Tien → `feature/7a-planet-generator-foundation` · Nova → his own `nova/*` branch · current Matter work → `matter-dust-collection` (rebased on latest `main`, **not yet merged**) · all merge to `main` via PR.
+**Last updated:** 2026-06-19 by Tien + Nova (+ Claude) — **integration branch `tien/integration-matter-planets` now combines both devs' work:** Tien's **Epic 4 Planet Interaction** (Sprints 4A–4G: approach prompt, inspect camera with player ride-along, info panel, Matter Converter seam, Archaea life-glow, marker/prompt coordination, own-planet-only) + Nova's **Sprint 8B Matter Converter** (spend Matter on Archaea Cells for passive income; on-screen "Create Life" button / **C**) + Nova's **footstep-mute fix**. Nice tie-in: Epic 4's `PlanetInspectContext` seam ("Open Matter Converter" button) is built to hand off to Nova's `MatterConverterUI`. Prior: Epic 7 planet-generator foundation + **Sprint 7H** star-system composition in `WorldConfig`, planets orbit the star, universe-wide dust (`DustField`), planet marker, return-home tracks the orbit.
+**Active branches:** Tien → `tien/integration-matter-planets` (this combined branch) · Nova → `matter-converter` / `mute-footsteps` / `planet-marker-render-order` (PRs #7/#8/#9, now folded in here) · all merge to `main` via PR.
 
 This is the "where are we right now" doc. Read this first, then `CLAUDE.md` for architecture and `docs/EPICS/` for detail.
 
@@ -46,8 +46,9 @@ rojo serve         # keep running; connect the Rojo Studio plugin to localhost:3
 | 0C | Soaring flight pose + banking into turns | ✅ Done (in `main`) |
 | 0D | Boost, look-based 3D flight, FOV, boost VFX, return-home | ✅ Done (in `main`) |
 | 7A | Procedural planet **descriptor** foundation (data only) | ✅ Done (in `main`) |
-| 4A–4G | Planet interaction: approach prompt, inspect camera, info panel, Matter Converter seam, life-stage glow, marker/prompt coordination, own-planet-only | 🔶 Built on `tien/integration-matter-planets`; pending in-Studio playtest (4H) |
-| — | Footstep sound muted | ✅ Done (in `main`) |
+| 4A–4G | Planet interaction: approach prompt, inspect camera (+ player ride-along), info panel, Matter Converter seam, life-stage glow, marker/prompt coordination, own-planet-only | 🔶 Integrated here; pending in-Studio playtest (4H) |
+| 8B | Matter Converter — spend Matter on an Archaea Cell (passive Matter income); on-screen "Create Life" button + **C** | ✅ Integrated here (Nova, PR #7) |
+| — | Footstep sound muted | ✅ Fixed — robust re-mute that holds against the engine re-un-muting (Nova, PR #8); integrated here |
 
 **Still pending:** Nova's Epic 0 home-planet (0D-01) is **not** in `main` yet. The Matter rework (1A dust collection) lives on `matter-dust-collection`, rebased on latest `main` and awaiting an in-Studio retest before merge — coordinate so 7B/0D-01 planet work doesn't collide with the dust field in `WorldBuilder.luau`.
 
@@ -64,6 +65,8 @@ rojo serve         # keep running; connect the Rojo Studio plugin to localhost:3
 | `src/client/SpaceMovement.client.luau` | Floaty movement + soaring pose + banking. Also honors the `PlanetInspectLocked` player attribute (set by `PlanetInteraction`) — when set it carries the player along with the orbiting planet (rides the orbit, stays framed) and skips input (Epic 4 inspect mode) | ✅ Safe — self-contained LocalScript |
 | `src/client/DustAnimator.client.luau` | Bobs the dust motes locally (cosmetic) | ✅ Safe — self-contained LocalScript |
 | `src/client/MatterUI.luau` | Builds HUD, listens to `MatterUpdate`, shows "+N" popup | ✅ Safe — owns the Matter UI |
+| `src/client/MatterConverterUI.luau` | Matter Converter panel (toggle **C**); spend Matter → Archaea Cell, shows balance + cell count (Epic 8 / 8B) | ✅ Safe — self-contained module, owns the converter UI |
+| `src/server/PlayerManager.luau` (converter) | Also owns converter state: `CreateArchaea` handler + passive Archaea production loop (8B) | ✅ Safe — same owner as Matter logic |
 | `src/shared/GameConfig.luau` | Shared tuning constants | ⚠️ **Shared** — append new keys, don't reorganize, to avoid conflicts |
 | `src/shared/Remotes.luau` | Defines all RemoteEvents | ⚠️ **Shared** — add new remotes here; coordinate. **Gotcha:** the runtime folder is named `RemoteEvents` (NOT `Remotes`) so it doesn't collide with this ModuleScript's name — don't rename it back. |
 | `src/shared/WorldConfig.luau` | World/home-planet constants (Epic 7) | ⚠️ **Shared** — used by WorldBuilder + future planet scripts; append, don't reorganize |

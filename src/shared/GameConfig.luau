@@ -17,4 +17,11 @@ return {
 	DUST_COLLECT_RADIUS = 3,    -- studs; a mote is collected when it reaches here
 	DUST_PULL_SPEED     = 48,   -- studs/sec; base speed a mote streaks toward the player
 	DUST_PULL_FORCE     = 1.6,  -- extra pull acceleration as the mote nears the player
+
+	-- Matter Converter (Epic 8, Sprint 8B): spend collected Matter to create
+	-- life forms that then produce Matter passively. The first life form is the
+	-- Archaea Cell. Server is authoritative over cost, counts, and production.
+	MATTER_CONVERTER_COST_ARCHAEA = 15, -- Matter to create one Archaea Cell
+	ARCHAEA_PRODUCTION_INTERVAL   = 5,  -- seconds between each passive production tick
+	ARCHAEA_PRODUCTION_AMOUNT     = 1,  -- Matter produced per cell per tick
 }
