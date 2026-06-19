@@ -1,5 +1,6 @@
 -- Builds the static space environment from source: zero gravity, dark void
--- lighting, a glowing centerpiece star, and a scattered star field.
+-- lighting, a glowing centerpiece star, a scattered star field, and the
+-- collectible dust motes that players fly through to earn Matter.
 --
 -- Per-player planets are NOT built here — see PlayerPlanetService. WorldBuilder
 -- owns only the shared, static backdrop. Everything is set from script (not
@@ -7,6 +8,11 @@
 -- environment on server start.
 
 local Lighting = game:GetService("Lighting")
+local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GameConfig = require(ReplicatedStorage.GameConfig)
+local WorldConfig = require(ReplicatedStorage.WorldConfig)
+local DustField = require(ReplicatedStorage.DustField)
 
 -- World / lighting
 local GRAVITY        = 0
@@ -21,20 +27,30 @@ local STAR_COUNT       = 160
 local STAR_FIELD_RADIUS = 1700    -- studs; how far stars scatter from origin
 local STAR_MIN_DIST    = 450      -- keep stars well away so they read as distant
 
--- Centerpiece "sun": the system anchor. Composition reads, from the player's
--- spawn at the origin looking down -Z:  player -> home planet ahead (0,0,-260)
--- -> sun far behind on the SAME vertical center line (X = 0), lifted just enough
--- to clear the planet so both are clearly visible and the planet looks like it
--- belongs to this star. Pushed further out (-1300) so the now-larger star frames
--- the scene instead of crowding it.
-local CENTERPIECE_POS    = Vector3.new(0, 250, -1300)
-local CENTERPIECE_RADIUS = 116 -- ~2x the previous 58 (bigger, more impressive sun)
+-- Centerpiece "sun": the system anchor. Position + radius come from WorldConfig
+-- so the star, the planets that orbit it, and the dust field all share one
+-- center. It sits straight ahead on the scene axis (0,0,-900) and dominates.
+local CENTERPIECE_POS    = WorldConfig.CENTERPIECE_STAR_POS
+local CENTERPIECE_RADIUS = WorldConfig.CENTERPIECE_STAR_RADIUS
+local STAR_HALO_SCALE    = 1.35 -- glow shell size relative to the star diameter
+local STAR_LIGHT_RANGE   = 2600
+local STAR_LIGHT_BRIGHT  = 3.5
+
+-- Dust motes (collectible Matter)
+local DUST_TAG  = "DustParticle"
+local DUST_SEED = 20260619 -- fixed seed => reproducible dust layout
 
 local WorldBuilder = {}
 
 local function configureWorld()
 	-- Zero gravity so players float
 	workspace.Gravity = GRAVITY
+
+	-- NOTE: StreamingEnabled is NOT set here. It is read-only at runtime and
+	-- throws if assigned from a script, which would abort the whole build. It's
+	-- set to false at the place level in default.project.json (applied by Rojo in
+	-- edit mode) so the far-off sun and outer star field render from spawn
+	-- instead of streaming in only when the player flies near them.
 
 	-- Remove the default baseplate / spawn so there's no ground in space.
 	-- Players then spawn at the origin (0, 0, 0).
@@ -86,11 +102,11 @@ local function buildCenterpiece(parent)
 	star.CastShadow = false
 	star.Parent = parent
 
-	-- A soft outer glow shell
+	-- A soft outer glow shell, scaled to the (now larger) star.
 	local halo = Instance.new("Part")
 	halo.Name = "Halo"
 	halo.Shape = Enum.PartType.Ball
-	halo.Size = Vector3.one * (CENTERPIECE_RADIUS * 2.6)
+	halo.Size = Vector3.one * (CENTERPIECE_RADIUS * 2 * STAR_HALO_SCALE)
 	halo.Position = CENTERPIECE_POS
 	halo.Anchored = true
 	halo.CanCollide = false
@@ -101,11 +117,11 @@ local function buildCenterpiece(parent)
 	halo.CastShadow = false
 	halo.Parent = star
 
-	-- Bigger sun sits further away, so widen the light range to keep the planet
-	-- lit; trim brightness slightly so the larger neon ball doesn't over-bloom.
+	-- Big sun: wide range to light the orbiting planets, brightness trimmed so the
+	-- larger neon ball stays impressive without washing out the scene.
 	local light = Instance.new("PointLight")
-	light.Brightness = 3.5
-	light.Range = 2400
+	light.Brightness = STAR_LIGHT_BRIGHT
+	light.Range = STAR_LIGHT_RANGE
 	light.Color = Color3.fromRGB(255, 210, 150)
 	light.Parent = star
 end
@@ -146,6 +162,47 @@ local function buildStarField(parent)
 	end
 end
 
+-- Collectible dust motes: small warm glowing balls scattered through the void.
+-- Positions come from DustField so the field spans the whole universe (centered
+-- on the star system, avoiding the star/spawn), not a sphere around spawn. Each
+-- mote stores its un-bobbed home position so the client animator can bob it and
+-- the server can respawn it cleanly. Tagged "DustParticle" for collection.
+local function buildDust(parent)
+	local rng = Random.new(DUST_SEED)
+	local field = Instance.new("Folder")
+	field.Name = "Dust"
+	field.Parent = parent
+
+	for _ = 1, GameConfig.DUST_PARTICLE_COUNT do
+		local pos = DustField.getSpawnPosition(rng)
+
+		local mote = Instance.new("Part")
+		mote.Name = "Dust"
+		mote.Shape = Enum.PartType.Ball
+		mote.Size = Vector3.one * rng:NextNumber(1.8, 2.6)
+		mote.Position = pos
+		mote.Anchored = true
+		mote.CanCollide = false
+		mote.CanQuery = false
+		mote.CastShadow = false
+		mote.Material = Enum.Material.Neon
+		mote.Color = Color3.fromRGB(255, 224, 150) -- warm gold
+
+		mote:SetAttribute("BasePosition", pos)
+		mote:SetAttribute("Collected", false)
+		mote:SetAttribute("BobPhase", rng:NextNumber(0, math.pi * 2))
+
+		local light = Instance.new("PointLight")
+		light.Brightness = 5
+		light.Range = 30
+		light.Color = Color3.fromRGB(255, 220, 150)
+		light.Parent = mote
+
+		mote.Parent = field
+		CollectionService:AddTag(mote, DUST_TAG)
+	end
+end
+
 function WorldBuilder.build()
 	configureWorld()
 
@@ -159,6 +216,7 @@ function WorldBuilder.build()
 
 	buildCenterpiece(root)
 	buildStarField(root)
+	buildDust(root)
 	-- Player planets are added under this folder by PlayerPlanetService.
 end
 

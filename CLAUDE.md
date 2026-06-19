@@ -33,7 +33,7 @@ Handoff context is **mandatory after every implementation task** — Claude shou
 
 An idle/progression + civilization management game on Roblox. The player is a **Universe Architect** — a godlike entity who floats through space and guides the evolution of life and civilizations across planets.
 
-The player is NOT a colonist or creature. They act from above, spending **Influence** to push civilizations forward through eras.
+The player is NOT a colonist or creature. They act from above, spending **Matter** to push civilizations forward through eras.
 
 **Core fantasy:** Help tiny organisms evolve from primitive life into spacefaring societies that eventually build Dyson spheres.
 
@@ -42,13 +42,13 @@ The player is NOT a colonist or creature. They act from above, spending **Influe
 ## Core Loop
 
 1. Player joins and receives a personal planet/system.
-2. The planet passively generates **Influence** over time.
-3. Player spends Influence on interventions: Guide Evolution, Stabilize Climate, Inspire Discovery, etc.
+2. The player gathers **Matter** by flying through glowing dust motes scattered across the void.
+3. Player spends Matter on interventions: Guide Evolution, Stabilize Climate, Inspire Discovery, etc.
 4. Interventions raise planet stats: Life, Technology, Stability.
 5. Planet visually evolves through eras:
    - Barren Planet → Primitive Life → Early Civilization → Industrial Civilization → Space Age → Interplanetary Expansion
 6. Random events occur: climate shifts, asteroid threats, plagues, wars, solar storms.
-7. Player uses Influence to help civilizations survive events.
+7. Player uses Matter to help civilizations survive events.
 8. Late game: civilizations expand to moons/other planets, build Dyson Swarms/Spheres.
 
 ---
@@ -79,13 +79,14 @@ All systems are ModuleScripts with an `.init()` function. Entry points (`Main.se
 
 ```
 src/server/Main.server.luau          → requires and inits all server systems
-src/server/WorldBuilder.luau         → builds the static backdrop (lighting, centerpiece star, star field)
+src/server/WorldBuilder.luau         → builds the environment (gravity/lighting), centerpiece star, star field + collectible dust motes
 src/server/PlayerPlanetService.luau  → builds one deterministic procedural planet per player on join (Epic 7)
-src/server/PlayerManager.luau        → player profiles, influence tick, remote firing
+src/server/PlayerManager.luau        → player profiles, dust collection + Matter awards, remote firing
 src/client/Main.client.luau          → requires and inits all client systems
-src/client/InfluenceUI.luau          → builds HUD, listens to InfluenceUpdate remote
+src/client/MatterUI.luau             → builds HUD, listens to MatterUpdate remote, shows "+N" popup
 src/client/SpaceMovement.client.luau → standalone LocalScript; floaty space movement (no module pattern — runs itself)
-src/shared/GameConfig.luau           → shared constants (BASE_INFLUENCE_PER_SEC, etc.)
+src/client/DustAnimator.client.luau  → standalone LocalScript; bobs the dust motes locally (no module pattern)
+src/shared/GameConfig.luau           → shared constants (DUST_* tuning, etc.)
 src/shared/Remotes.luau              → creates RemoteEvents server-side, waits client-side
 ```
 
@@ -96,7 +97,7 @@ All remotes are defined in `src/shared/Remotes.luau`. Server creates them on loa
 
 | Remote | Direction | Payload |
 |---|---|---|
-| `InfluenceUpdate` | Server → Client | `{ influence: number, influencePerSec: number }` |
+| `MatterUpdate` | Server → Client | `{ matter: number }` (client shows a "+N" popup from the delta) |
 
 ---
 
@@ -116,7 +117,7 @@ All remotes are defined in `src/shared/Remotes.luau`. Server creates them on loa
 | `Lighting.Bloom` | Intensity 0.4, Size 24, Threshold 0.95 | Subtle space glow |
 | `Lighting.DepthOfField` | Disabled | Keep distant stars crisp |
 | Baseplate / SpawnLocation | Removed at runtime | No ground; players spawn at origin |
-| `workspace.SpaceEnvironment` | Centerpiece star + 200-star field | Motion reference; fixed RNG seed `20260618` so both devs see an identical layout |
+| `workspace.SpaceEnvironment` | Centerpiece star + 200-star field + 80 collectible dust motes | Motion reference + Matter pickups; fixed RNG seeds (`20260618` stars, `20260619` dust) so both devs see an identical layout |
 
 > To change the look, edit the constants at the top of `WorldBuilder.luau` (`GRAVITY`, `BRIGHTNESS`, `AMBIENT`, etc.) — don't set Lighting in Studio, it'll be overwritten on the next Play.
 
@@ -129,7 +130,7 @@ All remotes are defined in `src/shared/Remotes.luau`. Server creates them on loa
 - **One small thing at a time.** Don't build ahead of the current sprint.
 - **No saving yet** until a DataStore epic is explicitly started.
 - **No planet visuals yet** until the planet era epic is started.
-- **No generic upgrade shop yet.** The first spend mechanic should be framed as a planet *intervention* (e.g. "First Intervention — Guide Evolution"), not a generic upgrade system. The mechanic can still be *Cost: 10 Influence → Effect: +1 Influence/sec*, but the fantasy is "the player spends Influence to guide early life toward complexity," not "buys a +1/sec upgrade."
+- **No generic upgrade shop yet.** The first spend mechanic should be framed as a planet *intervention* (e.g. "First Intervention — Guide Evolution"), not a generic upgrade system. The mechanic can still be *Cost: 10 Matter → Effect: a richer dust field*, but the fantasy is "the player spends Matter to guide early life toward complexity," not "buys an upgrade."
 - Server is the source of truth for all player data. Client only receives and displays.
 - Movement is client-side prototype only — no server-authoritative movement yet.
 - **A task is not done until the next developer can continue from it without asking what happened.**
@@ -146,8 +147,8 @@ Feature-specific files owned by the current ticket are usually safe to edit. Onl
 ```text
 src/client/SpaceMovement.client.luau   (Tien — traversal)
 src/server/WorldBuilder.luau           (Nova — environment)
-src/server/PlayerManager.luau          (Influence server logic)
-src/client/InfluenceUI.luau            (Influence UI)
+src/server/PlayerManager.luau          (Matter server logic)
+src/client/MatterUI.luau               (Matter UI)
 ```
 
 ### Shared Coordination Files
@@ -256,7 +257,7 @@ rojo serve
 Two devs (**Tien** and **Nova**) run separate Rojo instances. To avoid clobbering each other's history, **never commit straight to `main`** — each dev works on a personal branch and merges to `main` via PR.
 
 - **Tien:** `tien/<topic>`
-- **Nova:** `nova/<topic>` (e.g. `nova/influence-upgrades`)
+- **Nova:** `nova/<topic>` (e.g. `nova/matter-upgrades`)
 
 > Some existing branches predate this naming: `feature/0d-boost-movement` (active sprint work) and `bread/world-feel`. New branches should follow `tien/<topic>` / `nova/<topic>`.
 
@@ -277,6 +278,18 @@ Ship via PR: `https://github.com/tiennguyen03/grow-a-x/pull/new/<your-branch>`
 
 **Shared coordination-point files** (conflict-prone — announce edits): `Main.server.luau`, `Main.client.luau`, `shared/Remotes.luau`, `shared/GameConfig.luau`. See `HANDOFF.md` for the full per-file touch-safety map.
 
+### Documentation Preservation on Merge (non-negotiable)
+
+**The project goal is to preserve as much documentation as possible.** When merging branches or PRs, documentation is **unioned, never overwritten**. Tien's and Nova's docs are additive — neither dev's documentation should be lost because the other's branch didn't have it.
+
+When resolving a merge (or reconciling two branches) that touches `CLAUDE.md`, `HANDOFF.md`, `docs/EPICS/*`, `docs/PastEpics/*`, `docs/PastSprints/*`, `README`s, or in-code doc comments:
+
+- **Keep everything from both sides.** If one branch has a sprint section, epic doc, HANDOFF row, table entry, or note the other lacks, **carry it into the merged result** — do not drop it just because it's only on one side.
+- **Union over replace.** When the same section was edited on both sides, merge the content (combine bullets/rows/paragraphs) rather than picking one version and discarding the other. Only the currency rename (`Influence` → `Matter`) and other agreed factual corrections may replace text outright.
+- **Never delete docs to resolve a conflict.** If two versions genuinely can't coexist inline, keep both and reconcile, or archive the older one via the "Archive before you revise" convention below — deletion is not an acceptable conflict resolution.
+- **When in doubt, keep it.** Extra documentation is cheaper than lost context. If unsure whether a doc is still relevant, preserve it (archive rather than remove).
+- **Call out doc merges in the handoff summary** so the other dev can confirm nothing of theirs was lost.
+
 ---
 
 ## Epic Tracker
@@ -284,7 +297,7 @@ Ship via PR: `https://github.com/tiennguyen03/grow-a-x/pull/new/<your-branch>`
 | Epic | Doc | Status |
 |---|---|---|
 | Epic 0: World Traversal | `docs/EPICS/Epic0.md` | In Progress |
-| Epic 1: Core Influence Loop | `docs/EPICS/Epic1.md` | In Progress |
+| Epic 1: Core Matter Loop | `docs/EPICS/Epic1.md` | In Progress |
 | Epic 2: Planet Upgrade System | `docs/EPICS/Epic2.md` | Not Started |
 | Epic 3: Planet Era Visuals | `docs/EPICS/Epic3.md` | Not Started |
 | Epic 4: Events & Disasters | `docs/EPICS/Epic4.md` | Not Started |
@@ -299,3 +312,5 @@ Ship via PR: `https://github.com/tiennguyen03/grow-a-x/pull/new/<your-branch>`
 - When you finish or change a sprint, **update that epic's existing file** — add/append a sprint section, don't spin off a new doc.
 - Keep sprint sections substantive but not bloated: goal, owner/file, checklist, key constants, how-it-works notes. Leave generic process boilerplate (PR templates, one-off AI prompts) out of the epic docs.
 - If a sprint spec arrives as its own file, fold its useful content into the relevant `Epic<N>.md` and delete the standalone file.
+- **Archive before you revise.** Before meaningfully changing an epic doc, copy the *current* version into `docs/PastEpics/` as `Epic<N>.<YYYY-MM-DD>.md` (whole-epic changes: title, status, overview/tier tables, multiple sprints). If the edit is scoped to a single sprint section, instead copy just that section into `docs/PastSprints/` as `Epic<N>-Sprint<NX>.<YYYY-MM-DD>.md`. Git history remains the source of truth — these folders are a convenience mirror. See each folder's guide doc.
+- **Folder guide docs, not `README.md`.** A folder's explainer is named for the folder, not the generic `README.md`: use `<FolderName>-Guide.md` (e.g. `docs/PastEpics/PastEpics-Guide.md`, `docs/PastSprints/PastSprints-Guide.md`). Follow this `<FolderName>-Guide.md` pattern for any new folder that needs an explainer, so guides are self-describing in search and file lists.

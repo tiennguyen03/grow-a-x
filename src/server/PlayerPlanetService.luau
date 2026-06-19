@@ -17,13 +17,18 @@ local PlanetGenerator = require(ReplicatedStorage.PlanetGenerator)
 
 local PlayerPlanetService = {}
 
-local PLANET_SPACING = 800 -- studs between players' planets so they never overlap
 local DEFAULT_ROTATION_SECONDS = 160 -- fallback if a descriptor lacks RotationSeconds
+local ORBIT_ANGLE_SALT = 104729 -- prime mixed into the seed for orbit rolls
 
--- userId -> { model, slot, center = Vector3, angle = number, speed = rad/sec }
--- `angle` accumulates forever (never reset) so the spin is continuous.
+-- userId -> {
+--   model,
+--   orbitRadius, orbitHeight, orbitAngle, orbitSpeed,  -- position around the star
+--   spinAngle, spinSpeed,                              -- own-axis rotation
+-- }
+-- orbitAngle and spinAngle accumulate forever (never reset), so both the orbit
+-- and the spin are continuous and never snap. They are kept SEPARATE: orbitAngle
+-- places the planet around the star, spinAngle rotates it about its own center.
 local planets = {}
-local usedSlots = {} -- slot -> true
 
 local function ensurePlayerPlanetsFolder()
 	local env = workspace:FindFirstChild("SpaceEnvironment")
@@ -41,15 +46,14 @@ local function ensurePlayerPlanetsFolder()
 	return folder
 end
 
--- Smallest free non-negative slot, so the solo player always gets slot 0
--- (= exactly WorldConfig.HOME_PLANET_POS).
-local function allocSlot()
-	local slot = 0
-	while usedSlots[slot] do
-		slot += 1
-	end
-	usedSlots[slot] = true
-	return slot
+-- Current world position of a planet on its orbit, given its angle.
+local function orbitPosition(entry)
+	local center = WorldConfig.CENTERPIECE_STAR_POS
+	return center + Vector3.new(
+		math.cos(entry.orbitAngle) * entry.orbitRadius,
+		entry.orbitHeight,
+		math.sin(entry.orbitAngle) * entry.orbitRadius
+	)
 end
 
 local function seedForPlayer(player)
@@ -164,26 +168,37 @@ local function spawnPlanet(player)
 		return -- already has a planet; never duplicate (e.g. on respawn)
 	end
 
-	local slot = existing and existing.slot or allocSlot()
-	local position = WorldConfig.HOME_PLANET_POS + Vector3.new(slot * PLANET_SPACING, 0, 0)
-
-	local descriptor = PlanetGenerator.generatePlanetDescriptor(seedForPlayer(player), {
+	local seed = seedForPlayer(player)
+	local descriptor = PlanetGenerator.generatePlanetDescriptor(seed, {
 		planetId = "player_" .. player.UserId,
 		displayName = player.Name .. "'s World",
 		allowedArchetypes = WorldConfig.HOME_ARCHETYPE_POOL,
 	})
 
-	local model = buildPlanetModel(descriptor, position, player.UserId)
-	model.Parent = ensurePlayerPlanetsFolder()
-
+	-- Orbit params come from a SEPARATE deterministic rng stream so they don't
+	-- disturb the descriptor's rolls — the same player still gets the same planet
+	-- AND the same orbit. Per-player angle/radius/height spread keeps multiple
+	-- players' planets from stacking at the same spot on the orbit.
+	local orbitRng = Random.new(seed + ORBIT_ANGLE_SALT)
+	local radiusVar = WorldConfig.PLANET_ORBIT_RADIUS_VARIATION
+	local heightVar = WorldConfig.PLANET_ORBIT_HEIGHT_VARIATION
 	local rotationSeconds = descriptor.rotationSeconds or DEFAULT_ROTATION_SECONDS
-	planets[player.UserId] = {
-		model = model,
-		slot = slot,
-		center = position,                       -- fixed pivot point to spin about
-		angle = 0,                               -- accumulates forever, never reset
-		speed = (2 * math.pi) / rotationSeconds, -- rad/sec for one full turn / rotationSeconds
+
+	local entry = {
+		orbitRadius = WorldConfig.PLANET_ORBIT_BASE_RADIUS + orbitRng:NextNumber(-radiusVar, radiusVar),
+		orbitHeight = orbitRng:NextNumber(-heightVar, heightVar),
+		orbitAngle = orbitRng:NextNumber(0, 2 * math.pi),
+		orbitSpeed = (2 * math.pi) / WorldConfig.PLANET_ORBIT_PERIOD_SECONDS,
+		spinAngle = 0,
+		spinSpeed = (2 * math.pi) / rotationSeconds,
 	}
+
+	-- Build it already at its current orbit position so it never pops in from the
+	-- origin before the first Heartbeat.
+	local model = buildPlanetModel(descriptor, orbitPosition(entry), player.UserId)
+	model.Parent = ensurePlayerPlanetsFolder()
+	entry.model = model
+	planets[player.UserId] = entry
 end
 
 local function removePlanet(player)
@@ -194,25 +209,27 @@ local function removePlanet(player)
 	if entry.model then
 		entry.model:Destroy()
 	end
-	usedSlots[entry.slot] = nil
 	planets[player.UserId] = nil
 end
 
--- Continuous, authoritative planet rotation.
+-- Continuous, authoritative orbit + spin.
 --
 -- This MUST run on the server: the planet parts are anchored and server-owned,
--- so the server is the source of truth for their CFrames. The previous version
--- spun them from a LocalScript, but the server kept re-replicating the original
--- anchored CFrames over the client's changes — so the planet rotated a little
--- and then snapped back. Accumulating the angle here and pivoting the whole
--- model about its stored center means the authority itself is rotating, so the
--- spin is smooth and never resets.
-local function stepRotation(dt)
+-- so the server is the source of truth for their CFrames (an earlier client-side
+-- spin lost to the server re-replicating the anchored CFrames, snapping it back).
+-- Each frame we advance TWO independent accumulators that never reset:
+--   * orbitAngle — moves the whole model around the star (orbit position)
+--   * spinAngle  — rotates the model about its own center (day/night spin)
+-- We compute the orbit position, then PivotTo with the spin baked in, so a single
+-- rigid move carries the body, atmosphere, surface tiles, clouds, and marker.
+local function stepOrbitSpin(dt)
 	for _, entry in planets do
 		local model = entry.model
 		if model and model.Parent and model.PrimaryPart then
-			entry.angle += entry.speed * dt
-			model:PivotTo(CFrame.new(entry.center) * CFrame.Angles(0, entry.angle, 0))
+			entry.orbitAngle += entry.orbitSpeed * dt
+			entry.spinAngle += entry.spinSpeed * dt
+			local pos = orbitPosition(entry)
+			model:PivotTo(CFrame.new(pos) * CFrame.Angles(0, entry.spinAngle, 0))
 		end
 	end
 end
@@ -224,7 +241,7 @@ function PlayerPlanetService.init()
 	for _, player in Players:GetPlayers() do
 		spawnPlanet(player)
 	end
-	RunService.Heartbeat:Connect(stepRotation)
+	RunService.Heartbeat:Connect(stepOrbitSpin)
 end
 
 return PlayerPlanetService

@@ -77,6 +77,8 @@ CENTERPIECE_POS    = Vector3.new(0, -20, -350)
 CENTERPIECE_RADIUS = 60
 ```
 
+> **Update (Epic 7 Sprint 7H):** the centerpiece position/radius are no longer hardcoded in `WorldBuilder` — they now come from `WorldConfig.CENTERPIECE_STAR_POS` `(0,0,-900)` / `CENTERPIECE_STAR_RADIUS` `200`, the single source of truth shared with the orbiting planets and the dust field. Tune the star there. Return-home (R) also moved into `SpaceMovement` proper: it now teleports just outside the local player's **orbiting** planet (far side from the star), falling back to `WorldConfig.RETURN_HOME_FALLBACK` if the planet hasn't spawned. A new `PlanetMarker.client.luau` shows a screen-edge marker pointing back to your planet when you're far from it.
+
 **Footstep sound:** Muted in `SpaceMovement.client.luau` setup by setting the default `Running` Sound's `Volume = 0` (we're floating, not walking).
 
 ---

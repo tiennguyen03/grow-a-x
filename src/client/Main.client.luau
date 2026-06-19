@@ -1,2 +1,2 @@
-local InfluenceUI = require(script.Parent.InfluenceUI)
-InfluenceUI.init()
+local MatterUI = require(script.Parent.MatterUI)
+MatterUI.init()
