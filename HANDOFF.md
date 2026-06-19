@@ -52,6 +52,8 @@ rojo serve         # keep running; connect the Rojo Studio plugin to localhost:3
 
 **Still pending:** Nova's Epic 0 home-planet (0D-01) is **not** in `main` yet. The Matter rework (1A dust collection) lives on `matter-dust-collection`, rebased on latest `main` and awaiting an in-Studio retest before merge — coordinate so 7B/0D-01 planet work doesn't collide with the dust field in `WorldBuilder.luau`.
 
+> **Next integration (planned):** unify the Epic 4 inspect panel with Nova's Matter Converter / Create Life so there's one planet-contextual path (no separate top-right "Create Life" + non-functional "Open Matter Converter"). Full plan: [`docs/Plans/MatterCore-Inspect-Integration.md`](docs/Plans/MatterCore-Inspect-Integration.md). Key piece: after the first Create Life, the server sets `EvolutionTier=1` / `EvolutionStage="Archaea"` on the planet so the existing Archaea glow + inspect-panel update fire automatically.
+
 ---
 
 ## File Map — what each file does & how risky it is to touch
