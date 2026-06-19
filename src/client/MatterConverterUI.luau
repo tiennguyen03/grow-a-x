@@ -1,6 +1,6 @@
 -- Matter Converter UI (Epic 8, Sprint 8B).
 --
--- A toggleable panel — opened by an always-on-screen "⚛ Create Life" button
+-- A toggleable panel — opened by an always-on-screen "Create Life" button
 -- (so touch/mobile players can use it) or the C key on desktop — where the
 -- player spends Matter to create life forms that then produce Matter passively.
 -- The first creation is the Archaea
@@ -48,7 +48,7 @@ local function buildGui(playerGui)
 	openButton.Font = Enum.Font.GothamBold
 	openButton.TextSize = 16
 	openButton.TextColor3 = Color3.fromRGB(240, 255, 245)
-	openButton.Text = "⚛ Create Life"
+	openButton.Text = "Create Life"
 	openButton.Parent = screenGui
 
 	local openCorner = Instance.new("UICorner")
@@ -100,7 +100,7 @@ local function buildGui(playerGui)
 	closeButton.Font = Enum.Font.GothamBold
 	closeButton.TextSize = 16
 	closeButton.TextColor3 = Color3.fromRGB(220, 220, 240)
-	closeButton.Text = "✕"
+	closeButton.Text = "X"
 	closeButton.Parent = panel
 
 	local closeCorner = Instance.new("UICorner")
@@ -209,7 +209,7 @@ local function buildGui(playerGui)
 	hint.Font = Enum.Font.Gotham
 	hint.TextSize = 12
 	hint.TextColor3 = Color3.fromRGB(120, 120, 150)
-	hint.Text = "Tap ✕ or press C to close"
+	hint.Text = "Tap X or press C to close"
 	hint.Parent = panel
 
 	return screenGui, {
@@ -250,7 +250,7 @@ function MatterConverterUI.init()
 		refs.panel.Visible = open
 	end
 
-	-- Open button (always visible): tap to toggle. Close button (✕): tap to close.
+	-- Open button (always visible): tap to toggle. Close button (X): tap to close.
 	refs.openButton.Activated:Connect(function()
 		setOpen(not refs.panel.Visible)
 	end)
