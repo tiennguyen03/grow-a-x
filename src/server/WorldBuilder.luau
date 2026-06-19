@@ -44,13 +44,11 @@ local function configureWorld()
 	-- Zero gravity so players float
 	workspace.Gravity = GRAVITY
 
-	-- Render the whole scene at all times. New Roblox places default
-	-- StreamingEnabled = true, which streams out distant parts until the player
-	-- flies near them — that's why the far-off centerpiece sun (~1300 studs) and
-	-- outer star field were invisible at spawn. This is a small space scene (a
-	-- few hundred parts), so disabling streaming keeps the sun/stars/planet
-	-- visible from anywhere with no meaningful cost.
-	workspace.StreamingEnabled = false
+	-- NOTE: StreamingEnabled is NOT set here. It is read-only at runtime and
+	-- throws if assigned from a script, which would abort the whole build. It's
+	-- set to false at the place level in default.project.json (applied by Rojo in
+	-- edit mode) so the far-off sun and outer star field render from spawn
+	-- instead of streaming in only when the player flies near them.
 
 	-- Remove the default baseplate / spawn so there's no ground in space.
 	-- Players then spawn at the origin (0, 0, 0).
