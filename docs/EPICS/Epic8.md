@@ -81,3 +81,35 @@ local EvolutionTiers = {
     },
     -- ... repeat for all 9 tiers
 }
+```
+
+---
+
+### Sprint 8B: Matter Converter (Archaea Cell) ✅
+
+**Goal:** First playable slice of Epic 8 — a toggleable GUI where the player spends collected Matter to create an **Archaea Cell**, the first life form, which then produces Matter passively. This is the seed of the full 9-tier tree above (8B implements only Tier 1 as a working loop; richer tiers/visuals come later).
+
+**Owner/files:**
+- `src/shared/GameConfig.luau` (⚠️ shared — appended constants)
+- `src/shared/Remotes.luau` (⚠️ shared — added 2 remotes)
+- `src/server/PlayerManager.luau` (Matter server logic — owns converter state + production)
+- `src/client/MatterConverterUI.luau` (NEW — the converter panel)
+- `src/client/Main.client.luau` (⚠️ shared — inits the new UI)
+
+**Key constants (`GameConfig`):**
+- `MATTER_CONVERTER_COST_ARCHAEA = 15` — Matter to create one Archaea Cell
+- `ARCHAEA_PRODUCTION_INTERVAL = 5` — seconds between passive production ticks
+- `ARCHAEA_PRODUCTION_AMOUNT = 1` — Matter per cell per tick
+
+**Remotes (`Remotes.luau`):**
+| Remote | Direction | Payload |
+|---|---|---|
+| `CreateArchaea` | Client → Server | *(none)* — request to spend Matter on one cell |
+| `ConverterUpdate` | Server → Client | `{ archaeaCount: number }` |
+
+**How it works:**
+- The player presses **C** to toggle the Matter Converter panel (`MatterConverterUI`). The panel shows the live Matter balance, the Archaea Cell recipe (cost + production), how many cells are owned, and a Create button that greys out when Matter < cost.
+- The Create button fires `CreateArchaea`. **The server is authoritative**: `PlayerManager.onCreateArchaea` re-checks affordability, deducts the cost, increments `profile.archaeaCount`, and pushes both `MatterUpdate` (balance) and `ConverterUpdate` (count). The client never decides a purchase — the button state is only a hint.
+- A single shared timer (`PlayerManager.runProduction`) ticks every `ARCHAEA_PRODUCTION_INTERVAL` seconds and awards each player `archaeaCount × ARCHAEA_PRODUCTION_AMOUNT` Matter via the existing `addMatter` path (so passive income reuses the same `MatterUpdate` + "+N" popup feedback as dust collection).
+
+**Not in scope for 8B:** persistence (cells reset on rejoin — waits on Epic 5 DataStore), planet visual changes per tier, and Tiers 2–9. The full tier table above is the forward plan.

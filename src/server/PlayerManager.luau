@@ -19,12 +19,22 @@ local function fireUpdate(player, profile)
 	})
 end
 
+-- Push the player's Matter Converter state (Archaea count, etc.) so the
+-- converter UI can show how many cells they own.
+local function fireConverterUpdate(player, profile)
+	Remotes.ConverterUpdate:FireClient(player, {
+		archaeaCount = profile.archaeaCount,
+	})
+end
+
 local function createProfile(player)
-	local profile = { matter = 0 }
+	local profile = { matter = 0, archaeaCount = 0 }
 	profiles[player.UserId] = profile
 
-	-- Push initial state immediately so the HUD shows "Matter: 0" right away.
+	-- Push initial state immediately so the HUD shows "Matter: 0" right away
+	-- and the converter UI shows "0 cells" before any interaction.
 	fireUpdate(player, profile)
+	fireConverterUpdate(player, profile)
 end
 
 local function removeProfile(player)
@@ -119,6 +129,41 @@ local function runCollection()
 	RunService.Heartbeat:Connect(runMagnet)
 end
 
+-- Matter Converter: a player spends Matter to create one Archaea Cell. The
+-- server is authoritative — it checks the player can afford it, deducts the
+-- cost, and increments their cell count. Cheaters can't fake a cell because the
+-- count never leaves the server.
+local function onCreateArchaea(player)
+	local profile = profiles[player.UserId]
+	if not profile then return end
+
+	local cost = GameConfig.MATTER_CONVERTER_COST_ARCHAEA
+	if profile.matter < cost then return end -- can't afford it; ignore
+
+	profile.matter -= cost
+	profile.archaeaCount += 1
+
+	fireUpdate(player, profile)          -- Matter went down
+	fireConverterUpdate(player, profile) -- cell count went up
+end
+
+-- Passive Matter income: every ARCHAEA_PRODUCTION_INTERVAL seconds, each player
+-- earns ARCHAEA_PRODUCTION_AMOUNT Matter per Archaea Cell they own. One shared
+-- timer drives every player's production so it stays cheap as cells grow.
+local function runProduction()
+	task.spawn(function()
+		while true do
+			task.wait(GameConfig.ARCHAEA_PRODUCTION_INTERVAL)
+			for _, player in Players:GetPlayers() do
+				local profile = profiles[player.UserId]
+				if profile and profile.archaeaCount > 0 then
+					addMatter(player, profile.archaeaCount * GameConfig.ARCHAEA_PRODUCTION_AMOUNT)
+				end
+			end
+		end
+	end)
+end
+
 function PlayerManager.init()
 	Players.PlayerAdded:Connect(createProfile)
 	Players.PlayerRemoving:Connect(removeProfile)
@@ -127,7 +172,10 @@ function PlayerManager.init()
 		createProfile(player)
 	end
 
+	Remotes.CreateArchaea.OnServerEvent:Connect(onCreateArchaea)
+
 	runCollection()
+	runProduction()
 end
 
 return PlayerManager

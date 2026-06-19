@@ -1,6 +1,6 @@
 # Handoff / Current State
 
-**Last updated:** 2026-06-18 by Tien (+ Claude) — Epic 7 planet-generator foundation in `main`; the Matter rework (currency rename + dust-mote collection) is rebased on top. **Sprint 7H (on `tien/integration-matter-planets`):** star-system composition in `WorldConfig`, planets orbit the star, universe-wide dust (`DustField`), planet marker, return-home tracks the orbit.
+**Last updated:** 2026-06-19 by Claude — **Sprint 8B Matter Converter** added (open via the on-screen "⚛ Create Life" button or **C**; spend Matter on an Archaea Cell that produces Matter passively) on branch `matter-converter`, plus the footstep-sound bug actually fixed in `SpaceMovement.client.luau` on branch `mute-footsteps`. Both **not yet merged** (separate PRs). Prior: Epic 7 planet-generator foundation in `main`; the Matter rework (currency rename + dust-mote collection) is rebased on top. **Sprint 7H (on `tien/integration-matter-planets`):** star-system composition in `WorldConfig`, planets orbit the star, universe-wide dust (`DustField`), planet marker, return-home tracks the orbit.
 **Active branches:** Tien → `feature/7a-planet-generator-foundation` · Nova → his own `nova/*` branch · current Matter work → `matter-dust-collection` (rebased on latest `main`, **not yet merged**) · all merge to `main` via PR.
 
 This is the "where are we right now" doc. Read this first, then `CLAUDE.md` for architecture and `docs/EPICS/` for detail.
@@ -46,7 +46,8 @@ rojo serve         # keep running; connect the Rojo Studio plugin to localhost:3
 | 0C | Soaring flight pose + banking into turns | ✅ Done (in `main`) |
 | 0D | Boost, look-based 3D flight, FOV, boost VFX, return-home | ✅ Done (in `main`) |
 | 7A | Procedural planet **descriptor** foundation (data only) | ✅ Done (in `main`) |
-| — | Footstep sound muted | ✅ Done (in `main`) |
+| 8B | Matter Converter — spend Matter on an Archaea Cell (passive Matter income); on-screen button + **C** | ✅ Done (on `matter-converter`, not merged) |
+| — | Footstep sound muted | ⚠️ Re-fixed on `mute-footsteps` — the in-`main` version didn't hold (engine re-un-muted it every frame); not merged |
 
 **Still pending:** Nova's Epic 0 home-planet (0D-01) is **not** in `main` yet. The Matter rework (1A dust collection) lives on `matter-dust-collection`, rebased on latest `main` and awaiting an in-Studio retest before merge — coordinate so 7B/0D-01 planet work doesn't collide with the dust field in `WorldBuilder.luau`.
 
@@ -63,6 +64,8 @@ rojo serve         # keep running; connect the Rojo Studio plugin to localhost:3
 | `src/client/SpaceMovement.client.luau` | Floaty movement + soaring pose + banking | ✅ Safe — self-contained LocalScript |
 | `src/client/DustAnimator.client.luau` | Bobs the dust motes locally (cosmetic) | ✅ Safe — self-contained LocalScript |
 | `src/client/MatterUI.luau` | Builds HUD, listens to `MatterUpdate`, shows "+N" popup | ✅ Safe — owns the Matter UI |
+| `src/client/MatterConverterUI.luau` | Matter Converter panel (toggle **C**); spend Matter → Archaea Cell, shows balance + cell count (Epic 8 / 8B) | ✅ Safe — self-contained module, owns the converter UI |
+| `src/server/PlayerManager.luau` (converter) | Also owns converter state: `CreateArchaea` handler + passive Archaea production loop (8B) | ✅ Safe — same owner as Matter logic |
 | `src/shared/GameConfig.luau` | Shared tuning constants | ⚠️ **Shared** — append new keys, don't reorganize, to avoid conflicts |
 | `src/shared/Remotes.luau` | Defines all RemoteEvents | ⚠️ **Shared** — add new remotes here; coordinate. **Gotcha:** the runtime folder is named `RemoteEvents` (NOT `Remotes`) so it doesn't collide with this ModuleScript's name — don't rename it back. |
 | `src/shared/WorldConfig.luau` | World/home-planet constants (Epic 7) | ⚠️ **Shared** — used by WorldBuilder + future planet scripts; append, don't reorganize |
