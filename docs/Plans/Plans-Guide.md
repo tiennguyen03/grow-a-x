@@ -25,4 +25,4 @@ keep-for-reference archive, same spirit as `PastEpics/`).
 
 | Plan | What it covers | Status |
 |---|---|---|
-| [`MatterCore-Inspect-Integration.md`](MatterCore-Inspect-Integration.md) | Unify the Planet Inspect UI (Epic 4) with Nova's Matter Converter / Create Life (Epic 3 / Sprint 8B) into one planet-contextual flow — fold "Create Life" into the inspect panel as a planet intervention, wire the `PlanetInspectContext` seam, and have the server set `EvolutionTier=1` / `EvolutionStage="Archaea"` after first creation so the existing glow + panel update fire. | Proposed |
+| [`MatterCore-Inspect-Integration.md`](MatterCore-Inspect-Integration.md) | Unify the Planet Inspect UI (Epic 4) with Nova's Matter Converter / Create Life (Epic 3 / Sprint 8B) into one planet-contextual flow — fold "Create Life" into the inspect panel as a planet intervention, wire the `PlanetInspectContext` seam, and have the server set `EvolutionTier=1` / `EvolutionStage="Archaea"` after first creation so the existing glow + panel update fire. | ✅ v0 implemented 2026-06-19 (pending playtest) |

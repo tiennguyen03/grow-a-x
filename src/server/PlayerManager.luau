@@ -129,6 +129,21 @@ local function runCollection()
 	RunService.Heartbeat:Connect(runMagnet)
 end
 
+-- Find a player's own planet model (built by PlayerPlanetService under
+-- workspace.SpaceEnvironment.PlayerPlanets). Matched by the OwnerUserId attribute
+-- so we never touch someone else's world.
+local function findPlayerPlanet(player)
+	local env = workspace:FindFirstChild("SpaceEnvironment")
+	local folder = env and env:FindFirstChild("PlayerPlanets")
+	if not folder then return nil end
+	for _, model in folder:GetChildren() do
+		if model:IsA("Model") and model:GetAttribute("OwnerUserId") == player.UserId then
+			return model
+		end
+	end
+	return nil
+end
+
 -- Matter Converter: a player spends Matter to create one Archaea Cell. The
 -- server is authoritative — it checks the player can afford it, deducts the
 -- cost, and increments their cell count. Cheaters can't fake a cell because the
@@ -142,6 +157,18 @@ local function onCreateArchaea(player)
 
 	profile.matter -= cost
 	profile.archaeaCount += 1
+
+	-- First cell sparks life: flip the planet to the Archaea stage so the inspect
+	-- panel reads "Archaea / Microbial" and PlanetStageVisuals shows the glow.
+	-- (Server owns this; the client only ever requested the purchase.) We don't
+	-- advance past tier 1 here — the full evolution tree is a later epic.
+	if profile.archaeaCount == 1 then
+		local planet = findPlayerPlanet(player)
+		if planet then
+			planet:SetAttribute("EvolutionTier", 1)
+			planet:SetAttribute("EvolutionStage", "Archaea")
+		end
+	end
 
 	fireUpdate(player, profile)          -- Matter went down
 	fireConverterUpdate(player, profile) -- cell count went up

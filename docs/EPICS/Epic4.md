@@ -731,6 +731,8 @@ If true, show:
 **Primary files depend on Nova's implementation**
 
 > **Implementation notes (2026-06-19):** Built the **Option A** seam (recommended in this doc) — low-coupling, no economy logic. New client ModuleScript `src/client/PlanetInspectContext.luau` carries the inspect→Converter context: `set(ctx)` / `clear()` / `get()`, plus `Changed` and `OpenRequested` signals (BindableEvent-backed). `PlanetInteraction` calls `set{ type="Planet", planetModel, planetId, ownerUserId, displayName }` on inspect enter and `clear()` on exit, and the info panel's **"Open Matter Converter"** button calls `PlanetInspectContext.requestOpen()` (fires `OpenRequested` with the context) + prints a debug line and briefly shows "Matter Converter integration pending…". **Nothing is sent over remotes; no Matter is deducted; no server/economy files touched.** **What's still open (4D-05, needs Nova):** what the Converter UI file is called, whether it opens from this button or an always-on HUD, and who owns the button long-term. Nova consumes the seam by `require`-ing `PlanetInspectContext` and connecting `OpenRequested` (open the Converter for `ctx.planetModel`/`ctx.planetId`) and optionally `Changed` (track the active planet).
+>
+> **Superseded 2026-06-19 by the Matter Core integration** (`docs/Plans/MatterCore-Inspect-Integration.md`): the "Open Matter Converter" button was replaced by an in-panel **Create Life** intervention that fires the real `CreateArchaea` spend; `MatterConverterUI` ("Matter Core") now consumes `PlanetInspectContext.Changed` to show the planet name. The seam module still exists (`Changed` is live); `OpenRequested` is now vestigial.
 
 ## Goal
 

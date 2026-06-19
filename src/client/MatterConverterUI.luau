@@ -1,14 +1,15 @@
--- Matter Converter UI (Epic 8, Sprint 8B).
+-- Matter Core UI (Epic 8 / Sprint 8B, unified with Epic 4 inspect — see
+-- docs/Plans/MatterCore-Inspect-Integration.md).
 --
--- A toggleable panel — opened by an always-on-screen "Create Life" button
--- (so touch/mobile players can use it) or the C key on desktop — where the
--- player spends Matter to create life forms that then produce Matter passively.
--- The first creation is the Archaea
--- Cell. This UI is purely a view + request layer: it shows the server-pushed
--- Matter balance and cell count, and asks the server to create a cell via the
--- CreateArchaea remote. The server validates and owns all the numbers, so this
--- module never decides whether a purchase is allowed — it only enables/greys the
--- button as a hint and lets the server be the final word.
+-- A toggleable status panel — opened by an always-on-screen "Matter Core" button
+-- (touch/mobile friendly) or the C key — showing the player's Matter balance, how
+-- many Archaea Cells they own, and the production rate. It also shows the current
+-- planet context from PlanetInspectContext.
+--
+-- The actual "Create Life" intervention now lives in the PLANET INSPECT panel
+-- (PlanetInteraction), so there's a single, planet-contextual create path instead
+-- of a detached global button. This panel is an overview + shortcut, not a second
+-- create button — it points the player to inspect their planet to create life.
 --
 -- Follows the module + .init() pattern (wired from Main.client.luau).
 
@@ -17,6 +18,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+-- Planet context published by the inspect UI (so this panel can name the planet).
+local PlanetInspectContext = require(script.Parent:WaitForChild("PlanetInspectContext"))
 
 local TOGGLE_KEY = Enum.KeyCode.C
 
@@ -48,7 +51,7 @@ local function buildGui(playerGui)
 	openButton.Font = Enum.Font.GothamBold
 	openButton.TextSize = 16
 	openButton.TextColor3 = Color3.fromRGB(240, 255, 245)
-	openButton.Text = "Create Life"
+	openButton.Text = "Matter Core"
 	openButton.Parent = screenGui
 
 	local openCorner = Instance.new("UICorner")
@@ -86,7 +89,7 @@ local function buildGui(playerGui)
 	title.Font = Enum.Font.GothamBold
 	title.TextSize = 20
 	title.TextColor3 = Color3.fromRGB(210, 190, 255)
-	title.Text = "Matter Converter"
+	title.Text = "Matter Core"
 	title.Parent = panel
 
 	-- Tappable close button (mobile players have no Esc/C); top-right of the panel.
@@ -179,38 +182,36 @@ local function buildGui(playerGui)
 	owned.Text = "Owned: 0"
 	owned.Parent = card
 
-	-- Create button (bottom of the card).
-	local button = Instance.new("TextButton")
-	button.Name = "CreateButton"
-	button.AnchorPoint = Vector2.new(0, 1)
-	button.Position = UDim2.new(0, 0, 1, 0)
-	button.Size = UDim2.new(1, 0, 0, 34)
-	button.BackgroundColor3 = Color3.fromRGB(70, 120, 90)
-	button.BorderSizePixel = 0
-	button.AutoButtonColor = true
-	button.Font = Enum.Font.GothamBold
-	button.TextSize = 15
-	button.TextColor3 = Color3.fromRGB(240, 255, 245)
-	button.Text = string.format("Create  —  %d Matter", GameConfig.MATTER_CONVERTER_COST_ARCHAEA)
-	button.Parent = card
+	-- Where the create action now lives (bottom of the card). Create Life is a
+	-- planet intervention in the inspect panel, so this panel just points there.
+	local guide = Instance.new("TextLabel")
+	guide.Name = "CreateGuide"
+	guide.AnchorPoint = Vector2.new(0, 1)
+	guide.Position = UDim2.new(0, 0, 1, 0)
+	guide.Size = UDim2.new(1, 0, 0, 34)
+	guide.BackgroundTransparency = 1
+	guide.TextXAlignment = Enum.TextXAlignment.Left
+	guide.TextYAlignment = Enum.TextYAlignment.Bottom
+	guide.TextWrapped = true
+	guide.Font = Enum.Font.GothamMedium
+	guide.TextSize = 13
+	guide.TextColor3 = Color3.fromRGB(170, 255, 200)
+	guide.Text = "Create Life from the planet inspect panel — press E near your Origin World."
+	guide.Parent = card
 
-	local buttonCorner = Instance.new("UICorner")
-	buttonCorner.CornerRadius = UDim.new(0, 8)
-	buttonCorner.Parent = button
-
-	-- Hint at the bottom of the panel.
-	local hint = Instance.new("TextLabel")
-	hint.Name = "Hint"
-	hint.AnchorPoint = Vector2.new(0, 1)
-	hint.Position = UDim2.new(0, 0, 1, 0)
-	hint.Size = UDim2.new(1, 0, 0, 16)
-	hint.BackgroundTransparency = 1
-	hint.TextXAlignment = Enum.TextXAlignment.Left
-	hint.Font = Enum.Font.Gotham
-	hint.TextSize = 12
-	hint.TextColor3 = Color3.fromRGB(120, 120, 150)
-	hint.Text = "Tap X or press C to close"
-	hint.Parent = panel
+	-- Bottom line: shows the current planet context (set when inspecting).
+	local context = Instance.new("TextLabel")
+	context.Name = "Context"
+	context.AnchorPoint = Vector2.new(0, 1)
+	context.Position = UDim2.new(0, 0, 1, 0)
+	context.Size = UDim2.new(1, 0, 0, 16)
+	context.BackgroundTransparency = 1
+	context.TextXAlignment = Enum.TextXAlignment.Left
+	context.Font = Enum.Font.Gotham
+	context.TextSize = 12
+	context.TextColor3 = Color3.fromRGB(120, 120, 150)
+	context.Text = "No planet inspected"
+	context.Parent = panel
 
 	return screenGui, {
 		panel = panel,
@@ -218,7 +219,7 @@ local function buildGui(playerGui)
 		closeButton = closeButton,
 		balance = balance,
 		owned = owned,
-		button = button,
+		context = context,
 	}
 end
 
@@ -227,22 +228,29 @@ function MatterConverterUI.init()
 	local playerGui = player:WaitForChild("PlayerGui")
 	local screenGui, refs = buildGui(playerGui)
 
-	-- Re-render the affordable state of the button + the live numbers.
-	local cost = GameConfig.MATTER_CONVERTER_COST_ARCHAEA
+	-- Re-render the live numbers (read-only overview; the spend happens in inspect).
 	local function refresh()
 		refs.balance.Text = string.format("Matter: %d", localMatter)
 		refs.owned.Text = string.format("Owned: %d", localArchaea)
-
-		local canAfford = localMatter >= cost
-		refs.button.AutoButtonColor = canAfford
-		refs.button.BackgroundColor3 = canAfford
-			and Color3.fromRGB(70, 120, 90)   -- green: affordable
-			or Color3.fromRGB(55, 58, 74)     -- grey: not enough Matter
-		refs.button.TextColor3 = canAfford
-			and Color3.fromRGB(240, 255, 245)
-			or Color3.fromRGB(140, 145, 165)
 	end
 	refresh()
+
+	-- Reflect the inspected-planet context published by the inspect UI.
+	local function refreshContext()
+		local ctx = PlanetInspectContext.get()
+		if ctx and ctx.displayName then
+			refs.context.Text = "Planet: " .. ctx.displayName
+		else
+			refs.context.Text = "No planet inspected — press E near your Origin World"
+		end
+	end
+	refreshContext()
+	PlanetInspectContext.Changed:Connect(refreshContext)
+	-- If the inspect panel asks to open the converter, surface this panel.
+	PlanetInspectContext.OpenRequested:Connect(function()
+		refs.panel.Visible = true
+		refreshContext()
+	end)
 
 	-- Show/hide the panel. The persistent open button stays on screen either way,
 	-- so touch players always have a way back in.
@@ -265,13 +273,6 @@ function MatterConverterUI.init()
 		if input.KeyCode == TOGGLE_KEY then
 			setOpen(not refs.panel.Visible)
 		end
-	end)
-
-	-- Ask the server to create an Archaea Cell. The server validates affordability;
-	-- if the player can't afford it, the request is simply ignored server-side.
-	refs.button.Activated:Connect(function()
-		local Remotes = require(ReplicatedStorage.Remotes)
-		Remotes.CreateArchaea:FireServer()
 	end)
 
 	-- Subscribe to the server's state pushes. Resolve the remotes off the main

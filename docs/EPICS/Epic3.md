@@ -89,6 +89,8 @@ local EvolutionTiers = {
 
 ### Sprint 8B: Matter Converter (Archaea Cell) ✅
 
+> **Update (2026-06-19, Matter Core integration):** the converter was unified with the Epic 4 planet inspect UI (`docs/Plans/MatterCore-Inspect-Integration.md`). **Create Life** is now a planet intervention inside the inspect panel (server-authoritative spend unchanged); the standalone GUI was renamed **"Matter Core"** and is now a read-only overview (balance / owned / production + inspected-planet context). On the first cell, `PlayerManager` sets `EvolutionTier=1`/`EvolutionStage="Archaea"` on the planet so the inspect panel + Archaea glow update automatically. The server logic below is unchanged.
+
 **Goal:** First playable slice of Epic 8 — a toggleable GUI where the player spends collected Matter to create an **Archaea Cell**, the first life form, which then produces Matter passively. This is the seed of the full 9-tier tree above (8B implements only Tier 1 as a working loop; richer tiers/visuals come later).
 
 **Owner/files:**

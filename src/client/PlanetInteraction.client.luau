@@ -14,11 +14,13 @@
 -- The camera is always restored on exit, even if the planet disappears or the
 -- character respawns mid-inspect.
 --
--- Scope so far: own planet only (never other players'); no Matter/economy/server
--- spending. While inspecting, a read-only info panel (4C) shows the planet's
--- attributes, and an "Open Matter Converter" button publishes the current planet
--- context via PlanetInspectContext (4D) for Nova's economy UI to consume — this
--- file never deducts Matter or calls economy remotes.
+-- Scope: own planet only (never other players'). While inspecting, a read-only
+-- info panel (4C) shows the planet's attributes, plus an Intervention section with
+-- a "Create Life" button — a PLANET intervention that requests a server-authoritative
+-- Archaea purchase (Matter Core integration). The client only requests + reflects
+-- server-pushed numbers; PlayerManager validates, deducts Matter, and flips the
+-- planet to the Archaea stage. Context is still published via PlanetInspectContext
+-- (4D) so the standalone Matter Core panel can show the inspected planet's name.
 --
 -- Self-contained LocalScript (like SpaceMovement / DustAnimator / PlanetMarker)
 -- — no Main.client wiring. One ScreenGui is built with ResetOnSpawn = false so
@@ -46,6 +48,10 @@ end
 -- The inspect→Matter Converter seam (Sprint 4D). We publish planet context here;
 -- Nova's Converter UI consumes it. Sibling client ModuleScript.
 local PlanetInspectContext = require(script.Parent:WaitForChild("PlanetInspectContext"))
+
+-- Matter Converter integration: cost/production constants for the in-panel
+-- "Create Life" intervention (the actual spend is server-authoritative).
+local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 
 local PROMPT_DISTANCE    = 170  -- show the prompt at/under this distance (studs)
 local PROMPT_HIDE_BUFFER = 20   -- ...and hide once you pass distance + this (=190)
@@ -348,6 +354,11 @@ local function makeDivider(order: number)
 	return d
 end
 
+-- A "Field   value" row string with the field name dimmed (RichText).
+local function field(name: string, value: string): string
+	return string.format('<font color="%s">%s</font>   %s', DIM_COLOR, name, value)
+end
+
 local titleLabel    = makeInfoLabel(1, { font = Enum.Font.GothamBold, size = 22, height = 28 })
 makeDivider(2)
 local rowArchetype  = makeInfoLabel(3)
@@ -360,55 +371,94 @@ local rowAtmos      = makeInfoLabel(10)
 local debugLabel    = makeInfoLabel(11, { wrap = true, size = 13, color = Color3.fromRGB(150, 170, 190) })
 makeDivider(12)
 
--- "Open Matter Converter" button (Sprint 4D) — hands the current planet context to
--- Nova's Converter via PlanetInspectContext. No spending happens here.
-local converterButton = Instance.new("TextButton")
-converterButton.Name = "OpenMatterConverter"
-converterButton.LayoutOrder = 13
-converterButton.Size = UDim2.new(1, 0, 0, 34)
-converterButton.BackgroundColor3 = Color3.fromRGB(22, 40, 60)
-converterButton.BackgroundTransparency = 0.1
-converterButton.BorderSizePixel = 0
-converterButton.AutoButtonColor = true
-converterButton.Font = Enum.Font.GothamMedium
-converterButton.TextSize = 15
-converterButton.TextColor3 = Color3.fromRGB(176, 218, 255)
-converterButton.Text = "Open Matter Converter"
-converterButton.Parent = infoPanel
+-- Intervention section (Matter Core integration) — Create Life is a PLANET
+-- intervention shown right here in the inspect panel, not a detached global
+-- button. The spend is server-authoritative (PlayerManager validates + deducts);
+-- this UI only requests it and reflects the server-pushed numbers. Powered by the
+-- same Matter Core economy Nova owns.
+local interventionHeader = makeInfoLabel(13, { font = Enum.Font.GothamBold, size = 15, color = CYAN })
+interventionHeader.Text = "Intervention"
+local createTitle  = makeInfoLabel(14, { font = Enum.Font.GothamSemibold, color = Color3.fromRGB(170, 255, 200) })
+createTitle.Text = "Create Life"
+local createCost   = makeInfoLabel(15, { size = 14 })
+local createEffect = makeInfoLabel(16, { size = 14 })
+local createOwned  = makeInfoLabel(17, { size = 14 })
+local createProd   = makeInfoLabel(18, { size = 14 })
 
-local converterCorner = Instance.new("UICorner")
-converterCorner.CornerRadius = UDim.new(0, 8)
-converterCorner.Parent = converterButton
+local createButton = Instance.new("TextButton")
+createButton.Name = "CreateLife"
+createButton.LayoutOrder = 19
+createButton.Size = UDim2.new(1, 0, 0, 34)
+createButton.BackgroundColor3 = Color3.fromRGB(40, 96, 64)
+createButton.BorderSizePixel = 0
+createButton.AutoButtonColor = true
+createButton.Font = Enum.Font.GothamBold
+createButton.TextSize = 15
+createButton.TextColor3 = Color3.fromRGB(220, 255, 235)
+createButton.Text = "Create Life"
+createButton.Parent = infoPanel
 
-local converterStroke = Instance.new("UIStroke")
-converterStroke.Color = CYAN
-converterStroke.Transparency = 0.5
-converterStroke.Thickness = 1
-converterStroke.Parent = converterButton
+local createCorner = Instance.new("UICorner")
+createCorner.CornerRadius = UDim.new(0, 8)
+createCorner.Parent = createButton
 
-local exitLabel      = makeInfoLabel(14, { size = 13, color = Color3.fromRGB(150, 170, 190) })
+local createStroke = Instance.new("UIStroke")
+createStroke.Color = CYAN
+createStroke.Transparency = 0.55
+createStroke.Thickness = 1
+createStroke.Parent = createButton
 
-converterButton.Activated:Connect(function()
-	PlanetInspectContext.requestOpen()
-	local ctx = PlanetInspectContext.get()
-	print(string.format(
-		"[PlanetInteraction] Matter Converter open requested for %s (awaiting Nova's Converter UI)",
-		(ctx and ctx.displayName) or "your planet"
-	))
-	-- Brief placeholder feedback until Nova's Converter UI is wired in.
-	converterButton.Text = "Matter Converter integration pending…"
-	task.delay(1.4, function()
-		if converterButton.Parent then
-			converterButton.Text = "Open Matter Converter"
-		end
+local exitLabel = makeInfoLabel(20, { size = 13, color = Color3.fromRGB(150, 170, 190) })
+
+-- Static recipe text (cost/effect/production never change); owned + affordability
+-- are refreshed live by the remotes below.
+local ARCHAEA_COST = GameConfig.MATTER_CONVERTER_COST_ARCHAEA
+createCost.Text = field("Cost", string.format("%d Matter", ARCHAEA_COST))
+createEffect.Text = field("Effect", "First Archaea Cell")
+createProd.Text = field("Production", string.format(
+	"+%d Matter / %ds",
+	GameConfig.ARCHAEA_PRODUCTION_AMOUNT,
+	GameConfig.ARCHAEA_PRODUCTION_INTERVAL
+))
+
+-- Live converter state (server-owned; mirrored here for button enable + "Owned").
+local localMatter = 0
+local localArchaea = 0
+local remotesRef = nil
+
+local function refreshIntervention()
+	createOwned.Text = field("Owned", tostring(localArchaea))
+	local canAfford = localMatter >= ARCHAEA_COST
+	createButton.AutoButtonColor = canAfford
+	createButton.BackgroundColor3 = canAfford and Color3.fromRGB(40, 96, 64) or Color3.fromRGB(40, 44, 56)
+	createButton.TextColor3 = canAfford and Color3.fromRGB(220, 255, 235) or Color3.fromRGB(140, 150, 165)
+end
+refreshIntervention()
+
+createButton.Activated:Connect(function()
+	-- Visual guard only; the server re-checks affordability and owns the decision.
+	if remotesRef and localMatter >= ARCHAEA_COST then
+		remotesRef.CreateArchaea:FireServer()
+	end
+end)
+
+-- Subscribe to the server's Matter + converter pushes off the main thread so the
+-- panel builds instantly and never blocks on replication.
+task.spawn(function()
+	local Remotes = require(ReplicatedStorage:WaitForChild("Remotes"))
+	remotesRef = Remotes
+	Remotes.MatterUpdate.OnClientEvent:Connect(function(data)
+		localMatter = math.max(0, math.floor(data.matter))
+		refreshIntervention()
 	end)
+	Remotes.ConverterUpdate.OnClientEvent:Connect(function(data)
+		localArchaea = math.max(0, math.floor(data.archaeaCount))
+		refreshIntervention()
+	end)
+	refreshIntervention()
 end)
 
 -- ---- Formatting helpers -------------------------------------------------------
-local function field(name: string, value: string): string
-	return string.format('<font color="%s">%s</font>   %s', DIM_COLOR, name, value)
-end
-
 -- "TemperateOcean" / "young_habitable" -> "Temperate Ocean" / "Young Habitable"
 local function prettify(raw): string
 	if typeof(raw) ~= "string" or raw == "" then

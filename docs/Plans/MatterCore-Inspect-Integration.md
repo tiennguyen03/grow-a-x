@@ -2,9 +2,24 @@
 
 **Project:** Grow A [X]  
 **Purpose:** Make the Planet Inspect UI and Matter Converter / Create Life flow feel like one seamless system.  
-**Status:** Proposed implementation plan  
+**Status:** ✅ v0 implemented 2026-06-19 (on `tien/integration-matter-planets`) — pending in-Studio playtest  
 **Primary coordination:** Tien + Nova  
 **Recommended owner split:** Tien owns planet inspect UX/stylization; Nova owns Matter spending/server economy.
+
+---
+
+## Implementation status (2026-06-19)
+
+Implemented in one pass while Nova was idle, to be pushed to `main` as the shared base:
+
+- **Phase 1 (entry points):** the global "Create Life" button is renamed **"Matter Core"** (`MatterConverterUI.luau`); its panel is now a read-only **overview** (Matter / Owned / Production) — its own Create button was removed, so there is a single create path.
+- **Phase 2 (context):** `MatterConverterUI` now requires `PlanetInspectContext` and shows the inspected planet's name (or "No planet inspected — press E…"), reacting to `Changed`.
+- **Phase 3 (in-panel Create Life):** the inspect panel's old "Open Matter Converter" button is replaced by an **Intervention** section — Create Life with cost / effect / owned / production + a styled **[Create Life]** button (`PlanetInteraction.client.luau`).
+- **Phase 4 (server spend):** the button fires the existing `CreateArchaea` remote; `PlayerManager` stays authoritative (validate → deduct → increment). The inspect button subscribes to `MatterUpdate`/`ConverterUpdate` for affordability + "Owned".
+- **Phase 5 (stage update):** `PlayerManager.onCreateArchaea` sets `EvolutionTier=1` / `EvolutionStage="Archaea"` on the player's planet when the first cell is created, so the inspect panel flips to "Archaea / Microbial" and `PlanetStageVisuals` shows the glow automatically.
+- **Phase 6 (labels):** "Matter Core" (menu) vs "Create Life" (planet action).
+
+**Deferred / to confirm in playtest:** Phase 7 manual test pass; camera/UX taste tuning; whether the Matter Core panel should stay reachable by **C** at all (currently yes, as an overview shortcut).
 
 ---
 
