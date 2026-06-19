@@ -64,6 +64,7 @@ local currentVelocity = Vector3.zero
 local currentBank     = 0       -- current smoothed roll angle
 local prevHeading     = nil     -- last horizontal travel direction, for measuring turn rate
 local boostParticles  = nil     -- ParticleEmitter, recreated per character
+local inspectAnchorOffset = nil -- player offset from planet center, captured on inspect
 
 local function setupCharacter(char)
 	character = char
@@ -82,11 +83,26 @@ local function setupCharacter(char)
 		end
 	end)
 
-	-- Mute the default footstep sound — we're floating, not walking
-	local running = rootPart:FindFirstChild("Running")
-	if running and running:IsA("Sound") then
-		running.Volume = 0
+	-- Mute the default locomotion sounds — we float through space, not walk.
+	-- A one-time Volume = 0 doesn't stick: the engine's RbxCharacterSounds may
+	-- create the "Running" sound AFTER this runs, and it rewrites that sound's
+	-- Volume every frame from our AssemblyLinearVelocity (so it thinks we're
+	-- running). So we catch the sound whenever it appears and re-zero its volume
+	-- whenever the engine raises it.
+	local function muteSound(sound)
+		if not sound:IsA("Sound") then return end
+		if sound.Name ~= "Running" and sound.Name ~= "Climbing" then return end
+		sound.Volume = 0
+		sound:GetPropertyChangedSignal("Volume"):Connect(function()
+			if sound.Volume > 0 then
+				sound.Volume = 0
+			end
+		end)
 	end
+	for _, child in rootPart:GetChildren() do
+		muteSound(child)
+	end
+	rootPart.ChildAdded:Connect(muteSound)
 
 	-- Boost VFX: a particle trail that only emits while boosting.
 	-- Parented to the new rootPart, so the old one is cleaned up with the old character.
@@ -143,6 +159,35 @@ end)
 
 RunService.RenderStepped:Connect(function(dt)
 	if not rootPart or not character or not character.Parent then return end
+
+	-- Inspect mode (Epic 4): while the player is inspecting their planet,
+	-- PlanetInteraction sets this attribute. Rather than freezing the player in
+	-- absolute space (the planet keeps orbiting the star and would slide out of
+	-- frame), we CARRY the player along with the planet — we lock their position
+	-- relative to the planet center, so they ride the orbit and stay framed. Only
+	-- the orbital translation is followed (planet center), not the planet's own
+	-- spin, so the player isn't spun around. Input + pose updates are skipped.
+	if player:GetAttribute("PlanetInspectLocked") then
+		local planet = findLocalPlanet()
+		local body = planet and planet.PrimaryPart
+		if body then
+			if not inspectAnchorOffset then
+				inspectAnchorOffset = rootPart.Position - body.Position
+			end
+			rootPart.AssemblyLinearVelocity = Vector3.zero
+			rootPart.AssemblyAngularVelocity = Vector3.zero
+			-- Keep the captured offset; preserve the player's current orientation.
+			rootPart.CFrame = CFrame.new(body.Position + inspectAnchorOffset) * rootPart.CFrame.Rotation
+		else
+			rootPart.AssemblyLinearVelocity = Vector3.zero
+		end
+		currentVelocity = Vector3.zero
+		if boostParticles then
+			boostParticles.Enabled = false
+		end
+		return
+	end
+	inspectAnchorOffset = nil -- not inspecting → recapture offset next time
 
 	-- Read horizontal input
 	local inputDir = Vector3.zero

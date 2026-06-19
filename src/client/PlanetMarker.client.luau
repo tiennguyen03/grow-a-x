@@ -30,7 +30,11 @@ local gui = Instance.new("ScreenGui")
 gui.Name = "PlanetMarker"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
-gui.DisplayOrder = 10
+-- Render the marker BELOW the HUD/menus (which use the default DisplayOrder 0)
+-- so the "Origin World" label never covers UI you're trying to read. A ScreenGui
+-- always draws above the 3D world regardless, so a negative order still keeps the
+-- marker over in-world objects — just under the other GUI.
+gui.DisplayOrder = -1
 gui.Enabled = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
@@ -85,6 +89,13 @@ local function findLocalPlanet()
 end
 
 RunService.RenderStepped:Connect(function()
+	-- Yield to the inspect UI (Epic 4): hide the marker while inspecting or while
+	-- the approach prompt is up, so the marker never overlaps the planet UI.
+	if player:GetAttribute("InspectingPlanet") or player:GetAttribute("PlanetPromptVisible") then
+		gui.Enabled = false
+		return
+	end
+
 	local camera = Workspace.CurrentCamera
 	local planet = findLocalPlanet()
 	local body = planet and planet.PrimaryPart

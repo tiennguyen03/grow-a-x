@@ -30,4 +30,10 @@ end
 
 return {
 	MatterUpdate = get("MatterUpdate", "RemoteEvent"),
+
+	-- Matter Converter (Epic 8). CreateArchaea: client asks the server to spend
+	-- Matter on one Archaea Cell (no payload; server validates cost). ConverterUpdate:
+	-- server pushes the player's current converter state, e.g. { archaeaCount }.
+	CreateArchaea   = get("CreateArchaea", "RemoteEvent"),
+	ConverterUpdate = get("ConverterUpdate", "RemoteEvent"),
 }

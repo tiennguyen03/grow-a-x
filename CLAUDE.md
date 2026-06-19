@@ -298,15 +298,20 @@ When resolving a merge (or reconciling two branches) that touches `CLAUDE.md`, `
 |---|---|---|
 | Epic 0: World Traversal | `docs/EPICS/Epic0.md` | In Progress |
 | Epic 1: Core Matter Loop | `docs/EPICS/Epic1.md` | In Progress |
-| Epic 2: Planet Upgrade System | `docs/EPICS/Epic2.md` | Not Started |
-| Epic 3: Planet Era Visuals | `docs/EPICS/Epic3.md` | Not Started |
-| Epic 4: Events & Disasters | `docs/EPICS/Epic4.md` | Not Started |
-| Epic 5: DataStore / Saving | `docs/EPICS/Epic5.md` | Not Started |
-| Epic 6: Multi-Planet Expansion | `docs/EPICS/Epic6.md` | Not Started |
-| Epic 7: Procedural Planet Generation | `docs/EPICS/Epic7.md` | In Progress |
+| Epic 2: Procedural Planet Generation _(formerly Epic 7)_ | `docs/EPICS/Epic2.md` | In Progress |
+| Epic 3: Evolutionary Progression _(formerly Epic 8)_ | `docs/EPICS/Epic3.md` | Not Started |
+| Epic 4: Planet Interaction & Inspection | `docs/EPICS/Epic4.md` | In Progress (4A–4G built; 4H playtest pending) |
+| Epic 5: Planet Upgrade System | `docs/EPICS/Epic5.md` | Not Started |
+| Epic 6: Planet Era Visuals | `docs/EPICS/Epic6.md` | Not Started |
+| Epic 7: Events & Disasters | `docs/EPICS/Epic7.md` | Not Started |
+| Epic 8: DataStore / Saving | `docs/EPICS/Epic8.md` | Not Started |
+| Epic 9: Multi-Planet Expansion | `docs/EPICS/Epic9.md` | Not Started |
+
+> **Numbering note:** epic docs run `0,1,2,3,…` with no gaps. The two built planet epics are **Epic 2** (was 7) and **Epic 3** (was 8); their sprint IDs keep their original `7x`/`8x` letters to stay aligned with git history. **Epic 4 is now the concrete "Planet Interaction & Inspection" spec** (Tien's lane — approach prompt, inspect camera, planet info panel, Matter Converter hook); the previously-reserved planned epics (Upgrade System, Era Visuals, Events, DataStore, Multi-Planet) shifted down one to **5–9**.
 
 ### Documentation convention (keep this consistent)
 
+- **Incoming epic specs → save a reference copy to `docs/PastEpics/` (do this automatically).** When Tien hands you an epic spec — a file (e.g. in `Downloads/`) or pasted text — to work on, always do **both**: (1) place it as the live `docs/EPICS/Epic<N>.md`, and (2) save a verbatim reference snapshot to `docs/PastEpics/Epic<N>.<YYYY-MM-DD>.md` so the original brief is permanently available for context/reference even after the live doc evolves. Then update the Epic Tracker row. Do this without being reminded — it is the standing convention for every epic Tien or Nova sends.
 - **One file per epic**, named generally: `docs/EPICS/Epic<N>.md`. Never create a separate file for a sprint or ticket.
 - Each epic doc has an H1 title (`# Epic N: <Name>`) and one `## Sprint <N><letter>` section per sprint, appended in order.
 - When you finish or change a sprint, **update that epic's existing file** — add/append a sprint section, don't spin off a new doc.
@@ -314,3 +319,4 @@ When resolving a merge (or reconciling two branches) that touches `CLAUDE.md`, `
 - If a sprint spec arrives as its own file, fold its useful content into the relevant `Epic<N>.md` and delete the standalone file.
 - **Archive before you revise.** Before meaningfully changing an epic doc, copy the *current* version into `docs/PastEpics/` as `Epic<N>.<YYYY-MM-DD>.md` (whole-epic changes: title, status, overview/tier tables, multiple sprints). If the edit is scoped to a single sprint section, instead copy just that section into `docs/PastSprints/` as `Epic<N>-Sprint<NX>.<YYYY-MM-DD>.md`. Git history remains the source of truth — these folders are a convenience mirror. See each folder's guide doc.
 - **Folder guide docs, not `README.md`.** A folder's explainer is named for the folder, not the generic `README.md`: use `<FolderName>-Guide.md` (e.g. `docs/PastEpics/PastEpics-Guide.md`, `docs/PastSprints/PastSprints-Guide.md`). Follow this `<FolderName>-Guide.md` pattern for any new folder that needs an explainer, so guides are self-describing in search and file lists.
+- **Cross-cutting plans live in `docs/Plans/`.** Implementation/coordination plans that span more than one epic (or that aren't a single sprint/epic) go in `docs/Plans/` with a descriptive kebab-case name, indexed in `docs/Plans/Plans-Guide.md` — not in `docs/EPICS/`. Example: `docs/Plans/MatterCore-Inspect-Integration.md` (unifying the Epic 4 inspect UI with Nova's Epic 3 Matter Converter).
