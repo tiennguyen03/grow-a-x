@@ -1,6 +1,8 @@
-# Epic 7: Procedural Planet Generation & Planet Identity
+# Epic 2: Procedural Planet Generation & Planet Identity
 
-> Slotted as Epic 7 to avoid renumbering the existing tracker (Epic 2 stays "Planet Upgrade System"). Conceptually this is the **planet foundation** — upgrades/interventions and era visuals will act on planets generated here.
+> **Formerly Epic 7** (file was `Epic7.md`) — renumbered to close the old `0,1,7,8` gap so the epic docs run in a clean sequence. **Sprint IDs keep their original `7A`–`7H` labels** (they match the commit history `feat(7G)`/`feat(7H)`, etc.); only the epic number changed, not the sprint letters.
+>
+> Conceptually this is the **planet foundation** — upgrades/interventions and era visuals act on planets generated here.
 
 **Status:** ✅ Sprints 7A–7H complete. **Refactor (per-player + noise continents):** planets are built per player by `PlayerPlanetService` on join (seed = `UserId + WORLD_SEED_SALT`), under `workspace.SpaceEnvironment.PlayerPlanets`. Land is generated from coherent `math.noise` over the sphere (connected continents/islands) instead of clustered blobs; `WorldBuilder` no longer builds a planet (backdrop only); atmosphere is a thin shell (scale 1.04–1.08). See `PlayerPlanetService.luau` + `PlanetGenerator.generateSurface`. **Sprint 7G** added climate-based biomes (temperate/desert/mountain/tundra), moved planet rotation to the server (fixing the snap-back bug), and rebalanced the planet/star composition.
 
@@ -70,7 +72,7 @@ Future (disabled for now): Desert, Ice, Volcanic, Barren, GasGiant, Exotic.
 ## File plan
 
 **New:** `src/shared/WorldConfig.luau`, `src/shared/PlanetArchetypes.luau`, `src/shared/PlanetGenerator.luau`
-**Touch later:** `src/server/WorldBuilder.luau`, `docs/EPICS/Epic7.md`, `CLAUDE.md`, `HANDOFF.md`
+**Touch later:** `src/server/WorldBuilder.luau`, `docs/EPICS/Epic2.md`, `CLAUDE.md`, `HANDOFF.md`
 **Avoid (likely Nova's Matter/economy lane):** `PlayerManager.luau`, `GameConfig.luau`, `Remotes.luau`, `MatterUI.luau`, both `Main` files, `SpaceMovement.client.luau`
 
 ---

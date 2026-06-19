@@ -1,4 +1,6 @@
-# Epic 8: From Archaea to Universe — Evolutionary Progression
+# Epic 3: From Archaea to Universe — Evolutionary Progression
+
+> **Formerly Epic 8** (file was `Epic8.md`) — renumbered to close the old `0,1,7,8` gap. Sprint IDs keep their original `8A`–`8H` labels; only the epic number changed.
 
 **Status:** 📋 Planned / Not Started  
 **Dependency:** Epic 1 (Matter Loop) must be complete (Sprint 1A ✅, Sprint 1B in progress)  
