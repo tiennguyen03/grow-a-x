@@ -278,6 +278,18 @@ Ship via PR: `https://github.com/tiennguyen03/grow-a-x/pull/new/<your-branch>`
 
 **Shared coordination-point files** (conflict-prone — announce edits): `Main.server.luau`, `Main.client.luau`, `shared/Remotes.luau`, `shared/GameConfig.luau`. See `HANDOFF.md` for the full per-file touch-safety map.
 
+### Documentation Preservation on Merge (non-negotiable)
+
+**The project goal is to preserve as much documentation as possible.** When merging branches or PRs, documentation is **unioned, never overwritten**. Tien's and Nova's docs are additive — neither dev's documentation should be lost because the other's branch didn't have it.
+
+When resolving a merge (or reconciling two branches) that touches `CLAUDE.md`, `HANDOFF.md`, `docs/EPICS/*`, `docs/PastEpics/*`, `docs/PastSprints/*`, `README`s, or in-code doc comments:
+
+- **Keep everything from both sides.** If one branch has a sprint section, epic doc, HANDOFF row, table entry, or note the other lacks, **carry it into the merged result** — do not drop it just because it's only on one side.
+- **Union over replace.** When the same section was edited on both sides, merge the content (combine bullets/rows/paragraphs) rather than picking one version and discarding the other. Only the currency rename (`Influence` → `Matter`) and other agreed factual corrections may replace text outright.
+- **Never delete docs to resolve a conflict.** If two versions genuinely can't coexist inline, keep both and reconcile, or archive the older one via the "Archive before you revise" convention below — deletion is not an acceptable conflict resolution.
+- **When in doubt, keep it.** Extra documentation is cheaper than lost context. If unsure whether a doc is still relevant, preserve it (archive rather than remove).
+- **Call out doc merges in the handoff summary** so the other dev can confirm nothing of theirs was lost.
+
 ---
 
 ## Epic Tracker
