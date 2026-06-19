@@ -54,6 +54,12 @@ rojo serve         # keep running; connect the Rojo Studio plugin to localhost:3
 
 > **Matter Core ↔ Inspect integration — ✅ v0 done (2026-06-19), pending playtest.** Unified the two flows into one planet-contextual path: **Create Life** is now an Intervention in the inspect panel (the old "Open Matter Converter" button is gone); the global button is renamed **"Matter Core"** and its panel is a read-only overview that shows the inspected planet's name (consumes `PlanetInspectContext`). On first Create Life the server sets `EvolutionTier=1`/`EvolutionStage="Archaea"` so the glow + panel update fire automatically. Full plan + status: [`docs/Plans/MatterCore-Inspect-Integration.md`](docs/Plans/MatterCore-Inspect-Integration.md).
 
+> **Misc polish pass (2026-06-19)** — small QoL/visual tuning, *not* a new epic/sprint; Nova's economy/upgrade logic untouched. Changes + how to test:
+> - **Denser Matter** (`GameConfig.luau`): `DUST_PARTICLE_COUNT` 200→**360**, `DUST_FIELD_RADIUS` 1200→**1050**. *Test:* fly from spawn — you should hit dust much sooner/more often.
+> - **Planet farther from sun** (`WorldConfig.luau`): `PLANET_ORBIT_BASE_RADIUS` 340→**460**. *Test:* scene less cramped; **return-home (R)**, **inspect (E)**, and the **planet marker** all still work (they derive from the planet's live position, so no hardcoded spots to update).
+> - **Sun death** (`SpaceMovement.client.luau` + `WorldConfig.SUN_KILL_MARGIN`=15): flying within `star radius + margin` (=**215 studs** of the star center) kills you → respawn at origin. Also fixed the humanoid state-forcer to not fight the `Dead` state. *Test:* dive into the star → you die/respawn; normal flight + planet orbit never trigger it.
+> - **More organic terrain** (`PlanetGenerator.luau` + `PlayerPlanetService.buildTile`): land/ice/cloud tiles now get deterministic per-tile **size jitter, rectangular width/length, in-plane roll, and color jitter** (same tile *count*, so no perf change; still seed-deterministic). `buildTile` gained `width`/`length`/`roll` support. *Test:* inspect your planet — patches vary in size/shape/shade, less grid-like; orbit/inspect/marker/glow unaffected.
+
 ---
 
 ## File Map — what each file does & how risky it is to touch

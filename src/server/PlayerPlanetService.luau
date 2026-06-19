@@ -64,11 +64,16 @@ local function seedForPlayer(player)
 	return id + WorldConfig.WORLD_SEED_SALT
 end
 
--- Lays a flat square tile tangent to the sphere surface (its thin axis points
--- along the surface normal), so tiles hug the planet instead of poking out.
+-- Lays a flat tile tangent to the sphere surface (its thin axis points along the
+-- surface normal), so tiles hug the planet instead of poking out. The generator
+-- gives each tile a jittered size plus optional rectangular `width`/`length` and a
+-- `roll` (rotation in the tangent plane) so the surface reads as organic patches
+-- rather than a uniform square grid.
 local function buildTile(parent, center, radius, tile)
 	local isCloud = tile.kind == "cloud"
 	local size = tile.size
+	local width = tile.width or size   -- face dimensions (default square)
+	local length = tile.length or size
 	local thickness = math.max(0.5, size * 0.16)
 	-- Land sits flush; mountains add `raise` so highlands read as raised terrain.
 	local dist = isCloud and (radius + radius * 0.025)
@@ -78,8 +83,13 @@ local function buildTile(parent, center, radius, tile)
 	-- up hint avoids a degenerate lookAt when a tile sits near the poles
 	local up = (math.abs(tile.dir.Y) < 0.99) and Vector3.yAxis or Vector3.xAxis
 	local part = Instance.new("Part")
-	part.Size = Vector3.new(size, size, thickness)
-	part.CFrame = CFrame.lookAt(pos, pos + tile.dir, up) -- LookVector = normal => thin axis is radial
+	part.Size = Vector3.new(width, length, thickness)
+	-- LookVector = normal => thin (Z) axis is radial; roll spins the face about it.
+	local cf = CFrame.lookAt(pos, pos + tile.dir, up)
+	if tile.roll then
+		cf = cf * CFrame.Angles(0, 0, tile.roll)
+	end
+	part.CFrame = cf
 	part.Anchored = true
 	part.CanCollide = false
 	part.CanQuery = false

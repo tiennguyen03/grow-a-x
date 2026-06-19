@@ -78,7 +78,9 @@ local function setupCharacter(char)
 	-- Hand all physics control to this script; prevent Humanoid Freefall from fighting us
 	humanoid:ChangeState(Enum.HumanoidStateType.Physics)
 	humanoid.StateChanged:Connect(function(_, newState)
-		if newState ~= Enum.HumanoidStateType.Physics then
+		-- Keep us in Physics for flight — but never fight a Dead state, or sun-death
+		-- (and any future death) couldn't complete / respawn.
+		if newState ~= Enum.HumanoidStateType.Physics and newState ~= Enum.HumanoidStateType.Dead then
 			humanoid:ChangeState(Enum.HumanoidStateType.Physics)
 		end
 	end)
@@ -159,6 +161,18 @@ end)
 
 RunService.RenderStepped:Connect(function(dt)
 	if not rootPart or not character or not character.Parent then return end
+
+	-- Sun death: diving into the center star kills you. The kill zone is a small
+	-- margin beyond the star surface (WorldConfig.SUN_KILL_MARGIN); normal flight
+	-- and planet orbit are hundreds of studs away, so this only fires on a real dive.
+	local toStar = (rootPart.Position - WorldConfig.CENTERPIECE_STAR_POS).Magnitude
+	if toStar <= WorldConfig.CENTERPIECE_STAR_RADIUS + WorldConfig.SUN_KILL_MARGIN then
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		if humanoid and humanoid.Health > 0 then
+			humanoid.Health = 0 -- respawns at origin (far from the star)
+		end
+		return
+	end
 
 	-- Inspect mode (Epic 4): while the player is inspecting their planet,
 	-- PlanetInteraction sets this attribute. Rather than freezing the player in

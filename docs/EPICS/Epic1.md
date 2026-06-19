@@ -43,6 +43,8 @@ elsewhere, and a "+1" popup confirms the pickup.
 - `DUST_COLLECT_RADIUS = 4`
 
 > **Update (Epic 7 Sprint 7H):** dust is now a **universe field**, not a sphere around spawn. Placement moved into a shared `src/shared/DustField.luau` helper (`getSpawnPosition(rng)`) used by both `WorldBuilder` (initial) and `PlayerManager` (respawn); it spreads motes across `DUST_FIELD_RADIUS` (1200) centered between spawn and the star, rejecting spots inside the star/planets/spawn. `DUST_SPAWN_RADIUS` is replaced by `DUST_FIELD_RADIUS` + `DUST_MIN_DISTANCE_FROM_STAR_SURFACE/PLANET/SPAWN`; count raised to 200, and the magnet is stronger (`DUST_PULL_SPEED 48`, `DUST_MAGNET_RADIUS 42`).
+>
+> **Polish pass (2026-06-19):** Matter felt too sparse — bumped `DUST_PARTICLE_COUNT` 200→**360** and tightened `DUST_FIELD_RADIUS` 1200→**1050** for higher density near the play space. Tuning-only; no economy change.
 
 > **Design note:** collection is server-authoritative (a distance check, not a
 > Touched event) so fast fliers don't tunnel past tiny motes. The visual bob is
