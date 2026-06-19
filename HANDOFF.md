@@ -58,7 +58,7 @@ rojo serve         # keep running; connect the Rojo Studio plugin to localhost:3
 > - **Denser Matter** (`GameConfig.luau`): `DUST_PARTICLE_COUNT` 200→**360**, `DUST_FIELD_RADIUS` 1200→**1050**. *Test:* fly from spawn — you should hit dust much sooner/more often.
 > - **Planet farther from sun** (`WorldConfig.luau`): `PLANET_ORBIT_BASE_RADIUS` 340→**460**. *Test:* scene less cramped; **return-home (R)**, **inspect (E)**, and the **planet marker** all still work (they derive from the planet's live position, so no hardcoded spots to update).
 > - **Sun death** (`SpaceMovement.client.luau` + `WorldConfig.SUN_KILL_MARGIN`=15): flying within `star radius + margin` (=**215 studs** of the star center) kills you → respawn at origin. Also fixed the humanoid state-forcer to not fight the `Dead` state. *Test:* dive into the star → you die/respawn; normal flight + planet orbit never trigger it.
-> - **More organic terrain** (`PlanetGenerator.luau` + `PlayerPlanetService.buildTile`): land/ice/cloud tiles now get deterministic per-tile **size jitter, rectangular width/length, in-plane roll, and color jitter** (same tile *count*, so no perf change; still seed-deterministic). `buildTile` gained `width`/`length`/`roll` support. *Test:* inspect your planet — patches vary in size/shape/shade, less grid-like; orbit/inspect/marker/glow unaffected.
+> - **Terrain variation experiment — reverted.** Tried per-tile size/shape/roll/color jitter, but the original clean tiled surface looked better, so `PlanetGenerator.generateSurface` + `PlayerPlanetService.buildTile` were restored to their pre-experiment state. No terrain change shipped.
 
 ---
 

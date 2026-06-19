@@ -251,35 +251,16 @@ function PlanetGenerator.generateSurface(descriptor)
 			local dir = dirFromLatLon(lat, lon)
 
 			if math.abs(lat) > POLAR_LAT and descriptor.iceCoverage > 0.04 then
-				local s = ICE_TILE * rng:NextNumber(0.85, 1.16)
-				table.insert(tiles, {
-					dir = dir,
-					size = s,
-					width = s * rng:NextNumber(0.85, 1.18),
-					length = s * rng:NextNumber(0.85, 1.18),
-					roll = rng:NextNumber(0, math.pi),
-					color = shade(Color3.fromRGB(238, 246, 255), rng:NextNumber(0.95, 1.03)),
-					kind = "ice",
-				})
+				table.insert(tiles, { dir = dir, size = ICE_TILE, color = Color3.fromRGB(238, 246, 255), kind = "ice" })
 			else
 				local v = landValue(dir)
 				if v > landThreshold then
 					local landMargin = math.clamp((v - landThreshold) * 2.5, 0, 1)
 					local b = biomeFor(dir, lat, landMargin)
-					-- Per-tile variation (deterministic from the seed stream) so the
-					-- surface reads as organic patches, not a uniform square grid:
-					--  * base size jitter — tiles are no longer all the same size
-					--  * independent width/length — rectangles/strips, not just squares
-					--  * roll — rotate the patch in the tangent plane to break grid lines
-					--  * color jitter — subtle shade variation within a biome adds texture
-					local base = LAND_TILE * rng:NextNumber(0.78, 1.24)
 					table.insert(tiles, {
 						dir = dir,
-						size = base,
-						width = base * rng:NextNumber(0.82, 1.22),
-						length = base * rng:NextNumber(0.82, 1.22),
-						roll = rng:NextNumber(0, math.pi),
-						color = shade(b.color, rng:NextNumber(0.92, 1.07)),
+						size = LAND_TILE,
+						color = b.color,
 						kind = "land",
 						biome = b.biome,
 						material = b.material,
@@ -304,16 +285,7 @@ function PlanetGenerator.generateSurface(descriptor)
 				local dir = dirFromLatLon(lat, lon)
 				local cv = math.noise(dir.X * CLOUD_FREQ + cloudOff.X, dir.Y * CLOUD_FREQ + cloudOff.Y, dir.Z * CLOUD_FREQ + cloudOff.Z)
 				if cv > cloudThreshold then
-					local s = radius * 0.30 * rng:NextNumber(0.8, 1.25)
-					table.insert(tiles, {
-						dir = dir,
-						size = s,
-						width = s * rng:NextNumber(0.85, 1.3),
-						length = s * rng:NextNumber(0.85, 1.3),
-						roll = rng:NextNumber(0, math.pi),
-						color = descriptor.cloudColor,
-						kind = "cloud",
-					})
+					table.insert(tiles, { dir = dir, size = radius * 0.30, color = descriptor.cloudColor, kind = "cloud" })
 				end
 			end
 		end
