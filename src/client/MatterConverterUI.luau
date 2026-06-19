@@ -1,10 +1,11 @@
 -- Matter Core UI (Epic 8 / Sprint 8B, unified with Epic 4 inspect — see
 -- docs/Plans/MatterCore-Inspect-Integration.md).
 --
--- A toggleable status panel — opened by an always-on-screen "Matter Core" button
--- (touch/mobile friendly) or the C key — showing the player's Matter balance, how
--- many Archaea Cells they own, and the production rate. It also shows the current
--- planet context from PlanetInspectContext.
+-- A toggleable status panel — opened with the C key — showing the player's Matter
+-- balance, how many Archaea Cells they own, and the production rate. It also shows
+-- the current planet context from PlanetInspectContext. (The old always-on-screen
+-- "Matter Core" banner button was removed; this panel is obsolete now that all life
+-- interventions live in the planet inspect panel.)
 --
 -- The actual "Create Life" intervention now lives in the PLANET INSPECT panel
 -- (PlanetInteraction), so there's a single, planet-contextual create path instead
@@ -33,32 +34,14 @@ local function buildGui(playerGui)
 	local screenGui = Instance.new("ScreenGui")
 	screenGui.Name = "MatterConverterGui"
 	screenGui.ResetOnSpawn = false
-	-- The ScreenGui stays enabled; the persistent open button below is always
-	-- visible (so mobile players with no keyboard can open the menu by tapping),
-	-- and only the panel itself is shown/hidden.
+	-- The ScreenGui stays enabled; only the (hidden) panel is shown/hidden. The
+	-- old always-on-screen "Matter Core" banner (top-right) was removed — this
+	-- panel is obsolete (all life interventions now live in the planet inspect
+	-- panel) so the banner was just screen clutter. Desktop players can still
+	-- toggle the panel with C.
 	screenGui.Parent = playerGui
 
-	-- Persistent on-screen open button — always visible, top-right (clear of the
-	-- Matter HUD top-left and of the mobile movement controls in the bottom
-	-- corners). Works for touch and mouse; desktop players can also use the C key.
-	local openButton = Instance.new("TextButton")
-	openButton.Name = "OpenButton"
-	openButton.AnchorPoint = Vector2.new(1, 0)
-	openButton.Position = UDim2.new(1, -16, 0, 16)
-	openButton.Size = UDim2.fromOffset(150, 44)
-	openButton.BackgroundColor3 = Color3.fromRGB(70, 120, 90)
-	openButton.BorderSizePixel = 0
-	openButton.Font = Enum.Font.GothamBold
-	openButton.TextSize = 16
-	openButton.TextColor3 = Color3.fromRGB(240, 255, 245)
-	openButton.Text = "Matter Core"
-	openButton.Parent = screenGui
-
-	local openCorner = Instance.new("UICorner")
-	openCorner.CornerRadius = UDim.new(0, 10)
-	openCorner.Parent = openButton
-
-	-- Centered panel (hidden until opened via the button or C).
+	-- Centered panel (hidden until opened via C).
 	local panel = Instance.new("Frame")
 	panel.Name = "Panel"
 	panel.Visible = false
@@ -215,7 +198,6 @@ local function buildGui(playerGui)
 
 	return screenGui, {
 		panel = panel,
-		openButton = openButton,
 		closeButton = closeButton,
 		balance = balance,
 		owned = owned,
@@ -252,16 +234,12 @@ function MatterConverterUI.init()
 		refreshContext()
 	end)
 
-	-- Show/hide the panel. The persistent open button stays on screen either way,
-	-- so touch players always have a way back in.
+	-- Show/hide the panel.
 	local function setOpen(open)
 		refs.panel.Visible = open
 	end
 
-	-- Open button (always visible): tap to toggle. Close button (X): tap to close.
-	refs.openButton.Activated:Connect(function()
-		setOpen(not refs.panel.Visible)
-	end)
+	-- Close button (X): tap to close.
 	refs.closeButton.Activated:Connect(function()
 		setOpen(false)
 	end)
