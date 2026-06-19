@@ -11,9 +11,6 @@ local NORMAL_FOV = 70
 local BOOST_FOV  = 84
 local FOV_SMOOTH = 8
 
--- Return-home safety teleport (placed in front of + above Nova's HomePlanet at (0,0,-180))
-local RETURN_HOME_POS = Vector3.new(0, 20, -90)
-
 -- Soaring / banking feel
 local ORIENT_SMOOTH    = 9              -- how fast the body rotates toward its target pose
 local POSE_MIN_SPEED   = 3              -- below this speed, return to an upright hover
@@ -24,9 +21,43 @@ local MAX_BANK         = math.rad(55)  -- max roll angle while turning
 local RunService        = game:GetService("RunService")
 local UserInputService  = game:GetService("UserInputService")
 local Players           = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local WorldConfig = require(ReplicatedStorage:WaitForChild("WorldConfig"))
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
+
+-- Find the local player's own planet (it orbits, so its position changes).
+local function findLocalPlanet()
+	local env = workspace:FindFirstChild("SpaceEnvironment")
+	local planets = env and env:FindFirstChild("PlayerPlanets")
+	if not planets then
+		return nil
+	end
+	for _, model in planets:GetChildren() do
+		if model:IsA("Model") and model:GetAttribute("OwnerUserId") == player.UserId then
+			return model
+		end
+	end
+	return nil
+end
+
+-- Where R should drop the player: just outside their planet on the side facing
+-- away from the star, so they land looking back at the system. Falls back to a
+-- fixed point if the planet hasn't spawned yet.
+local function returnHomePosition()
+	local planet = findLocalPlanet()
+	local body = planet and planet.PrimaryPart
+	if not body then
+		return WorldConfig.RETURN_HOME_FALLBACK
+	end
+	local planetPos = body.Position
+	local radius = planet:GetAttribute("Radius") or 40
+	local awayFromStar = planetPos - WorldConfig.CENTERPIECE_STAR_POS
+	awayFromStar = (awayFromStar.Magnitude > 1e-3) and awayFromStar.Unit or Vector3.yAxis
+	return planetPos + awayFromStar * (radius + WorldConfig.RETURN_HOME_CLEARANCE) + Vector3.new(0, 20, 0)
+end
 
 local character, rootPart
 local currentVelocity = Vector3.zero
@@ -105,7 +136,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if input.KeyCode == Enum.KeyCode.R and rootPart then
 		rootPart.AssemblyLinearVelocity  = Vector3.zero
 		rootPart.AssemblyAngularVelocity = Vector3.zero
-		rootPart.CFrame = CFrame.new(RETURN_HOME_POS)
+		rootPart.CFrame = CFrame.new(returnHomePosition())
 		currentVelocity = Vector3.zero
 	end
 end)

@@ -4,6 +4,7 @@ local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 local GameConfig = require(ReplicatedStorage.GameConfig)
 local Remotes = require(ReplicatedStorage.Remotes)
+local DustField = require(ReplicatedStorage.DustField)
 
 local DUST_TAG = "DustParticle"
 
@@ -37,15 +38,8 @@ local function addMatter(player, amount)
 	fireUpdate(player, profile)
 end
 
--- A random point within the spawn sphere, used when a collected mote respawns.
-local function randomDustPosition()
-	local dir = rng:NextUnitVector()
-	local dist = rng:NextNumber(60, GameConfig.DUST_SPAWN_RADIUS)
-	return dir * dist
-end
-
 -- Collect a mote for one player: award Matter, hide the mote, then bring it
--- back at a fresh random spot after DUST_RESPAWN_TIME.
+-- back at a fresh universe-wide spot after DUST_RESPAWN_TIME.
 local function collect(player, mote)
 	if mote:GetAttribute("Collected") then return end
 	mote:SetAttribute("Collected", true)
@@ -58,7 +52,7 @@ local function collect(player, mote)
 
 	task.delay(GameConfig.DUST_RESPAWN_TIME, function()
 		if not mote.Parent then return end
-		local pos = randomDustPosition()
+		local pos = DustField.getSpawnPosition(rng)
 		mote.Position = pos
 		mote:SetAttribute("BasePosition", pos)
 		mote:SetAttribute("Pulling", false)

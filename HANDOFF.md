@@ -1,6 +1,6 @@
 # Handoff / Current State
 
-**Last updated:** 2026-06-18 by Tien (+ Claude) — Epic 7 planet-generator foundation in `main`; the Matter rework (currency rename + dust-mote collection) is rebased on top
+**Last updated:** 2026-06-18 by Tien (+ Claude) — Epic 7 planet-generator foundation in `main`; the Matter rework (currency rename + dust-mote collection) is rebased on top. **Sprint 7H (on `tien/integration-matter-planets`):** star-system composition in `WorldConfig`, planets orbit the star, universe-wide dust (`DustField`), planet marker, return-home tracks the orbit.
 **Active branches:** Tien → `feature/7a-planet-generator-foundation` · Nova → his own `nova/*` branch · current Matter work → `matter-dust-collection` (rebased on latest `main`, **not yet merged**) · all merge to `main` via PR.
 
 This is the "where are we right now" doc. Read this first, then `CLAUDE.md` for architecture and `docs/EPICS/` for detail.
@@ -68,7 +68,9 @@ rojo serve         # keep running; connect the Rojo Studio plugin to localhost:3
 | `src/shared/WorldConfig.luau` | World/home-planet constants (Epic 7) | ⚠️ **Shared** — used by WorldBuilder + future planet scripts; append, don't reorganize |
 | `src/shared/PlanetArchetypes.luau` | Planet archetype defs + trait ranges (Epic 7) | ✅ Safe — owned by planet-generation work |
 | `src/shared/PlanetGenerator.luau` | Pure deterministic descriptor + surface/biome generator (Epic 7) | ✅ Safe — pure data, no Instances; don't reorder its rng calls |
-| `src/server/PlayerPlanetService.luau` | Builds one per-player planet on join + spins it server-side (Epic 7) | ✅ Safe — owns per-player planets; rotation lives here (authoritative, no client spin) |
+| `src/server/PlayerPlanetService.luau` | Builds one per-player planet on join; server-side **orbit around the star + own-axis spin** (Epic 7) | ✅ Safe — owns per-player planets; orbit/spin lives here (authoritative, no client motion) |
+| `src/shared/DustField.luau` | Universe-wide dust spawn helper (`getSpawnPosition`) used by WorldBuilder + PlayerManager (Epic 7/1) | ✅ Safe — server-only helper; pure-ish (reads planet positions to avoid them) |
+| `src/client/PlanetMarker.client.luau` | Screen-space marker pointing to the local player's orbiting planet (Epic 7) | ✅ Safe — self-contained LocalScript |
 
 **Rule of thumb:** the ✅ files are owned by one feature and safe to work in solo. The ⚠️ files are coordination points — tell each other before restructuring them.
 

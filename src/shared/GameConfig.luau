@@ -1,9 +1,15 @@
 return {
 	-- Dust collection (Matter is earned by flying through floating dust,
-	-- not generated passively).
-	DUST_PARTICLE_COUNT = 220,  -- how many dust motes float in the void (denser field)
-	DUST_SPAWN_RADIUS   = 340,  -- studs; motes scatter within this sphere (tighter = denser)
+	-- not generated passively). Dust is spread across a large UNIVERSE FIELD
+	-- centered on the star system (see DustField.luau), not clustered on a planet.
+	DUST_PARTICLE_COUNT = 200,  -- how many dust motes fill the void
+	DUST_FIELD_RADIUS   = 1200, -- studs; radius of the spherical field around the system center
 	DUST_RESPAWN_TIME   = 4,    -- seconds before a collected mote returns
+
+	-- Spawn keep-out distances so dust never lands inside the star/planets/spawn.
+	DUST_MIN_DISTANCE_FROM_STAR_SURFACE = 80, -- added to star radius
+	DUST_MIN_DISTANCE_FROM_PLANET       = 80, -- added to each planet's radius
+	DUST_MIN_DISTANCE_FROM_SPAWN        = 60, -- keep the immediate spawn clear
 
 	-- Collection magnet: motes within DUST_MAGNET_RADIUS are pulled toward the
 	-- player and collected once they reach DUST_COLLECT_RADIUS.

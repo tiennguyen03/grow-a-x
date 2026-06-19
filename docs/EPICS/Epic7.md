@@ -2,7 +2,7 @@
 
 > Slotted as Epic 7 to avoid renumbering the existing tracker (Epic 2 stays "Planet Upgrade System"). Conceptually this is the **planet foundation** — upgrades/interventions and era visuals will act on planets generated here.
 
-**Status:** ✅ Sprints 7A–7G complete. **Refactor (per-player + noise continents):** planets are built per player by `PlayerPlanetService` on join (seed = `UserId + WORLD_SEED_SALT`), under `workspace.SpaceEnvironment.PlayerPlanets`. Land is generated from coherent `math.noise` over the sphere (connected continents/islands) instead of clustered blobs; `WorldBuilder` no longer builds a planet (backdrop only); atmosphere is a thin shell (scale 1.04–1.08). See `PlayerPlanetService.luau` + `PlanetGenerator.generateSurface`. **Sprint 7G** added climate-based biomes (temperate/desert/mountain/tundra), moved planet rotation to the server (fixing the snap-back bug), and rebalanced the planet/star composition.
+**Status:** ✅ Sprints 7A–7H complete. **Refactor (per-player + noise continents):** planets are built per player by `PlayerPlanetService` on join (seed = `UserId + WORLD_SEED_SALT`), under `workspace.SpaceEnvironment.PlayerPlanets`. Land is generated from coherent `math.noise` over the sphere (connected continents/islands) instead of clustered blobs; `WorldBuilder` no longer builds a planet (backdrop only); atmosphere is a thin shell (scale 1.04–1.08). See `PlayerPlanetService.luau` + `PlanetGenerator.generateSurface`. **Sprint 7G** added climate-based biomes (temperate/desert/mountain/tundra), moved planet rotation to the server (fixing the snap-back bug), and rebalanced the planet/star composition.
 
 ---
 
@@ -135,9 +135,20 @@ Different seeds already produce visibly different planets — the body color (`l
 
 **Determinism note:** the biome fields add three more `offset()` calls inside `generateSurface`'s own rng stream (continent/detail/cloud/elevation/moisture). This is a separate stream from `generatePlanetDescriptor`, so descriptor rolls are untouched; same seed → same biome map.
 
+### Sprint 7H: Star system — orbit, marker, universe dust & composition ✅ COMPLETE
+**Files:** `WorldConfig.luau` (composition source of truth), `PlayerPlanetService.luau`, `WorldBuilder.luau`, `PlayerManager.luau`, new `src/shared/DustField.luau`, new `src/client/PlanetMarker.client.luau`, `SpaceMovement.client.luau`.
+
+- [x] **7H-01 Composition centralized in `WorldConfig`.** Star pos/radius, planet-orbit constants, return-home clearance, and spawn pos now live in `WorldConfig` so the star, the planets that orbit it, and the dust field share one geometry. Star moved to `(0,0,-900)` on the scene axis; radius `200` (dominant). `WorldBuilder` reads these instead of local constants (halo scale 1.35, light range 2600 / brightness 3.5). Replaces the old `HOME_PLANET_POS` slot placement.
+- [x] **7H-02 Planets orbit the star (deterministic, no physics).** `PlayerPlanetService` advances TWO independent accumulators per planet on `Heartbeat`: `orbitAngle` (position around the star) and `spinAngle` (own-axis spin). One `PivotTo(CFrame.new(orbitPos) * Angles(0, spinAngle, 0))` carries body/atmosphere/tiles/clouds/marker rigidly. Orbit params (radius±70, height±40, start angle) come from a separate rng stream `Random.new(seed + 104729)` — same player → same planet AND same orbit; different UserIds spread around the star so planets never stack. Period ~15 min (slow/celestial).
+- [x] **7H-03 Planet marker.** `PlanetMarker.client.luau` shows a screen-space marker for the LOCAL player's planet only (matched by `OwnerUserId`), tracking it live as it orbits: parked over the planet on screen, clamped to a screen-edge arrow when off screen/behind, hidden within 150 studs or before the planet spawns. Single `ScreenGui`, `ResetOnSpawn = false` (no respawn dupes).
+- [x] **7H-04 Universe-wide dust** (Epic 1 tie-in). New `DustField.getSpawnPosition(rng)` spreads motes across a `DUST_FIELD_RADIUS` sphere centered between spawn and the star, rejecting positions inside the star/planets/spawn. Used by BOTH `WorldBuilder` (initial) and `PlayerManager` (respawn), so collected Matter returns somewhere new in the void.
+- [x] **7H-05 Return-home tracks the orbit.** `SpaceMovement` R now teleports just outside the local planet's *current* position on the far side from the star (falls back to a fixed point if the planet's missing), so it works as the planet moves.
+
+**Validated (runtime, edit session):** sample seed → planet clears the star surface by ~120 studs on its orbit; 200 sampled dust positions all land outside the star (min 302 vs allowed 280); `rojo build` clean; no errors.
+
 ---
 
-**Epic 7 status: all sprints 7A–7G complete.** Next recommended work is **Epic 0 Sprint 0E** (planet approach + inspect prompt), which targets these generated planets.
+**Epic 7 status: all sprints 7A–7H complete.** Next recommended work is **Epic 0 Sprint 0E** (planet approach + inspect prompt), which targets these generated planets.
 
 ---
 
