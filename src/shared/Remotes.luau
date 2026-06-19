@@ -44,4 +44,13 @@ return {
 	-- the path and became a Eukaryotic Cell — payload { cellId } (drives the celebration).
 	PurchaseOrganelle = get("PurchaseOrganelle", "RemoteEvent"),
 	CellEvolved       = get("CellEvolved", "RemoteEvent"),
+
+	-- Eukaryotic Cascade (Epic 3, Tier 1). Fired once, the first time a player ever
+	-- completes a Eukaryotic Cell: the server instantly evolves all the player's other
+	-- cells too and unlocks a permanent Dust Multiplier. Payload
+	-- { triggerCellId, cellIds = { …others… }, count, dustMultiplier } — drives the
+	-- "Eukaryotic Evolution Cascade!" celebration (bursts across every cell) and the
+	-- "Dust Value ×N" announcement. The authoritative state already arrived via
+	-- ConverterUpdate (which now also carries dustMultiplier); this is feedback only.
+	CascadeTriggered = get("CascadeTriggered", "RemoteEvent"),
 }

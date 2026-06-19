@@ -283,6 +283,49 @@ local function playToast(text: string)
 	end)
 end
 
+-- Bigger two-line announcement for the one-time Eukaryotic Cascade: a bold title
+-- and a gold subtitle (cell count + new Dust Value). Rises and fades like playToast.
+local function playCascadeToast(title: string, subtitle: string)
+	local holder = Instance.new("Frame")
+	holder.AnchorPoint = Vector2.new(0.5, 0.5)
+	holder.Position = UDim2.fromScale(0.5, 0.34)
+	holder.Size = UDim2.fromOffset(560, 76)
+	holder.BackgroundTransparency = 1
+	holder.Parent = toastGui
+
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, 0, 0, 44)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextSize = 32
+	titleLabel.TextColor3 = EUKARYOTIC_COLOR
+	titleLabel.TextStrokeColor3 = Color3.fromRGB(10, 30, 18)
+	titleLabel.TextStrokeTransparency = 0.15
+	titleLabel.Text = title
+	titleLabel.Parent = holder
+
+	local subLabel = Instance.new("TextLabel")
+	subLabel.Position = UDim2.fromOffset(0, 44)
+	subLabel.Size = UDim2.new(1, 0, 0, 26)
+	subLabel.BackgroundTransparency = 1
+	subLabel.Font = Enum.Font.GothamSemibold
+	subLabel.TextSize = 18
+	subLabel.TextColor3 = Color3.fromRGB(255, 220, 140)
+	subLabel.TextStrokeColor3 = Color3.fromRGB(30, 24, 8)
+	subLabel.TextStrokeTransparency = 0.3
+	subLabel.Text = subtitle
+	subLabel.Parent = holder
+
+	local riseInfo = TweenInfo.new(3.0, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	TweenService:Create(holder, riseInfo, { Position = UDim2.fromScale(0.5, 0.24) }):Play()
+	for _, lbl in { titleLabel, subLabel } do
+		TweenService:Create(lbl, riseInfo, { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+	end
+	task.delay(3.0, function()
+		holder:Destroy()
+	end)
+end
+
 -- Green pulse + particle burst on a specific cell's body.
 local function playBurst(model: Model)
 	if not (model and model.PrimaryPart) then
@@ -362,5 +405,37 @@ task.spawn(function()
 		task.delay(0.1, function()
 			playBurst(cellModels[data and data.cellId])
 		end)
+	end)
+
+	-- The one-time Eukaryotic Cascade: every cell turns Eukaryotic at once. Announce
+	-- it as a single big moment and burst across every affected cell (the trigger
+	-- cell plus all the cells the cascade swept up).
+	Remotes.CascadeTriggered.OnClientEvent:Connect(function(data)
+		local count = data and data.count or 0
+		local mult = data and data.dustMultiplier or 1
+		local title = (count > 0) and "Eukaryotic Evolution Cascade!" or "First Eukaryotic Cell!"
+		local subtitle = (count > 0)
+			and string.format("%d cell%s evolved   ·   Dust Value ×%d", count, count == 1 and "" or "s", mult)
+			or string.format("Dust Value ×%d", mult)
+		playCascadeToast(title, subtitle)
+
+		-- Burst on every cell that just became Eukaryotic. Models may rebuild this same
+		-- frame from ConverterUpdate, so fire now and again shortly after.
+		local ids = {}
+		if data then
+			if data.triggerCellId then
+				table.insert(ids, data.triggerCellId)
+			end
+			for _, id in ipairs(data.cellIds or {}) do
+				table.insert(ids, id)
+			end
+		end
+		local function burstAll()
+			for _, id in ipairs(ids) do
+				playBurst(cellModels[id])
+			end
+		end
+		burstAll()
+		task.delay(0.12, burstAll)
 	end)
 end)

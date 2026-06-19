@@ -2,7 +2,7 @@
 
 > **Formerly Epic 8** (file was `Epic8.md`) — renumbered to close the old `0,1,7,8` gap. Sprint IDs keep their original `8A`–`8H` labels; only the epic number changed.
 
-**Status:** 🔶 In Progress — Tier 1 organelle path built (Sprint 8C), pending in-Studio playtest  
+**Status:** 🔶 In Progress — Tier 1 organelle path (8C) + Eukaryotic Cascade & Dust Multiplier (8D) built, pending in-Studio playtest  
 **Dependency:** Epic 1 (Matter Loop) must be complete (Sprint 1A ✅, Sprint 1B in progress)  
 **Estimated Sprints:** 8 sprints (8A–8H)  
 **Core Designer:** Nova (Matter / economy lane)
@@ -158,3 +158,32 @@ local EvolutionTiers = {
 - `CellVisuals` renders each cell as a small glowing body orbiting the planet, adding a cosmetic layer per organelle; on `CellEvolved` it plays a green pulse + particle burst and floats the "Eukaryotic Cell Unlocked!" notification (capped at `MAX_RENDERED_CELLS` drawn cells for performance — the economy still counts them all).
 
 **Not in scope for 8C:** persistence (cells reset on rejoin — waits on the DataStore epic), Tier 2 (Bacteria) and beyond, and advancing the *planet* past Archaea when a cell becomes Eukaryotic (the planet-stage ladder is a later sprint). The Matter Core panel (`MatterConverterUI`) is left in place but vestigial.
+
+---
+
+### Sprint 8D: Eukaryotic Cascade + Dust Multiplier
+
+**Goal:** Make the first Eukaryotic evolution a watershed moment with two permanent, tightly-linked rewards — an instant **Eukaryotic Cascade** (every cell evolves at once and all future cells are born Eukaryotic) and a permanent **Dust Multiplier** that raises the Matter value of every dust mote. Both fire together the first time a player completes a Eukaryotic Cell.
+
+**Owner/files (Nova):**
+- `src/server/PlayerManager.luau` — cascade + dust-multiplier logic; new profile fields; dust award now scales.
+- `src/shared/OrganelleData.luau` (⚠️ shared — appended) — `TOTAL_PRODUCTION_BONUS` (sum of organelle bonuses ≈ 3.5) for one-shot full evolution.
+- `src/shared/Remotes.luau` (⚠️ shared — appended) — `CascadeTriggered` (S→C).
+- `src/client/CellVisuals.client.luau` — cascade celebration (multi-cell bursts + big two-line toast).
+- `src/client/MatterConverterUI.luau` — "Dust Value: ×N" indicator.
+- `src/client/CellInterventionUI.luau` (⚠️ **Nova/progression file** — added a "Dust Value ×N" readout to the summary line).
+
+**Eukaryotic Cascade (one-time, per player):**
+- Triggered when a player completes their **first** Eukaryotic Cell (buys the Nucleus on any cell). The server sets `profile.cascadeTriggered = true`, then loops every **other** cell and calls `makeEukaryotic` on it (all organelles owned, stage = Eukaryotic, full production) in one shot.
+- From then on, `onCreateArchaea` spawns each new cell **already Eukaryotic** (same creation cost — the cascade is the reward).
+- Fires `CascadeTriggered { triggerCellId, cellIds (the others), count, dustMultiplier }`. `CellVisuals` plays a green pulse + particle burst on every affected cell and shows a big two-line **"Eukaryotic Evolution Cascade!"** toast listing how many cells evolved. The planet's `EvolutionStage` attribute flips to `"Eukaryotic"`.
+- If the player had only the one cell, the cascade still fires (marking the milestone + dust multiplier) and the toast reads **"First Eukaryotic Cell!"**.
+
+**Dust Multiplier (permanent, grows per tier):**
+- Formula: `dustMultiplier = floor((tier + 1)^2 / 2)`, where `tier` is the life-form tier just evolved into for the first time. **Tier 1 (Eukaryotic) → ×2**, tier 2 → ×4, tier 3 → ×8, tier 4 → ×12. Monotonic — a higher tier never lowers it.
+- `PlayerManager.collect` now awards `profile.dustMultiplier` Matter per mote instead of a hardcoded `1`.
+- Exposed via `ConverterUpdate.dustMultiplier`; shown as **"Dust Value: ×N"** in the Matter Core panel and the inspect panel's summary line. Only Tier 1 exists today; `applyTierEvolution(profile, tier)` + `dustMultiplierForTier(tier)` are ready for higher tiers.
+
+**New profile fields:** `cascadeTriggered` (bool), `dustMultiplier` (number, starts 1), `maxTierEvolved` (number, starts 0).
+
+**Not in scope for 8D:** persistence (all three new fields reset on rejoin — waits on the DataStore epic), Tier 2+ evolutions (the formula is wired but no tier-2 life form exists yet), and removing the vestigial Matter Core panel.

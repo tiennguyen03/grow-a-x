@@ -29,6 +29,7 @@ local MatterConverterUI = {}
 -- Cached local view of the server-owned numbers, refreshed by the remotes.
 local localMatter = 0
 local localArchaea = 0
+local localDustMultiplier = 1 -- Matter awarded per dust mote (raised by tier evolutions)
 
 local function buildGui(playerGui)
 	local screenGui = Instance.new("ScreenGui")
@@ -105,6 +106,21 @@ local function buildGui(playerGui)
 	balance.TextColor3 = Color3.fromRGB(255, 230, 150)
 	balance.Text = "Matter: 0"
 	balance.Parent = panel
+
+	-- Dust Value: how much Matter each collected dust mote is worth right now (the
+	-- player's permanent Dust Multiplier). Sits at the right of the balance row.
+	local dustValue = Instance.new("TextLabel")
+	dustValue.Name = "DustValue"
+	dustValue.AnchorPoint = Vector2.new(1, 0)
+	dustValue.Position = UDim2.new(1, 0, 0, 30)
+	dustValue.Size = UDim2.fromOffset(150, 22)
+	dustValue.BackgroundTransparency = 1
+	dustValue.TextXAlignment = Enum.TextXAlignment.Right
+	dustValue.Font = Enum.Font.GothamBold
+	dustValue.TextSize = 16
+	dustValue.TextColor3 = Color3.fromRGB(140, 230, 255)
+	dustValue.Text = "Dust Value: ×1"
+	dustValue.Parent = panel
 
 	-- Recipe card: Archaea Cell.
 	local card = Instance.new("Frame")
@@ -200,6 +216,7 @@ local function buildGui(playerGui)
 		panel = panel,
 		closeButton = closeButton,
 		balance = balance,
+		dustValue = dustValue,
 		owned = owned,
 		context = context,
 	}
@@ -214,6 +231,7 @@ function MatterConverterUI.init()
 	local function refresh()
 		refs.balance.Text = string.format("Matter: %d", localMatter)
 		refs.owned.Text = string.format("Owned: %d", localArchaea)
+		refs.dustValue.Text = string.format("Dust Value: ×%d", localDustMultiplier)
 	end
 	refresh()
 
@@ -265,6 +283,7 @@ function MatterConverterUI.init()
 
 		Remotes.ConverterUpdate.OnClientEvent:Connect(function(data)
 			localArchaea = math.max(0, math.floor(data.archaeaCount))
+			localDustMultiplier = math.max(1, math.floor(data.dustMultiplier or 1))
 			refresh()
 		end)
 	end)

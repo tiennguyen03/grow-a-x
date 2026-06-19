@@ -38,6 +38,7 @@ local CONTENT_HEIGHT = 184 -- fixed height of the swappable list/detail area
 local localMatter = 0
 local cells = {}           -- array of { id, stage, purchased = {id=true}, purchasedCount, production }
 local totalProduction = 0
+local localDustMultiplier = 1 -- Matter awarded per dust mote (raised by tier evolutions)
 local selectedCellId: number? = nil  -- nil = show the list; set = show that cell's detail
 local remotesRef = nil
 
@@ -370,8 +371,12 @@ function CellInterventionUI.render()
 		return
 	end
 
-	-- Header line: summed production.
-	refs.summary.Text = string.format("Production  %s", fmtRate(totalProduction))
+	-- Header line: summed production + the current dust value (Matter per mote).
+	refs.summary.Text = string.format(
+		"Production  %s     Dust Value  ×%d",
+		fmtRate(totalProduction),
+		localDustMultiplier
+	)
 
 	-- Create button affordability.
 	local createCost = GameConfig.MATTER_CONVERTER_COST_ARCHAEA
@@ -513,6 +518,7 @@ function CellInterventionUI.mount(parent: Instance, opts)
 		Remotes.ConverterUpdate.OnClientEvent:Connect(function(data)
 			cells = data.cells or {}
 			totalProduction = data.totalProduction or 0
+			localDustMultiplier = math.max(1, math.floor(data.dustMultiplier or 1))
 			CellInterventionUI.render()
 		end)
 
