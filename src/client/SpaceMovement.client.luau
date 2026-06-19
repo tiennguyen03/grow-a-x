@@ -83,11 +83,26 @@ local function setupCharacter(char)
 		end
 	end)
 
-	-- Mute the default footstep sound — we're floating, not walking
-	local running = rootPart:FindFirstChild("Running")
-	if running and running:IsA("Sound") then
-		running.Volume = 0
+	-- Mute the default locomotion sounds — we float through space, not walk.
+	-- A one-time Volume = 0 doesn't stick: the engine's RbxCharacterSounds may
+	-- create the "Running" sound AFTER this runs, and it rewrites that sound's
+	-- Volume every frame from our AssemblyLinearVelocity (so it thinks we're
+	-- running). So we catch the sound whenever it appears and re-zero its volume
+	-- whenever the engine raises it.
+	local function muteSound(sound)
+		if not sound:IsA("Sound") then return end
+		if sound.Name ~= "Running" and sound.Name ~= "Climbing" then return end
+		sound.Volume = 0
+		sound:GetPropertyChangedSignal("Volume"):Connect(function()
+			if sound.Volume > 0 then
+				sound.Volume = 0
+			end
+		end)
 	end
+	for _, child in rootPart:GetChildren() do
+		muteSound(child)
+	end
+	rootPart.ChildAdded:Connect(muteSound)
 
 	-- Boost VFX: a particle trail that only emits while boosting.
 	-- Parented to the new rootPart, so the old one is cleaned up with the old character.
