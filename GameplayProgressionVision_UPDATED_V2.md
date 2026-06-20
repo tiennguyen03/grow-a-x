@@ -13,7 +13,7 @@ Relationships are saved.
 Offline time creates summaries and choices, not punishment.
 ```
 
-**Major update in this version:** This version expands the vague early-game ideas like `Guide Intelligence` into specific, casual-friendly gameplay systems: Sentience Progress, evolutionary pressures, planet-level projects, limited choice slots, traits, events, and a progression chain that keeps the game strategic without hexes, workers, or heavy 4X micromanagement.
+**Major update in this version:** This version expands the vague early-game ideas like `Guide Intelligence` into specific, casual-friendly gameplay systems: Sentience Progress, evolutionary pressures, planet-level projects, limited choice slots, traits, events, and a progression chain that keeps the game strategic without hexes, workers, or heavy 4X micromanagement. It also adds the newer direction: Matter remains the only spendable currency, Origin Worlds gain functional strengths/weaknesses and trade specialties, and the Interstellar Marketplace becomes the long-term economy layer that makes player-to-player trade, contracts, protection, probes, and war meaningful.
 
 ---
 
@@ -3597,3 +3597,1587 @@ My civilization remembers those choices.
 ```
 
 That is the bridge between Roblox playability and Civ/Stellaris/Three-Body-inspired depth.
+
+---
+
+# 49. Updated Economy Direction — Matter As The Only Currency
+
+After further discussion, the game should **not** add Civ-style visible currencies like Gold, Science, Culture, Faith, Industry, and Energy yet.
+
+That would increase cognitive load too early.
+
+The cleaner direction is:
+
+```text
+Matter is the only spendable currency.
+Planet stats are conditions.
+Traits are consequences.
+Projects are unlocks.
+Relationships are persistent state.
+```
+
+The player-facing economy should stay simple:
+
+```text
+Collect Matter.
+Spend Matter.
+Watch the planet change.
+Unlock new options.
+```
+
+But Matter should have many strategic uses so it never becomes shallow.
+
+## 49.1 What Matter Represents
+
+Matter is not just money.
+
+Matter is:
+
+```text
+cosmic fuel
+biological catalyst
+construction material
+trade currency
+repair resource
+probe fuel
+war resource
+marketplace currency
+late-game cosmic material
+```
+
+It is the resource that powers almost every major action in the game.
+
+## 49.2 Why Matter Should Stay Central
+
+The current core loop is already built around flying through space and collecting Matter. That is tactile and Roblox-friendly.
+
+Instead of replacing that loop with many resources, the game should make Matter more valuable over time.
+
+Early game:
+
+```text
+Matter creates life.
+```
+
+Mid game:
+
+```text
+Matter builds projects and grows civilization.
+```
+
+Late game:
+
+```text
+Matter powers trade, protection, probes, war, starports, and cosmic technology.
+```
+
+The player should always care about Matter because it always has a use.
+
+## 49.3 Visible Currency vs Hidden Conditions
+
+Only Matter should behave like a currency.
+
+Other values can exist, but they should not all be spendable resources.
+
+Use them as conditions or strategic pressures:
+
+```text
+Ecosystem Maturity
+Stability
+Mutation Pressure
+Biodiversity
+Sentience Progress
+Tendencies
+Signal
+Defense
+Trust
+Planet Resource Traits
+```
+
+The player does not spend these like money. They shape what happens.
+
+Example:
+
+```text
+Accelerate Mutation
+Cost: 25 Matter
+Effect: +35 Ecosystem Maturity, +20 Mutation Pressure, -10 Stability
+```
+
+That is still simple because the only payment is Matter, but the consequences are deeper.
+
+---
+
+# 50. Matter Use Categories
+
+Matter should become the universal action fuel across the whole game.
+
+## 50.1 Matter For Life
+
+Used during early biology:
+
+```text
+Create Cell
+Nourish Microbes
+Stabilize Oceans
+Accelerate Mutation
+Cellular Cooperation
+Colony Formation
+Tissue Differentiation
+Primitive Organisms
+Encourage Biodiversity
+Nervous Systems
+Sensory Organs
+Advanced Behavior
+```
+
+These actions grow life and set up future civilization identity.
+
+## 50.2 Matter For Planet Conditions
+
+Used to change environmental safety, stability, and biological risk:
+
+```text
+Stabilize Oceans
+Cool Atmosphere
+Seed Nutrients
+Repair Ecosystem
+Reduce Mutation Pressure
+Protect Fragile Life
+Balance Atmosphere
+Recover From Extinction Event
+```
+
+These are not just upgrades. They are planet-scale interventions.
+
+## 50.3 Matter For Civilization Direction
+
+Once life becomes intelligent, Matter powers interventions that guide society:
+
+```text
+Encourage Cooperation
+Inspire Curiosity
+Promote Memory
+Guide Agriculture
+Promote Unity
+Support Toolmaking
+Encourage Exploration
+Fund First Scholars
+```
+
+These create tendencies:
+
+```text
+Curious
+Cooperative
+Adaptive
+Competitive
+Industrial
+Merchant
+Diplomatic
+Militarist
+Secretive
+```
+
+## 50.4 Matter For Projects
+
+Instead of adding an Industry currency immediately, projects should cost Matter and have requirements/timers.
+
+Examples:
+
+```text
+Observatory Network
+Market Network
+Unity Monuments
+Industrial Base
+Telescope Array
+Radio Array
+Starport
+Defense Grid
+Signal Dampeners
+Probe Launcher
+```
+
+A project can require certain stages or conditions, but Matter is still the cost.
+
+Example:
+
+```text
+Starport
+Cost: 400 Matter
+Requirement: Space Age + Stability 60%+
+Effect: unlocks trade routes
+Consequence: Signal +20
+```
+
+## 50.5 Matter For Multiplayer
+
+Matter should become the backbone of player-to-player interaction:
+
+```text
+Send Gift
+Open Trade Route
+Pay Marketplace Tax
+Launch Probe
+Repair Trade Route
+Fund Embassy
+Buy Protection
+Hire Construction Support
+Buy Probe Data
+Blockade Route
+Repair War Damage
+```
+
+This makes Matter important far beyond the early upgrade loop.
+
+## 50.6 Matter For War And Defense
+
+Conflict should also be Matter-powered:
+
+```text
+Deploy Defense Grid
+Intercept Probe
+Repair Satellites
+Launch Drone Swarm
+Blockade Trade Route
+Counter-Scan
+Rebuild Damaged Starport
+Reinforce Shield
+```
+
+Matter becomes the thing wars disrupt, alliances protect, and markets tax.
+
+---
+
+# 51. Planet Identity And Resource Specialization
+
+The current procedural planets are already visually unique. The next step is to make them **functionally unique**.
+
+Core rule:
+
+```text
+Every Origin World is unique.
+Every world has strengths, weaknesses, and resource tendencies.
+No world is perfect alone.
+Trade matters because planets need each other.
+```
+
+This is one of the biggest missing economy foundations.
+
+## 51.1 Planet Identity Components
+
+When a player starts, their Origin World should eventually have:
+
+```text
+Archetype
+Strengths
+Weaknesses
+Resource Traits
+Trade Specialties
+Development Bias
+Environmental Risks
+```
+
+These should come from the planet's deterministic seed and archetype, so the world feels personal and permanent.
+
+## 51.2 Soft Biases, Not Hard Locks
+
+A planet should make certain paths easier, but never fully lock the player out of a playstyle.
+
+Bad:
+
+```text
+Ocean Worlds cannot build weapons.
+```
+
+Good:
+
+```text
+Ocean Worlds can become militarist, but mineral-rich worlds build defense projects more efficiently.
+```
+
+The planet identity should create flavor and trade demand, not force a destiny.
+
+## 51.3 Example Planet Identities
+
+### Ocean World
+
+Strengths:
+
+```text
++ Life growth
++ Stability
++ Biological development
++ Diplomacy / peaceful trade potential
+```
+
+Weaknesses:
+
+```text
+- Slower heavy industry
+- Lower metal access
+- Vulnerable to ocean instability events
+```
+
+Resource traits:
+
+```text
+Bio-Dense Oceans
+Stable Climate
+Low Metal Deposits
+```
+
+Trade specialty:
+
+```text
+Biosphere Aid / Stability Support
+```
+
+Natural future role:
+
+```text
+biological support, diplomacy, trade reliability, peaceful development
+```
+
+### Mineral-Rich Rocky World
+
+Strengths:
+
+```text
++ Construction speed
++ Defense infrastructure
++ Industrial development
++ War/project support
+```
+
+Weaknesses:
+
+```text
+- Lower early Stability
+- Harder biological development
+- Higher pollution / Signal later
+```
+
+Resource traits:
+
+```text
+Dense Metal Veins
+Rugged Crust
+Thin Biosphere
+```
+
+Trade specialty:
+
+```text
+Construction Support / Defense Manufacturing
+```
+
+Natural future role:
+
+```text
+industrial supplier, military contractor, project accelerator
+```
+
+### Volcanic Young World
+
+Strengths:
+
+```text
++ Mutation Pressure
++ Energy potential
++ Fast adaptation
++ Risky evolution paths
+```
+
+Weaknesses:
+
+```text
+- Low Stability
+- More disasters
+- Harder diplomacy if unstable
+```
+
+Resource traits:
+
+```text
+Thermal Core
+Volcanic Vents
+Unstable Crust
+```
+
+Trade specialty:
+
+```text
+Thermal Energy Boost / Rare Volcanic Compounds
+```
+
+Natural future role:
+
+```text
+high-risk powerhouse, adaptation specialist, energy exporter
+```
+
+### Temperate Balanced World
+
+Strengths:
+
+```text
++ Flexible development
++ Moderate Stability
++ Balanced life and civilization growth
+```
+
+Weaknesses:
+
+```text
+- No extreme specialty
+- Less valuable rare exports
+```
+
+Resource traits:
+
+```text
+Balanced Climate
+Moderate Minerals
+Mixed Biomes
+```
+
+Trade specialty:
+
+```text
+Reliable Trade Hub / General Support
+```
+
+Natural future role:
+
+```text
+diplomatic middle path, flexible build, beginner-friendly civilization
+```
+
+### Crystal / Exotic World
+
+Usually rare or later-game, not common starter.
+
+Strengths:
+
+```text
++ Scanning
++ Probe data
++ Rare market goods
++ Advanced tech potential
+```
+
+Weaknesses:
+
+```text
+- Fragile ecosystem
+- High Signal
+- Harder Stability
+```
+
+Resource traits:
+
+```text
+Crystal Deposits
+Signal-Reactive Minerals
+Fragile Biosphere
+```
+
+Trade specialty:
+
+```text
+Deep Scan Data / Rare Artifacts
+```
+
+Natural future role:
+
+```text
+scientific broker, information seller, high-value but vulnerable civilization
+```
+
+## 51.4 Balance Rule For Starting Worlds
+
+Every starting world should be interesting and fair.
+
+Use a point-budget style design:
+
+```text
+2 strengths
+1–2 weaknesses
+2–3 resource traits
+1 future trade specialty
+```
+
+No player should roll a perfect planet or a useless planet.
+
+Every world should make the player think:
+
+```text
+My world has a role.
+```
+
+## 51.5 Why Planet Identity Makes Trade Work
+
+Trade only matters if players are different.
+
+Example:
+
+```text
+Ocean World has high Stability but weak Industry.
+Mineral World has high Industry but weak Stability.
+```
+
+They can trade:
+
+```text
+Ocean player buys Construction Support.
+Mineral player buys Stability Aid.
+Both benefit.
+```
+
+Matter stays the currency, but planet identity creates the reason to spend it.
+
+---
+
+# 52. Interstellar Marketplace
+
+The long-term economy should revolve around an **Interstellar Marketplace**.
+
+Matter should be the market currency.
+
+The marketplace should not just be players swapping Matter for Matter. That would be boring.
+
+Players should use Matter to buy and sell **services, contracts, support, information, protection, and rare opportunities**.
+
+## 52.1 Marketplace Thesis
+
+```text
+Matter is the currency.
+Planet identity creates the product.
+Trust controls risk.
+Signal controls visibility.
+War disrupts the economy.
+```
+
+## 52.2 Marketplace Unlock Chain
+
+The marketplace should not unlock immediately.
+
+Recommended progression:
+
+```text
+Visible Worlds
+→ Telescope Scan
+→ Signal Contact
+→ Probe Missions
+→ Starport Trade
+→ Interstellar Marketplace
+```
+
+Required milestone:
+
+```text
+Starport built
+At least one contacted civilization
+Space Age reached
+```
+
+## 52.3 What Players Can Sell
+
+### Matter Trade Contracts
+
+Simple loan or investment deals:
+
+```text
+Matter Loan
+Seller lends 500 Matter now.
+Buyer repays 650 Matter over 3 Cosmic Cycles.
+Failure damages Trust.
+```
+
+### Protection Contracts
+
+Militarist/defensive worlds can sell safety:
+
+```text
+Protection Pact
+Cost: 300 Matter
+Duration: 24 hours
+Effect: seller's Defense Grid helps intercept probes/raids against buyer.
+```
+
+### Probe Data
+
+Scientific/scanner worlds can sell information:
+
+```text
+Probe Data Package
+Cost: 120 Matter
+Reveals target stage, Signal, threat level, or trade compatibility.
+```
+
+### Trade Route Access
+
+Merchant worlds can become hubs:
+
+```text
+Market Access Permit
+Cost: 200 Matter
+Effect: unlocks or improves a trade route through seller's Starport.
+```
+
+### Emergency Aid
+
+Stable or biological worlds can help after events:
+
+```text
+Emergency Stabilization Aid
+Cost: 250 Matter
+Effect: restores Stability after crisis or reduces biological event damage.
+```
+
+### Construction Assistance
+
+Industrial worlds can sell project acceleration:
+
+```text
+Industrial Support Contract
+Cost: 400 Matter
+Effect: reduces buyer's active project timer by 25%.
+```
+
+### Defense / Tech Blueprints
+
+Advanced worlds can sell unlock help:
+
+```text
+Orbital Shield Blueprint
+Cost: 800 Matter
+Requirement: seller owns Orbital Shield tech/project
+Effect: buyer unlocks or discounts Orbital Shield project.
+```
+
+### Rare Artifacts
+
+Late-game market goods:
+
+```text
+Ancient Signal Fragment
+Dark Matter Core
+Star Lens Component
+Dyson Shard
+Crystal Memory Archive
+```
+
+These can come from events, probes, or cosmic exploration.
+
+## 52.4 Economy Roles By Civilization Type
+
+### Scientific Civilization
+
+Sells:
+
+```text
+probe data
+scanner reports
+blueprints
+research assistance
+```
+
+Wants:
+
+```text
+Matter
+protection
+stable trade partners
+```
+
+### Militarist Civilization
+
+Sells:
+
+```text
+protection contracts
+defense support
+threat deterrence
+counter-raid services
+```
+
+Wants:
+
+```text
+Matter
+influence
+strategic leverage
+```
+
+### Merchant Civilization
+
+Sells:
+
+```text
+market access
+trade route bonuses
+broker services
+bulk Matter liquidity
+```
+
+Wants:
+
+```text
+many partners
+low war risk
+high trust
+```
+
+### Industrial Civilization
+
+Sells:
+
+```text
+construction support
+project acceleration
+repair support
+defense infrastructure
+```
+
+Wants:
+
+```text
+Matter
+stable trade
+biological/stability support
+```
+
+### Isolationist Civilization
+
+Sells less but may sell rare stealth/security services later.
+
+Strength:
+
+```text
+low Signal
+harder to detect
+safe from hostile attention
+```
+
+Potential services:
+
+```text
+Signal Masking Support
+Hidden Route Broker
+Cloaked Probe Design
+```
+
+## 52.5 Marketplace Sinks
+
+Matter needs sinks so the economy does not inflate forever.
+
+Marketplace systems should burn Matter through:
+
+```text
+market tax
+listing fee
+trade route maintenance
+starport docking fee
+probe launch cost
+contract insurance
+repair costs
+war damage recovery
+signal masking upkeep
+```
+
+Example:
+
+```text
+Nova sells a Protection Pact for 300 Matter.
+Buyer pays 300.
+Nova receives 270.
+30 Matter is burned as market/transport tax.
+```
+
+This keeps Matter important even for rich players.
+
+## 52.6 Trust And Reputation
+
+Matter trade should be shaped by relationship state.
+
+Track:
+
+```text
+Trust
+Reputation
+Contract history
+Hostility
+Trade reliability
+```
+
+High Trust:
+
+```text
+lower market tax
+better contract options
+longer trade routes
+cheaper protection
+higher loan limits
+```
+
+Low Trust:
+
+```text
+higher fees
+limited contracts
+increased scam/blockade risk
+less favorable terms
+```
+
+This makes the marketplace social, not just transactional.
+
+## 52.7 War And Marketplace Interaction
+
+War should affect the economy without deleting planets.
+
+Possible actions:
+
+```text
+Blockade Trade Route
+Sabotage Starport
+Intercept Cargo Probe
+Raid Market Shipment
+Disrupt Signal Network
+Hack Contract Relay
+```
+
+Possible effects:
+
+```text
+trade route paused
+market listing delayed
+delivery disrupted
+Matter fee lost
+Trust damaged
+Defense response triggered
+Signal increased
+```
+
+War becomes meaningful because it attacks economic systems, not because it destroys accounts.
+
+---
+
+# 53. Deeper Upgrade Design Rules
+
+The game should not keep adding shallow upgrades.
+
+Every major upgrade/intervention/project should do at least **two** of the following:
+
+```text
+1. Change a visible planet state
+2. Unlock a new action
+3. Add a tendency
+4. Affect future trade/war/economy
+5. Create a risk or tradeoff
+6. Change a relationship or Signal profile
+7. Create a new marketplace role
+```
+
+Bad upgrade:
+
+```text
++20 Life Progress
+```
+
+Better upgrade:
+
+```text
+Accelerate Mutation
+Cost: 25 Matter
+Immediate: +35 Ecosystem Maturity
+Tradeoff: +Mutation Pressure, -Stability
+Long-term: +Adaptive / Competitive tendency
+Risk: higher chance of biological event
+Future: stronger survival/war traits, shakier diplomacy
+```
+
+## 53.1 Upgrade Chains Should Point Toward Future Systems
+
+Every early-game action should secretly answer:
+
+```text
+What future civilization does this support?
+```
+
+Examples:
+
+```text
+Stabilize Oceans
+→ Stable tendency
+→ safer civilization
+→ better trade reliability
+→ stronger alliances/offline safety
+```
+
+```text
+Accelerate Mutation
+→ Adaptive / Competitive tendency
+→ stronger survival and conflict tools
+→ higher instability and diplomacy risk
+```
+
+```text
+Nourish Microbes
+→ Biodiverse / Abundant tendency
+→ stronger population/economy base
+→ better biological support services in market
+```
+
+```text
+Encourage Cooperation
+→ Cooperative tendency
+→ diplomacy bonuses
+→ stronger trade pacts and alliances
+```
+
+```text
+Encourage Competition
+→ Competitive tendency
+→ defense and war bonuses
+→ weaker trust / stronger rivalry tools
+```
+
+This is how the early game connects to the late-game economy and war systems.
+
+---
+
+# 54. Revised Big-Picture Progression Spine
+
+The full progression should be thought of as gameplay layers, not just upgrade tiers.
+
+```text
+Matter
+→ Life
+→ Species
+→ Civilization
+→ Economy
+→ Other Players
+→ Trade / Diplomacy
+→ Rivalry / War
+→ Cosmic Risk
+```
+
+## 54.1 Phase 1 — Biological Foundation
+
+Question:
+
+```text
+Can life exist here?
+```
+
+Systems:
+
+```text
+Matter
+Cells
+Organelles
+Eukaryotic evolution
+Ecosystem Maturity
+Stability
+Mutation Pressure
+```
+
+Player choices:
+
+```text
+safe growth
+fast mutation
+stable oceans
+cellular cooperation
+biodiversity
+```
+
+Outcome:
+
+```text
+early tendencies begin forming
+```
+
+## 54.2 Phase 2 — Complex Life
+
+Question:
+
+```text
+What kind of species is emerging?
+```
+
+Systems:
+
+```text
+Biodiversity
+Nervous Systems
+Sensory Organs
+Behavior
+Sentience Progress
+```
+
+Player choices:
+
+```text
+cooperation
+curiosity
+adaptability
+competition
+memory
+problem solving
+```
+
+Outcome:
+
+```text
+species tendencies form future civilization identity
+```
+
+## 54.3 Phase 3 — Early Civilization
+
+Question:
+
+```text
+What kind of society are they building?
+```
+
+Systems:
+
+```text
+Tool Use
+Communication
+Memory
+Culture flavor
+First Projects
+Doctrine seeds
+```
+
+Projects:
+
+```text
+Agriculture Network
+Writing System
+Unity Monuments
+Tool Workshops
+Sky-Watching Sites
+Early Trade Markets
+Defensive Settlements
+```
+
+Outcome:
+
+```text
+civilization direction becomes visible
+```
+
+## 54.4 Phase 4 — Industrial / Economic Civilization
+
+Question:
+
+```text
+What does this civilization produce and depend on?
+```
+
+Systems:
+
+```text
+Industrial Base
+Market Network
+Pollution/Stability tradeoff
+Project timers
+Matter sinks
+Planet resource traits
+```
+
+Outcome:
+
+```text
+civilizations become economically different
+```
+
+## 54.5 Phase 5 — Space Awareness
+
+Question:
+
+```text
+Who else is out there?
+```
+
+Unlock chain:
+
+```text
+Telescope Array
+→ Nearby Worlds panel
+→ Radio Array
+→ First Contact pings
+→ Probe Launcher
+→ scouting / gifts / basic interaction
+```
+
+Outcome:
+
+```text
+other players become identifiable
+```
+
+## 54.6 Phase 6 — Trade And Diplomacy
+
+Question:
+
+```text
+Can other civilizations help me, and can I profit from them?
+```
+
+Systems:
+
+```text
+Trade Routes
+Starport
+Trust
+Marketplace
+Contracts
+Protection Pacts
+Resource Specialties
+```
+
+Outcome:
+
+```text
+Matter becomes political and economic
+```
+
+## 54.7 Phase 7 — Rivalry, Espionage, War
+
+Question:
+
+```text
+How do I protect my economy or pressure others?
+```
+
+Systems:
+
+```text
+Rivalry
+Spy Probes
+Blockades
+Defense Grid
+Trade Route attacks
+Starport sabotage
+Ceasefire
+Protection contracts
+```
+
+Outcome:
+
+```text
+war targets systems, not planets
+```
+
+## 54.8 Phase 8 — Cosmic / Dark Forest Layer
+
+Question:
+
+```text
+Do I broadcast, hide, expand, dominate, ally, or transcend?
+```
+
+Systems:
+
+```text
+Signal
+Stealth
+Dyson Swarm
+Star-Lens Scanner
+Relativistic Probe
+Planetary Shield
+False Beacon
+Cloaked Probe
+Cosmic artifacts
+```
+
+Outcome:
+
+```text
+late game becomes about visibility, fear, power, and survival
+```
+
+---
+
+# 55. Revised Near-Term Upgrade Direction
+
+The next upgrades should not be generic Life Progress buttons.
+
+They should connect Nova's cell system to planet-level readiness and future identity.
+
+## 55.1 Current Relationship To Nova's System
+
+Nova's system should own:
+
+```text
+cell creation
+organelle upgrades
+Eukaryotic evolution
+cascade
+cell production
+Multicellular Path internals
+```
+
+The ecosystem system should own:
+
+```text
+planet conditions
+evolution pressure
+readiness requirements
+risk vs safety
+tendency direction
+future trade/economy hooks
+```
+
+Core relationship:
+
+```text
+Cells evolve internally through Nova's upgrade path.
+The planet ecosystem determines whether that evolution is safe, fast, risky, stable, adaptive, cooperative, or unstable.
+```
+
+## 55.2 Recommended Immediate Upgrade Chain
+
+After Eukaryotic Cell + Ecosystem Maturity, the next chain should be:
+
+```text
+Cellular Cooperation
+→ Colony Formation
+→ Tissue Differentiation
+→ Primitive Organisms
+→ Multicellular Life
+→ Biodiversity
+→ Nervous Systems
+→ Sensory Organs
+→ Advanced Behavior
+→ Complex Life
+```
+
+## 55.3 Example Cards
+
+### Cellular Cooperation
+
+```text
+Requirement:
+- At least 1 Eukaryotic Cell
+- Ecosystem Maturity 100
+- Stability 60%+
+
+Cost: 75 Matter
+Effect:
+- Cells begin forming simple cooperative colonies
+- Unlocks Colony Formation
+- +Cooperative tendency
+- Small production bonus
+```
+
+### Colony Formation
+
+```text
+Requirement:
+- Cellular Cooperation
+
+Cost: 125 Matter
+Effect:
+- Stable cell colonies emerge
+- Unlocks Tissue Differentiation
+- +Biodiverse / Cooperative tendency
+```
+
+### Tissue Differentiation
+
+```text
+Requirement:
+- Colony Formation
+- Stability 60%+
+
+Cost: 200 Matter
+Effect:
+- Cells specialize into roles like movement, sensing, protection, and energy
+- Unlocks Primitive Organisms
+- +Complexity / Adaptive tendency
+```
+
+### Primitive Organisms
+
+```text
+Requirement:
+- Tissue Differentiation
+
+Cost: 300 Matter
+Effect:
+- EvolutionStage = Multicellular
+- Unlocks Biodiversity
+- Unlocks Multicellular-era interventions
+- Planet visuals gain simple life patches / reef-like accents
+```
+
+### Encourage Biodiversity
+
+```text
+Requirement:
+- Multicellular Life
+
+Cost: 150 Matter
+Effect:
+- Biodiversity +20
+- Stability +5
+- +Adaptive tendency
+- Future: supports Complex Life and better ecosystem resilience
+```
+
+### Predator-Prey Balance
+
+```text
+Requirement:
+- Multicellular Life
+
+Cost: 180 Matter
+Effect:
+- Biodiversity +25
+- Mutation Pressure +10
+- Stability -5
+- +Competitive tendency
+- Future: stronger survival/defense path, more ecosystem event risk
+```
+
+### Nervous Systems
+
+```text
+Requirement:
+- Biodiversity 50+
+
+Cost: 300 Matter
+Effect:
+- Unlocks Complex Life path
+- Adds early Sentience potential
+- +Awareness tendency
+```
+
+### Sensory Organs
+
+```text
+Requirement:
+- Nervous Systems
+
+Cost: 400 Matter
+Effect:
+- Sentience Potential +15
+- Biodiversity +10
+- Unlocks Advanced Behavior
+```
+
+### Advanced Behavior
+
+```text
+Requirement:
+- Sensory Organs
+
+Cost: 600 Matter
+Effect:
+- Unlocks Complex Life
+- Adds Curious or Competitive tendency depending on current Stability / Mutation Pressure
+```
+
+## 55.4 Milestone Requirements Should Be Visible
+
+The UI should show next milestone readiness, not just full bars.
+
+Example:
+
+```text
+Next Milestone: Multicellular Readiness
+
+Requirements:
+✓ Eukaryotic Cell exists
+✓ Ecosystem Maturity 100/100
+✓ Stability 60%+
+
+Your world can now support cooperative multicellular life.
+```
+
+If a requirement is missing:
+
+```text
+Needs Stability 60%+
+Use Stabilize Oceans or reduce Mutation Pressure.
+```
+
+This explains why Stability matters.
+
+---
+
+# 56. Updated Interstellar Economy Design
+
+Matter should be the universal interstellar medium of exchange.
+
+Players use Matter for:
+
+```text
+upgrades
+projects
+contracts
+trade routes
+protection
+probe data
+repairs
+market taxes
+war responses
+rare artifacts
+cosmic tech
+```
+
+## 56.1 Trade Is Based On Player Differences
+
+Trade is not meaningful if every player produces the same thing.
+
+Planet identity creates differences:
+
+```text
+Ocean worlds sell stabilization and biology support.
+Mineral worlds sell construction and defense support.
+Scientific worlds sell probe data and blueprints.
+Merchant worlds sell route access and market services.
+Militarist worlds sell protection.
+Volcanic worlds sell energy boosts and rare compounds.
+```
+
+Matter is the payment. Specialization is the product.
+
+## 56.2 First Marketplace MVP
+
+Do not build the full marketplace first.
+
+MVP should include:
+
+```text
+Requirement:
+- Space Age
+- Starport built
+- First Contact with at least one player
+
+Features:
+1. Send Matter gift
+2. Request Matter trade
+3. Create simple Matter Trade Route
+4. Apply small marketplace tax
+5. Increase Trust after successful trade
+```
+
+Later expansions:
+
+```text
+contracts
+protection pacts
+probe data sales
+construction support
+artifact trading
+blockades
+insurance
+market reputation
+```
+
+---
+
+# 57. Updated Development Roadmap
+
+The current future epic roadmap should shift to include planet identity and Matter economy earlier.
+
+Suggested order:
+
+```text
+Epic 6 — Ecosystem Conditions
+Matter-powered life stability, mutation pressure, multicellular readiness.
+
+Epic 7 — Planet Identity & Resource Specialization
+Starting planet strengths/weaknesses/resource traits/trade specialties.
+
+Epic 8 — Complex Life & Tendencies
+Biodiversity, nervous systems, social behavior, curiosity/competition/cooperation.
+
+Epic 9 — Early Civilization Projects
+Tool use, communication, culture flavor, observatory, market, defense settlements.
+
+Epic 10 — Industrial Economy
+Industry-flavored projects, pollution/stability tension, project timers, Matter sinks.
+
+Epic 11 — Space Awareness
+Telescope, radio, nearby worlds, first contact.
+
+Epic 12 — Trade Routes & Interstellar Marketplace
+Matter contracts, services, trust, taxes, trade specialties.
+
+Epic 13 — Probes / Espionage / Defense
+Scout, intercept, sabotage, counter-scan, defense grid.
+
+Epic 14 — Conflict / War
+Rivalry, blockade, system damage, ceasefire, protection contracts.
+
+Epic 15 — Signal / Cosmic Late Game
+Dark Forest tension, Dyson tech, hidden civilizations, terrifying probes.
+```
+
+This route keeps the game from jumping straight from cells to war.
+
+It builds the economic and social reasons for war and trade first.
+
+---
+
+# 58. Final Updated Thesis — Simple Surface, Deep Consequences
+
+The game should keep the surface simple:
+
+```text
+Collect Matter.
+Spend Matter.
+Inspect planet.
+Pick cards.
+Watch planet change.
+```
+
+But under that simple surface, every major choice should push the player toward a future civilization identity.
+
+The real long-term chain is:
+
+```text
+Cells become organisms.
+Organisms become species.
+Species become civilizations.
+Civilizations become economies.
+Economies create trade.
+Trade creates diplomacy.
+Diplomacy creates rivalry.
+Rivalry creates war.
+War and trade create cosmic strategy.
+```
+
+Matter remains the central resource from beginning to end.
+
+Planet identity decides what each player is naturally good at.
+
+Trade exists because no planet is perfect alone.
+
+War matters because it threatens economic systems, not because it deletes planets.
+
+Signal creates the late-game cosmic fear.
+
+Offline time creates summaries and choices, not punishment.
+
+The player should feel:
+
+```text
+I did not just buy upgrades.
+I shaped a world.
+That world produced a civilization.
+That civilization entered an economy of other worlds.
+My early choices changed what I can trade, who trusts me, who fears me, and how I survive.
+```
+
+That is the bridge between Roblox simplicity and Civ/Stellaris/Three-Body-inspired depth.
+
