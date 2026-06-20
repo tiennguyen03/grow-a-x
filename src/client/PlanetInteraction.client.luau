@@ -55,6 +55,10 @@ local PlanetInspectContext = require(script.Parent:WaitForChild("PlanetInspectCo
 -- All spends are server-authoritative; this module only requests + reflects them.
 local CellInterventionUI = require(script.Parent:WaitForChild("CellInterventionUI"))
 
+-- Interactive ecosystem interventions (Epic 6: Life Progress / Stability), mounted
+-- below the live cell UI.
+local EcosystemInterventionUI = require(script.Parent:WaitForChild("EcosystemInterventionUI"))
+
 local PROMPT_DISTANCE    = 170  -- show the prompt at/under this distance (studs)
 local PROMPT_HIDE_BUFFER = 20   -- ...and hide once you pass distance + this (=190)
 local UPDATE_INTERVAL    = 0.1  -- seconds between distance checks (no need per-frame)
@@ -282,8 +286,7 @@ local infoPanel = Instance.new("CanvasGroup")
 infoPanel.Name = "InfoPanel"
 infoPanel.AnchorPoint = Vector2.new(1, 0.5)
 infoPanel.Position = UDim2.new(1, -36, 0.5, 0) -- right side, vertically centered
-infoPanel.Size = UDim2.fromOffset(316, 0)
-infoPanel.AutomaticSize = Enum.AutomaticSize.Y -- height grows to fit the rows
+infoPanel.Size = UDim2.fromOffset(316, 0) -- height is set dynamically below (capped to viewport)
 infoPanel.BackgroundColor3 = Color3.fromRGB(11, 15, 23)
 infoPanel.BackgroundTransparency = 0.06
 infoPanel.BorderSizePixel = 0
@@ -312,18 +315,54 @@ infoGradient.Color = ColorSequence.new({
 })
 infoGradient.Parent = infoPanel
 
+-- Content lives in a ScrollingFrame so a tall panel (info + cells + previews)
+-- scrolls instead of running off the top/bottom of the screen. The CanvasGroup
+-- above keeps the rounded bg/stroke/gradient + fade animation; this fills it.
+local infoScroll = Instance.new("ScrollingFrame")
+infoScroll.Name = "Scroll"
+infoScroll.Size = UDim2.fromScale(1, 1)
+infoScroll.BackgroundTransparency = 1
+infoScroll.BorderSizePixel = 0
+infoScroll.CanvasSize = UDim2.new() -- driven by AutomaticCanvasSize
+infoScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+infoScroll.ScrollingDirection = Enum.ScrollingDirection.Y
+infoScroll.ScrollBarThickness = 5
+infoScroll.ScrollBarImageColor3 = CYAN
+infoScroll.ScrollBarImageTransparency = 0.4
+infoScroll.Active = true
+infoScroll.Parent = infoPanel
+
 local infoPadding = Instance.new("UIPadding")
 infoPadding.PaddingTop = UDim.new(0, 16)
 infoPadding.PaddingBottom = UDim.new(0, 16)
 infoPadding.PaddingLeft = UDim.new(0, 18)
 infoPadding.PaddingRight = UDim.new(0, 18)
-infoPadding.Parent = infoPanel
+infoPadding.Parent = infoScroll
 
 local infoLayout = Instance.new("UIListLayout")
 infoLayout.FillDirection = Enum.FillDirection.Vertical
 infoLayout.SortOrder = Enum.SortOrder.LayoutOrder
 infoLayout.Padding = UDim.new(0, 6)
-infoLayout.Parent = infoPanel
+infoLayout.Parent = infoScroll
+
+-- Cap the panel to a fraction of screen height; below that it shrinks to fit so a
+-- short panel (just planet info) isn't a tall box with empty space.
+local MAX_PANEL_FRAC = 0.9
+local function updateInfoPanelHeight()
+	local camera = Workspace.CurrentCamera
+	local viewportH = (camera and camera.ViewportSize.Y) or 600
+	local contentH = infoLayout.AbsoluteContentSize.Y
+		+ infoPadding.PaddingTop.Offset + infoPadding.PaddingBottom.Offset
+	infoPanel.Size = UDim2.fromOffset(316, math.min(contentH, viewportH * MAX_PANEL_FRAC))
+end
+infoLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateInfoPanelHeight)
+do
+	local cam0 = Workspace.CurrentCamera
+	if cam0 then
+		cam0:GetPropertyChangedSignal("ViewportSize"):Connect(updateInfoPanelHeight)
+	end
+end
+updateInfoPanelHeight()
 
 -- Small factory for a left-aligned text row inside the panel.
 local function makeInfoLabel(order: number, opts)
@@ -341,7 +380,7 @@ local function makeInfoLabel(order: number, opts)
 	l.TextWrapped = opts.wrap or false
 	l.RichText = true
 	l.Text = ""
-	l.Parent = infoPanel
+	l.Parent = infoScroll
 	return l
 end
 
@@ -352,7 +391,7 @@ local function makeDivider(order: number)
 	d.BackgroundColor3 = CYAN
 	d.BackgroundTransparency = 0.7
 	d.BorderSizePixel = 0
-	d.Parent = infoPanel
+	d.Parent = infoScroll
 	return d
 end
 
@@ -379,8 +418,12 @@ makeDivider(12)
 -- are server-authoritative; the module only requests them and re-renders from the
 -- server's ConverterUpdate. It owns its own remote subscriptions and state.
 local interventionHeader = makeInfoLabel(13, { font = Enum.Font.GothamBold, size = 15, color = CYAN })
-interventionHeader.Text = "Intervention"
-CellInterventionUI.mount(infoPanel, { layoutOrder = 14 })
+interventionHeader.Text = "Life Interventions"
+CellInterventionUI.mount(infoScroll, { layoutOrder = 14 })
+
+-- Ecosystem Interventions (Epic 6): Life Progress + Stability + the three live
+-- interventions, server-authoritative. Sits below Nova's Cell Cultures UI.
+EcosystemInterventionUI.mount(infoScroll, { layoutOrder = 30 })
 
 local exitLabel = makeInfoLabel(20, { size = 13, color = Color3.fromRGB(150, 170, 190) })
 
