@@ -79,6 +79,80 @@ local DEFS = {
 		state = "Active",
 		sortOrder = 120,
 	},
+
+	-- Sentience interventions (Epic 7, Complex Life): each raises Sentience Progress
+	-- AND builds a long-term civilization `tendency`. Gated to Complex Life (Nova's
+	-- Multicellular path complete / Life Progress 100). At Sentience 100 → Tool Use.
+	{
+		id = "encourage_cooperation",
+		displayName = "Encourage Cooperation",
+		category = "Sentience",
+		description = "Encourage social bonds so cooperative species survive together and form stable societies.",
+		flavor = "Together, fragile things endure.",
+		cost = { Matter = 30 },
+		repeatable = true,
+		requirements = { complexLife = true },
+		effects = { addSentienceProgress = 15, addStability = 5 },
+		tendency = "cooperative",
+		state = "Active",
+		sortOrder = 200,
+	},
+	{
+		id = "encourage_curiosity",
+		displayName = "Encourage Curiosity",
+		category = "Sentience",
+		description = "Nudge life toward exploration and experimentation — curious species discover faster, but push too far.",
+		flavor = "A mind that wonders eventually builds.",
+		cost = { Matter = 30 },
+		repeatable = true,
+		requirements = { complexLife = true },
+		effects = { addSentienceProgress = 15, addStability = -5 },
+		tendency = "curious",
+		state = "Active",
+		sortOrder = 210,
+	},
+	{
+		id = "encourage_adaptability",
+		displayName = "Encourage Adaptability",
+		category = "Sentience",
+		description = "Favor species that survive change — adaptive worlds endure disasters and stay stable.",
+		flavor = "What bends does not break.",
+		cost = { Matter = 30 },
+		repeatable = true,
+		requirements = { complexLife = true },
+		effects = { addSentienceProgress = 12, addStability = 8 },
+		tendency = "adaptive",
+		state = "Active",
+		sortOrder = 220,
+	},
+	{
+		id = "encourage_competition",
+		displayName = "Encourage Competition",
+		category = "Sentience",
+		description = "Encourage rivalry and survival pressure — competitive species grow strong, but harder to trust.",
+		flavor = "Struggle sharpens the mind, and the claw.",
+		cost = { Matter = 30 },
+		repeatable = true,
+		requirements = { complexLife = true },
+		effects = { addSentienceProgress = 18, addStability = -8 },
+		tendency = "competitive",
+		state = "Active",
+		sortOrder = 230,
+	},
+	{
+		id = "nudge_problem_solving",
+		displayName = "Nudge Problem Solving",
+		category = "Sentience",
+		description = "Encourage species to solve challenges, not just survive them — problem solvers become inventors.",
+		flavor = "The first tool was a question.",
+		cost = { Matter = 35 },
+		repeatable = true,
+		requirements = { complexLife = true },
+		effects = { addSentienceProgress = 20 },
+		tendency = "strategic",
+		state = "Active",
+		sortOrder = 240,
+	},
 }
 
 -- Stable display order + id index.
@@ -109,16 +183,25 @@ function InterventionData.getPreviews()
 	return out
 end
 
--- Live, interactive ecosystem interventions (Epic 6): Active + category "Ecosystem".
--- (Excludes `create_life`, which is category "Life" and owned by Nova's cell flow.)
-function InterventionData.getEcosystemActive()
+-- Live, interactive interventions of a given category (Active + category).
+function InterventionData.getActiveByCategory(category: string)
 	local out = {}
 	for _, d in DEFS do
-		if d.state == "Active" and d.category == "Ecosystem" then
+		if d.state == "Active" and d.category == category then
 			table.insert(out, d)
 		end
 	end
 	return out
+end
+
+-- Ecosystem interventions (Epic 6): Active + "Ecosystem" (excludes `create_life`).
+function InterventionData.getEcosystemActive()
+	return InterventionData.getActiveByCategory("Ecosystem")
+end
+
+-- Sentience interventions (Epic 7): Active + "Sentience".
+function InterventionData.getSentienceActive()
+	return InterventionData.getActiveByCategory("Sentience")
 end
 
 -- A friendly one-line summary of a definition's effects for a card.
@@ -127,6 +210,9 @@ function InterventionData.effectSummary(def): string
 	local e = def.effects or {}
 	if e.addLifeProgress then
 		table.insert(parts, string.format("Life Progress %+d", e.addLifeProgress))
+	end
+	if e.addSentienceProgress then
+		table.insert(parts, string.format("Sentience %+d", e.addSentienceProgress))
 	end
 	if e.addStability then
 		table.insert(parts, string.format("Stability %+d", e.addStability))

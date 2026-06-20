@@ -4,15 +4,16 @@ Tien's active lane handoff. Fast-changing day-to-day notes. Global/integration
 state lives in [`HANDOFF.md`](HANDOFF.md).
 
 ## Current Branch
-`tien/epic6-ecosystem-interventions` (off the Epic 5 branch, off `main`). Carries Epic 5 (Matter Core
-additive layer + overflow fix) **and** Epic 6.
+`tien/epic7-sentience-tendencies` (off `main`). Epic 4/5/6 are all in `main` now.
 
 ## Current Focus
-**Epic 6 — Ecosystem Interventions & Early Evolution.** The Epic 5 preview cards are now **live**:
-`lifeProgress`/`stability` server state + `ApplyIntervention` pipeline + interactive Life
-Progress/Stability UI. Built additively — Nova's cell economy untouched, but it **extends his
-`ConverterUpdate` payload + profile** (coordinate when his unmerged 1C lands). Design C for
-Multicellular (milestone only at 100, no transition). 6G (Mass Algae Bloom event) deferred.
+**Epic 7 — Complex Life: Sentience Progress & Civilization Tendencies.** Built additively on the
+Epic 5/6 `InterventionData` + `ApplyIntervention` pipeline: profile `sentienceProgress`/`tendencies`,
+5 Sentience interventions gated to Complex Life (Multicellular complete / Life Progress 100), the
+Tendency→Civilization-Identity foundation, and a Tool Use milestone at Sentience 100. New `SentienceUI`
+mounts below Ecosystem in the inspect panel. Extends shared `PlayerManager`/`ConverterUpdate` (additive
+— coordinate with Nova; confirm the Complex Life gate + `EvolutionStage="ToolUse"` don't fight his stages).
+Optional Complex Life event deferred.
 
 ## Active Sprint / Ticket
 - **Epic 5 5A** ✅ audit + **5B/5G** ✅ additive layer (`InterventionData` + `InterventionPreviewUI` + extension docs). Pending in-Studio playtest.
@@ -20,6 +21,9 @@ Multicellular (milestone only at 100, no transition). 6G (Mass Algae Bloom event
 - (Carryover) Epic 4 **4H** playtest sign-off.
 
 ## Recent Changes
+- **Epic 7 reframed to V3 vision** (doc-level; `docs/EPICS/Epic7.md`). Renamed **Complex Life & Species Direction** (was "Sentience Progress & Civilization Tendencies"). Added: K-Rating band (~K0.45–K0.70, Tool Use @ K0.70), the **World Direction Tree** framing (the 5 interventions are now Cooperation/Curiosity/Adaptation/Competition/Problem-Solving *branches* with long-term paths), **World Overview + World Direction**-first UI priority (biology becomes secondary), **Starting Planet Influence** hooks, **Species Identity → Civilization Doctrine** bridge, **Cosmic Cycle compatibility**, and V3 DoD checks. Archived prior doc → `docs/PastEpics/Epic7.2026-06-20.md`; fix request → `docs/PastEpics/Epic7-V3-FixRequest.2026-06-20.md`. CLAUDE.md tracker updated.
+- **Epic 7 7H shipped (UI-aligned to V3)**: inspect **"Sentience" tab → "World Direction"** (`PlanetInteraction`); `SentienceUI` header → "World Direction", subtitle/locked copy + identity label reframed to *species direction* / *Species Identity*. Added a **World Overview** block on the Overview tab — **K-Rating · Era · Next Milestone · Species Identity** surfaced *above* planet conditions, all **derived client-side** from existing attributes (`EvolutionStage`, `LifeProgress`/`LifeProgressMax`, `SentienceProgress`, `CivIdentity`) — **no server/`PlayerManager` change**. K-Rating is display-only (Complex Life K0.45→K0.70, Tool Use @ K0.70). Still-optional: profile placeholder hooks (`kRating`/`speciesIdentity`/`activeWorldDirectionFocus`) + `PlanetArchetypeModifiers` stub.
+- **Inspect panel redesigned → tabbed layout** (`PlanetInteraction.client.luau`). Was one ~316px-wide right column with everything stacked behind a single long scroll (cramped, lots of scrolling). Now a wider 430px panel (height 84% of viewport) with a fixed header (planet name + tab row) over a page area: **Overview** (archetype/stage/life/civ/water/clouds/atmosphere), **Cells** (CellInterventionUI), **Ecosystem** (EcosystemInterventionUI), **Sentience** (SentienceUI). Each system mounts into its own tab page — only the active page shows, and it scrolls only if that one section overflows. Sub-UI `.mount(parent, {layoutOrder})` contract unchanged. Inspect-panel chrome (bg/stroke/gradient/corner + fade) preserved.
 - Renamed the read-only future-intervention preview section to **Ecosystem Interventions**; added bridge copy explaining it shapes planet conditions around the cells.
 - Parent intervention header → **Life Interventions** (reads: Life Interventions › Cell Cultures [Nova] › Ecosystem Interventions [preview]).
 - Finalized the three card descriptions/effect summaries; `category = "Ecosystem"`. **No** remotes / `LifeProgress` / `Stability` / Matter spend added.
