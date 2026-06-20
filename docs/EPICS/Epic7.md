@@ -238,3 +238,22 @@ It continues the vision's near-term chain exactly (§29, §45, §35.4), reuses t
 near-zero new infrastructure, and — most importantly — stands up the **Tendency/Identity** system that
 the entire mid/late game (Doctrine, the new V2 **Planet Specialties** §51 and **Interstellar Marketplace**
 §52, diplomacy, war) is built on. Small to ship, foundational for everything after.
+
+---
+
+# Implementation — Epic 7 MVP (2026-06-20, Tien + Claude)
+
+Built additively on the Epic 5/6 pipeline; Nova's cell/organelle/Multicellular lane untouched.
+
+**Shipped (7B–7F):**
+- **`InterventionData`**: 5 `category="Sentience"` interventions (`encourage_cooperation` 30→Sentience +15/Stab +5 `cooperative`; `encourage_curiosity` 30→+15/−5 `curious`; `encourage_adaptability` 30→+12/+8 `adaptive`; `encourage_competition` 30→+18/−8 `competitive`; `nudge_problem_solving` 35→+20 `strategic`), each `requirements={complexLife=true}`. New `getActiveByCategory`/`getSentienceActive`; `effectSummary` handles `addSentienceProgress`.
+- **`PlayerManager`**: profile `sentienceProgress`/`tendencies`/`toolUseReached`; `complexLifeReached(profile)` = Multicellular complete **or** Life Progress 100; `civIdentity(profile)` = top-2 tendencies; `onApplyIntervention` extended (requirement `complexLife`; effects `addSentienceProgress` clamp 0–100 + `def.tendency` +1; Tool Use milestone at 100 → `EvolutionStage="ToolUse"` once; planet attrs `SentienceProgress`/`CivIdentity`). `ConverterUpdate` carries `sentienceProgress`/`sentienceProgressMax`/`tendencies`/`complexLifeReached`. **Reuses the `ApplyIntervention` remote** — none added.
+- **`SentienceUI.luau`** (new): gated section below Ecosystem — Sentience bar + Civilization Identity + interactive cards + Tool Use milestone; mounted by `PlanetInteraction` (`layoutOrder=40`).
+
+**Deferred:** the optional Complex Life event (Predator Explosion); full Tool Use/Doctrine systems (tendencies only accumulate + display).
+
+**Coordination (Nova):** extends shared `PlayerManager`/`ConverterUpdate` (additive); the Complex Life gate keys off `MulticellularData.isComplete`, and Sentience 100 sets `EvolutionStage="ToolUse"` — confirm that doesn't fight his stage logic.
+
+**Test:** complete the Multicellular path → Sentience section unlocks → apply interventions (Matter drops, Sentience bar rises, identity updates, Stability tradeoffs clamp) → at 100 the Tool Use milestone shows. Cells/organelles/ecosystem unchanged.
+
+**Status:** 7B–7F ✅ (pending in-Studio playtest); optional event deferred.

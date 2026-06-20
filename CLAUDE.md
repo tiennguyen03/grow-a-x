@@ -355,7 +355,7 @@ When resolving a merge (or reconciling two branches) that touches `CLAUDE.md`, `
 | Epic 4: Planet Interaction & Inspection | `docs/EPICS/Epic4.md` | In Progress (4A–4G built; 4H playtest pending) |
 | Epic 5: Planet Upgrade System / Matter Core | `docs/EPICS/Epic5.md` | In Progress (5A audit done; MVP largely pre-built by Nova's Epic 3 — see 5A) |
 | Epic 6: Ecosystem Interventions & Early Evolution | `docs/EPICS/Epic6.md` | In `main` (6A–6F: Life Progress/Stability + ApplyIntervention; 6G event deferred; playtest pending) |
-| Epic 7: Complex Life — Sentience Progress & Civilization Tendencies | `docs/EPICS/Epic7.md` | Planned (spec authored 2026-06-20) |
+| Epic 7: Complex Life — Sentience Progress & Civilization Tendencies | `docs/EPICS/Epic7.md` | In Progress (7B–7F built: Sentience Progress + tendencies + Tool Use milestone; playtest pending) |
 | Epic 8: Planet Era Visuals | `docs/EPICS/Epic8.md` | Not Started |
 | Epic 9: Events & Disasters | `docs/EPICS/Epic9.md` | Not Started |
 | Epic 10: DataStore / Saving & Offline Progression | `docs/EPICS/Epic10.md` | Not Started |

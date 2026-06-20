@@ -49,7 +49,8 @@ Then `CLAUDE.md` for architecture/rules.
 | — | Footstep mute fix; marker render order | ✅ in `main` (#10, Nova) |
 | — | Misc polish (denser Matter, planet farther from sun, sun-death) + handoff split | ✅ in `main` (#11) |
 | 5A/5B | Epic 5 Matter Core: audit + additive intervention-definition format (`InterventionData`) + inspect-panel overflow fix | 🔶 on Tien branch; pending playtest |
-| 6A–6F | Epic 6 Ecosystem Interventions: `lifeProgress`/`stability` profile + `ApplyIntervention` remote/handler (server-authoritative) + Life Progress/Stability bars + interactive Nourish/Stabilize/Accelerate cards. ⚠️ extends Nova's `ConverterUpdate` payload + profile (additive; coordinate with his unmerged 1C) | 🔶 `tien/epic6-ecosystem-interventions`; pending playtest |
+| 6A–6F | Epic 6 Ecosystem Interventions: `lifeProgress`/`stability` + `ApplyIntervention` pipeline + Life Progress/Stability bars + Nourish/Stabilize/Accelerate cards | ✅ in `main` (#16); playtest pending |
+| 7B–7F | Epic 7 Complex Life: Sentience Progress + civilization tendencies + Tool Use milestone; 5 Sentience interventions (gated to Complex Life) via the same `ApplyIntervention` pipeline + `SentienceUI` | 🔶 `tien/epic7-sentience-tendencies`; pending playtest |
 
 ---
 
@@ -77,7 +78,7 @@ Then `CLAUDE.md` for architecture/rules.
 |---|---|---|
 | `src/server/Main.server.luau` | Server entry point; inits systems | ⚠️ **Shared** — keep edits to single lines |
 | `src/server/WorldBuilder.luau` | Environment (gravity/lighting), star + star field, dust motes | ✅ Safe — self-contained |
-| `src/server/PlayerManager.luau` | Matter profiles + dust collection + `MatterUpdate`; **converter:** `CreateArchaea` + production (Nova); **ecosystem (Epic 6):** `lifeProgress`/`stability` profile fields + `onApplyIntervention` handler | ⚠️ **Shared lane** — Nova owns the cell economy; Epic 6 added ecosystem fields/handler additively, coordinate on merge |
+| `src/server/PlayerManager.luau` | Matter profiles + dust collection + `MatterUpdate`; **converter:** `CreateArchaea` + production (Nova); **ecosystem/sentience (Epic 6/7):** `lifeProgress`/`stability`/`sentienceProgress`/`tendencies` + `onApplyIntervention` (gates incl. `complexLife`, Tool Use milestone) | ⚠️ **Shared lane** — Nova owns the cell economy; Epic 6/7 added ecosystem+sentience fields/effects additively, coordinate on merge |
 | `src/server/PlayerPlanetService.luau` | Builds per-player planet on join; server-side **orbit + spin**; exposes descriptor attributes (incl. `CloudCoverage`) | ✅ Safe — owns per-player planets |
 | `src/client/Main.client.luau` | Client entry point; inits client systems | ⚠️ **Shared** |
 | `src/client/SpaceMovement.client.luau` | Floaty movement + pose + banking; honors `PlanetInspectLocked` (rides the orbit during inspect); **sun-death** kill check | ✅ Safe — self-contained (Tien) |
@@ -91,8 +92,9 @@ Then `CLAUDE.md` for architecture/rules.
 | `src/client/PlanetInspectContext.luau` | Seam: publishes active planet context + `Changed`/`OpenRequested` (no economy logic) | ⚠️ **Tien↔Nova boundary** — coordinate before changing its shape |
 | `src/client/PlanetStageVisuals.client.luau` | Archaea life-glow when `EvolutionTier≥1`/`EvolutionStage=="Archaea"` | ✅ Safe — self-contained (Tien) |
 | `src/shared/OrganelleData.luau` | Ordered Tier-1 organelle path (Archaea → Eukaryotic): id/name/cost/bonus/visual + helpers (`TOTAL_COST`=240). Pure data (Epic 3 / 8C) | ✅ Safe — pure data (Nova) |
-| `src/shared/InterventionData.luau` | Generic intervention definition format (id/cost/requirements/effects/state); `create_life` reference + the **live** Epic 6 `category="Ecosystem"` interventions. Read by both `onApplyIntervention` (server) and `EcosystemInterventionUI` (Epic 5/6) | ✅ Safe — pure data (Tien) |
+| `src/shared/InterventionData.luau` | Generic intervention definition format (id/cost/requirements/effects/state/tendency); `create_life` ref + live `Ecosystem` (Epic 6) + `Sentience` (Epic 7) interventions. Read by `onApplyIntervention` (server) + the intervention UIs | ✅ Safe — pure data (Tien) |
 | `src/client/EcosystemInterventionUI.luau` | Interactive Ecosystem Interventions: Life Progress + Stability bars + cards that fire `ApplyIntervention`; mounted in the inspect panel below Cell Cultures (Epic 6) | ✅ Safe — self-contained module (Tien) |
+| `src/client/SentienceUI.luau` | Interactive Sentience (Epic 7): Sentience Progress bar + Civilization Identity + cards; gated to Complex Life; fires `ApplyIntervention`; mounted below Ecosystem | ✅ Safe — self-contained module (Tien) |
 | `src/shared/Pricing.luau` | Shared dynamic cost formulas: `cellCost(n)` (grows with cells owned) + `upgradeCost(base, bought)`. Pure functions (Epic 3 / 1C) | ✅ Safe — pure data (Nova) |
 | `src/shared/MulticellularData.luau` | The six Eukaryotic→Multicellular upgrades (id/name/baseCost/visual) + helpers (`next`, `COUNT`=6). Pure data (Epic 3 / 1C) | ✅ Safe — pure data (Nova) |
 | `src/shared/GameConfig.luau` | Shared tuning constants (`DUST_*`, `MATTER_CONVERTER_*`, `ARCHAEA_*`) | ⚠️ **Shared** — append, don't reorganize |

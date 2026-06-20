@@ -4,15 +4,16 @@ Tien's active lane handoff. Fast-changing day-to-day notes. Global/integration
 state lives in [`HANDOFF.md`](HANDOFF.md).
 
 ## Current Branch
-`tien/epic6-ecosystem-interventions` (off the Epic 5 branch, off `main`). Carries Epic 5 (Matter Core
-additive layer + overflow fix) **and** Epic 6.
+`tien/epic7-sentience-tendencies` (off `main`). Epic 4/5/6 are all in `main` now.
 
 ## Current Focus
-**Epic 6 — Ecosystem Interventions & Early Evolution.** The Epic 5 preview cards are now **live**:
-`lifeProgress`/`stability` server state + `ApplyIntervention` pipeline + interactive Life
-Progress/Stability UI. Built additively — Nova's cell economy untouched, but it **extends his
-`ConverterUpdate` payload + profile** (coordinate when his unmerged 1C lands). Design C for
-Multicellular (milestone only at 100, no transition). 6G (Mass Algae Bloom event) deferred.
+**Epic 7 — Complex Life: Sentience Progress & Civilization Tendencies.** Built additively on the
+Epic 5/6 `InterventionData` + `ApplyIntervention` pipeline: profile `sentienceProgress`/`tendencies`,
+5 Sentience interventions gated to Complex Life (Multicellular complete / Life Progress 100), the
+Tendency→Civilization-Identity foundation, and a Tool Use milestone at Sentience 100. New `SentienceUI`
+mounts below Ecosystem in the inspect panel. Extends shared `PlayerManager`/`ConverterUpdate` (additive
+— coordinate with Nova; confirm the Complex Life gate + `EvolutionStage="ToolUse"` don't fight his stages).
+Optional Complex Life event deferred.
 
 ## Active Sprint / Ticket
 - **Epic 5 5A** ✅ audit + **5B/5G** ✅ additive layer (`InterventionData` + `InterventionPreviewUI` + extension docs). Pending in-Studio playtest.
