@@ -295,19 +295,29 @@ panel.Name = "Panel"
 panel.AnchorPoint = Vector2.new(0.5, 0.5)
 panel.Position = UDim2.fromScale(0.5, 0.5)
 panel.Size = UDim2.fromScale(0.72, 0.78)
-panel.BackgroundColor3 = Color3.fromRGB(8, 16, 22)
+-- Styled to match the planet inspect panel (cyan rim + top-lit gradient + rounded).
+panel.BackgroundColor3 = Color3.fromRGB(11, 15, 23)
+panel.BackgroundTransparency = 0.06
 panel.BorderSizePixel = 0
 panel.Parent = microGui
 
 local panelCorner = Instance.new("UICorner")
-panelCorner.CornerRadius = UDim.new(0, 16)
+panelCorner.CornerRadius = UDim.new(0, 14)
 panelCorner.Parent = panel
 
 local panelStroke = Instance.new("UIStroke")
-panelStroke.Color = Color3.fromRGB(90, 200, 180)
-panelStroke.Transparency = 0.4
-panelStroke.Thickness = 2
+panelStroke.Color = Color3.fromRGB(130, 205, 255)
+panelStroke.Transparency = 0.45
+panelStroke.Thickness = 1.5
 panelStroke.Parent = panel
+
+local panelGradient = Instance.new("UIGradient")
+panelGradient.Rotation = 90
+panelGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(26, 34, 48)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(9, 12, 19)),
+})
+panelGradient.Parent = panel
 
 -- The water drop: a circular, blue-tinted viewport.
 local viewport = Instance.new("ViewportFrame")
@@ -340,7 +350,7 @@ title.Size = UDim2.fromScale(0.9, 0.08)
 title.BackgroundTransparency = 1
 title.Font = Enum.Font.GothamBold
 title.TextScaled = true
-title.TextColor3 = Color3.fromRGB(190, 240, 230)
+title.TextColor3 = Color3.fromRGB(130, 205, 255)
 title.Text = "Microscope — Drop of Water"
 title.Parent = panel
 
@@ -352,7 +362,7 @@ readout.Size = UDim2.fromScale(0.9, 0.06)
 readout.BackgroundTransparency = 1
 readout.Font = Enum.Font.GothamSemibold
 readout.TextScaled = true
-readout.TextColor3 = Color3.fromRGB(150, 200, 220)
+readout.TextColor3 = Color3.fromRGB(214, 226, 240)
 readout.Text = "No life yet — create a cell to populate the sample."
 readout.Parent = panel
 
@@ -364,7 +374,7 @@ hint.Size = UDim2.fromScale(0.2, 0.05)
 hint.BackgroundTransparency = 1
 hint.Font = Enum.Font.Gotham
 hint.TextScaled = true
-hint.TextColor3 = Color3.fromRGB(120, 150, 165)
+hint.TextColor3 = Color3.fromRGB(150, 172, 196)
 hint.Text = "[M] close"
 hint.Parent = panel
 
