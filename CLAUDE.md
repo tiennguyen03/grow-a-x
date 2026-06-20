@@ -94,7 +94,7 @@ src/client/PlanetInteraction.client.luau → standalone LocalScript; approach pr
 src/client/PlanetInspectContext.luau → client seam publishing the active inspected-planet context to other UIs (Epic 4)
 src/client/PlanetStageVisuals.client.luau → standalone LocalScript; pulsing Archaea glow on the planet once life begins (Epic 4)
 src/client/CellInterventionUI.luau   → cell list + per-cell organelle-upgrade UI, mounted into the inspect panel (Epic 3)
-src/client/BiosphereView.client.luau → standalone LocalScript; Life Vessel orb (near camera, 1 speckle per cell) + Microscope ViewportFrame overlay + evolution/cascade celebration toasts; toggle M/Tab; client-only, no planet coupling (Epic 3)
+src/client/BiosphereView.client.luau → standalone LocalScript; Life Vessel orb (near camera, 1 speckle per cell) + Microscope ViewportFrame overlay (population zoom progression + fading organelles) + evolution/cascade celebration toasts; toggle M/Tab; client-only, no planet coupling (Epic 3)
 
 # Shared (ReplicatedStorage)
 src/shared/GameConfig.luau           → shared constants (DUST_* tuning, converter/organelle rates, etc.)

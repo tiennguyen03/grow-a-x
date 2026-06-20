@@ -44,8 +44,8 @@ local HEARTBEAT_AMPLITUDE = 0.05
 local VESSEL_SPECKLE_CAP = 120  -- max speckles drawn inside the orb (1 per cell up to here)
 local VESSEL_SPECKLE_SEED = 8675309 -- fixed so speckle positions are stable as cells grow
 
-local MICRO_MAX_CELLS = 50      -- hard cap on cells drawn in the microscope (perf)
-local MICRO_REGION = Vector3.new(22, 13, 9) -- swim box (studs) inside the viewport
+local MICRO_MAX_CELLS = 200     -- hard cap on cells drawn in the microscope (perf)
+local MICRO_BASE_REGION = Vector3.new(9, 6, 5) -- swim box at the CLOSEST zoom; grows with zoom-out
 local MICRO_TOGGLE_KEYS = { [Enum.KeyCode.M] = true, [Enum.KeyCode.Tab] = true }
 
 -- Dominant-life-form palette. The orb + cells tint toward whichever stage leads.
@@ -356,9 +356,26 @@ hint.TextColor3 = Color3.fromRGB(120, 150, 165)
 hint.Text = "[M] close"
 hint.Parent = panel
 
--- ---- Microscope cell sim ------------------------------------------------------
+-- ---- Microscope: cells, organelles, zoom --------------------------------------
+-- Organelle categories and the cell-count at/under which each stays visible. Once
+-- the population grows past a threshold that organelle fades out — and since the
+-- population only ever RISES in play, organelles fade out and never back in.
+local ORG_RIBO_MAX     = 20   -- ribosomes + plasmids: only the closest zoom
+local ORG_PLASMID_MAX  = 20
+local ORG_NUCLEUS_MAX  = 50   -- nucleus + mitochondria: close-to-medium zoom
+local ORG_MITO_MAX     = 50
+local ORG_MEMBRANE_MAX = 200  -- membrane + flagella: visible longest (cell outline)
+local ORG_FLAGELLA_MAX = 200
+
+-- Camera zoom range (studs from the sample). Near = a single cell fills the frame
+-- (organelles legible); far = a living field of dots. Mapped from population on a
+-- log curve so each ~decade of cells pulls the lens back another step.
+local ZOOM_NEAR = 9
+local ZOOM_FAR  = 140
+
 type MicroCell = {
 	model: Model,
+	body: BasePart,
 	pos: Vector3,
 	vel: Vector3,
 }
@@ -367,17 +384,91 @@ local microCells: { MicroCell } = {}
 local microWorld = Instance.new("Model") -- holds the swimming cells inside the viewport
 microWorld.Name = "Cells"
 microWorld.Parent = viewport
+local microRng = Random.new()
 
--- How many cells to draw: exactly the player's actual cell count, capped for perf.
--- Never more than they really own — the sample is accurate, not inflated.
+-- Live pools of organelle parts by category, so a threshold crossing can fade them
+-- all out together (then destroy them to reclaim performance).
+local orgPools: { [string]: { BasePart } } = {
+	membrane = {}, flagella = {}, nucleus = {}, mitochondria = {}, ribosomes = {}, plasmids = {},
+}
+
+-- Camera distance is TweenService-animated via this NumberValue, which the render
+-- loop reads each frame — so the zoom glides smoothly as the population changes.
+local zoomValue = Instance.new("NumberValue")
+zoomValue.Value = ZOOM_NEAR
+
+local function targetZoomFor(count: number): number
+	return math.clamp(ZOOM_NEAR + 21 * math.log10(math.max(count, 1)), ZOOM_NEAR, ZOOM_FAR)
+end
+
+local function updateZoom(animate: boolean)
+	local target = targetZoomFor(state.totalCount)
+	if animate then
+		TweenService:Create(
+			zoomValue,
+			TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{ Value = target }
+		):Play()
+	else
+		zoomValue.Value = target
+	end
+end
+
+-- The swim box grows with the zoom, but SUB-LINEARLY (^0.65), so as the lens pulls
+-- back the cells pack closer together in the frame — a sparse few up close becoming
+-- dense clusters and finally a packed field at the far end.
+local function currentRegion(): Vector3
+	return MICRO_BASE_REGION * ((zoomValue.Value / ZOOM_NEAR) ^ 0.65)
+end
+
+-- Visible cells = exactly the real count, capped for performance. Never more.
 local function microCountForPopulation(n: number): number
 	return math.clamp(n, 0, MICRO_MAX_CELLS)
 end
 
--- Build one microscope cell: a translucent body + nucleus + (for eukaryotes) a few
--- organelle specks, so richer life reads as more complex under the lens.
-local function buildMicroCell(complex: boolean, color: Color3): Model
+-- A new cell's spawn point: budding off a parent (division), or random in the box.
+local function newCellPosition(near: Vector3?): Vector3
+	local reg = currentRegion()
+	if near then
+		local off = Vector3.new(microRng:NextNumber(-1, 1), microRng:NextNumber(-1, 1), microRng:NextNumber(-1, 1))
+		if off.Magnitude < 0.01 then off = Vector3.xAxis end
+		return near + off.Unit * (reg.X * 0.05)
+	end
+	return Vector3.new(
+		(microRng:NextNumber() - 0.5) * reg.X,
+		(microRng:NextNumber() - 0.5) * reg.Y,
+		(microRng:NextNumber() - 0.5) * reg.Z
+	)
+end
+
+-- One organelle part at a fixed local offset from the body, registered in its
+-- category pool so a later zoom-out can fade it. `size` may be a scalar (ball
+-- diameter) or a Vector3 (e.g. the flagella cylinder).
+local function addOrganelle(model, category, color, size, offset, shape, transparency)
+	local p = Instance.new("Part")
+	p.Name = "Org_" .. category
+	p.Shape = shape or Enum.PartType.Ball
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CastShadow = false
+	p.Material = Enum.Material.Neon
+	p.Color = color
+	p.Transparency = transparency or 0
+	p.Size = (typeof(size) == "Vector3") and size or Vector3.one * size
+	p.CFrame = CFrame.new(offset) -- local; the whole model is PivotTo'd as a unit
+	p.Parent = model
+	table.insert(orgPools[category], p)
+	return p
+end
+
+-- Build a cell whose organelle complement matches the CURRENT population: organelles
+-- already past their threshold simply aren't built. `complex` (eukaryotic dominant)
+-- adds the inner mitochondria. The model is moved rigidly with PivotTo, so organelle
+-- offsets are set once here and never touched per-frame.
+local function buildMicroCell(count: number, color: Color3, complex: boolean): (Model, BasePart)
 	local model = Instance.new("Model")
+	local size = complex and 1.6 or 1.2
 
 	local body = Instance.new("Part")
 	body.Name = "Body"
@@ -388,63 +479,83 @@ local function buildMicroCell(complex: boolean, color: Color3): Model
 	body.CastShadow = false
 	body.Material = Enum.Material.SmoothPlastic
 	body.Color = color
-	body.Transparency = 0.35
-	body.Size = Vector3.one * (complex and 1.6 or 1.1)
+	body.Transparency = 0.3
+	body.Size = Vector3.one * size
 	model.PrimaryPart = body
 	body.Parent = model
 
-	-- Nucleus.
-	local nucleus = Instance.new("Part")
-	nucleus.Name = "Nucleus"
-	nucleus.Shape = Enum.PartType.Ball
-	nucleus.Anchored = true
-	nucleus.CanCollide = false
-	nucleus.CanQuery = false
-	nucleus.CastShadow = false
-	nucleus.Material = Enum.Material.Neon
-	nucleus.Color = color:Lerp(Color3.new(1, 1, 1), 0.3)
-	nucleus.Size = body.Size * 0.42
-	nucleus.Parent = model
-
-	if complex then
-		for _ = 1, 4 do
-			local org = Instance.new("Part")
-			org.Name = "Organelle"
-			org.Shape = Enum.PartType.Ball
-			org.Anchored = true
-			org.CanCollide = false
-			org.CanQuery = false
-			org.CastShadow = false
-			org.Material = Enum.Material.Neon
-			org.Color = Color3.fromRGB(255, 190, 90)
-			org.Size = body.Size * 0.14
-			org.Parent = model
+	-- Membrane: faint outer shell (the cell outline — visible longest).
+	if count <= ORG_MEMBRANE_MAX then
+		local shell = addOrganelle(model, "membrane", color, size * 1.5, Vector3.zero, nil, 0.55)
+		shell.Material = Enum.Material.ForceField
+	end
+	-- Flagella: a small tail nub off one side.
+	if count <= ORG_FLAGELLA_MAX then
+		addOrganelle(model, "flagella", color:Lerp(Color3.new(1, 1, 1), 0.2),
+			Vector3.new(size * 0.95, size * 0.14, size * 0.14), Vector3.new(size * 0.75, 0, 0),
+			Enum.PartType.Cylinder, 0.1)
+	end
+	-- Nucleus: central bright core.
+	if count <= ORG_NUCLEUS_MAX then
+		addOrganelle(model, "nucleus", color:Lerp(Color3.new(1, 1, 1), 0.35), size * 0.42, Vector3.zero)
+	end
+	-- Mitochondria: warm side organelle (eukaryotes only).
+	if complex and count <= ORG_MITO_MAX then
+		addOrganelle(model, "mitochondria", Color3.fromRGB(255, 170, 70), size * 0.34,
+			Vector3.new(size * 0.32, size * 0.15, 0))
+	end
+	-- Ribosomes: a scatter of tiny specks (only the very closest zoom).
+	if count <= ORG_RIBO_MAX then
+		for i = 1, 4 do
+			local a = (i / 4) * math.pi * 2
+			addOrganelle(model, "ribosomes", Color3.fromRGB(180, 255, 200), size * 0.12,
+				Vector3.new(math.cos(a) * size * 0.28, math.sin(a * 1.7) * size * 0.2, math.sin(a) * size * 0.28))
+		end
+	end
+	-- Plasmids: a small ring (only the very closest zoom).
+	if count <= ORG_PLASMID_MAX then
+		for i = 1, 4 do
+			local a = (i / 4) * math.pi * 2
+			addOrganelle(model, "plasmids", color, size * 0.1,
+				Vector3.new(math.cos(a) * size * 0.5, 0, math.sin(a) * size * 0.5))
 		end
 	end
 
 	model.Parent = microWorld
-	return model
+	return model, body
 end
 
--- Place a cell's parts at a center point (body + nucleus + organelles scattered).
-local function placeMicroCell(cell: MicroCell)
-	local body = cell.model.PrimaryPart
-	if not body then return end
-	body.CFrame = CFrame.new(cell.pos)
-	local r = body.Size.X * 0.5
-	for _, part in cell.model:GetChildren() do
-		if part:IsA("BasePart") and part ~= body then
-			if part.Name == "Organelle" then
-				part.CFrame = body.CFrame * CFrame.new(
-					(math.random() - 0.5) * r,
-					(math.random() - 0.5) * r,
-					(math.random() - 0.5) * r
-				)
-			else
-				part.CFrame = body.CFrame -- nucleus stays centered
-			end
-		end
+-- Add one cell. When `animate` (a real new cell appeared), it buds off a random
+-- existing cell and grows into place — a visible division.
+local function addMicroCell(animate: boolean)
+	local count = state.totalCount
+	local color = colorForDominant(state.dominant)
+	local complex = state.dominant == OrganelleData.STAGE_EUKARYOTIC
+
+	local parent = (animate and #microCells > 0) and microCells[microRng:NextInteger(1, #microCells)] or nil
+	local pos = newCellPosition(parent and parent.pos or nil)
+	local model, body = buildMicroCell(count, color, complex)
+	model:PivotTo(CFrame.new(pos))
+
+	local cell: MicroCell = {
+		model = model,
+		body = body,
+		pos = pos,
+		vel = Vector3.new(microRng:NextNumber(-1, 1), microRng:NextNumber(-1, 1), microRng:NextNumber(-1, 1)) * 2,
+	}
+	table.insert(microCells, cell)
+
+	if parent then
+		local full = body.Size
+		body.Size = full * 0.2
+		TweenService:Create(body, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+			{ Size = full }):Play()
 	end
+end
+
+local function removeMicroCell()
+	local cell = table.remove(microCells)
+	if cell then cell.model:Destroy() end
 end
 
 local function clearMicroCells()
@@ -452,11 +563,44 @@ local function clearMicroCells()
 		cell.model:Destroy()
 	end
 	table.clear(microCells)
+	for cat in pairs(orgPools) do
+		table.clear(orgPools[cat])
+	end
 end
 
--- Accurate readout: shows the real cell count, and only notes "(capped)" when the
--- population exceeds what we can draw — so the number never overstates the cells.
+-- Smoothly fade out (then destroy) every organelle in a category whose threshold the
+-- population has now passed. One-shot per crossing; safe against already-freed parts.
+local FADE_INFO = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local function fadeCategoryIfPast(category: string, threshold: number)
+	if state.totalCount <= threshold then return end
+	local pool = orgPools[category]
+	if #pool == 0 then return end
+	orgPools[category] = {}
+	for _, p in pool do
+		if p and p.Parent then
+			TweenService:Create(p, FADE_INFO, { Transparency = 1 }):Play()
+		end
+	end
+	task.delay(0.7, function()
+		for _, p in pool do
+			if p then p:Destroy() end
+		end
+	end)
+end
+
+local function applyOrganelleVisibility()
+	fadeCategoryIfPast("ribosomes", ORG_RIBO_MAX)
+	fadeCategoryIfPast("plasmids", ORG_PLASMID_MAX)
+	fadeCategoryIfPast("nucleus", ORG_NUCLEUS_MAX)
+	fadeCategoryIfPast("mitochondria", ORG_MITO_MAX)
+	fadeCategoryIfPast("membrane", ORG_MEMBRANE_MAX)
+	fadeCategoryIfPast("flagella", ORG_FLAGELLA_MAX)
+end
+
+-- Accurate readout: shows the real cell count, noting "(capped)" only when the
+-- population exceeds what we can draw — the number never overstates the cells.
 local lastMicroCount = -1
+local builtDominant: string? = nil
 local function refreshMicroReadout()
 	if state.totalCount <= 0 then
 		readout.Text = "No life yet — create a cell to populate the sample."
@@ -473,37 +617,26 @@ local function refreshMicroReadout()
 	end
 end
 
--- Rebuild the swimming sample to match the current population + dominant form.
-local function rebuildMicroSample()
-	local target = microCountForPopulation(state.totalCount)
-	local color = colorForDominant(state.dominant)
-	local complex = state.dominant == OrganelleData.STAGE_EUKARYOTIC
-
-	clearMicroCells()
-	local rng = Random.new()
-	for _ = 1, target do
-		local pos = Vector3.new(
-			(rng:NextNumber() - 0.5) * MICRO_REGION.X,
-			(rng:NextNumber() - 0.5) * MICRO_REGION.Y,
-			(rng:NextNumber() - 0.5) * MICRO_REGION.Z
-		)
-		local cell: MicroCell = {
-			model = buildMicroCell(complex, color),
-			pos = pos,
-			vel = Vector3.new(rng:NextNumber(-1, 1), rng:NextNumber(-1, 1), rng:NextNumber(-1, 1)) * 2,
-		}
-		placeMicroCell(cell)
-		table.insert(microCells, cell)
+-- Bring the sample in line with the current population: add/remove cells (animating
+-- real new cells as divisions), fade organelles past their zoom thresholds, and ease
+-- the zoom. A change of dominant life form rebuilds the sample (new look), un-animated.
+local function syncMicroSample(animate: boolean)
+	if builtDominant ~= state.dominant then
+		clearMicroCells()
+		builtDominant = state.dominant
+		animate = false
 	end
-	lastMicroCount = target
+	local shown = microCountForPopulation(state.totalCount)
+	while #microCells < shown do
+		addMicroCell(animate)
+	end
+	while #microCells > shown do
+		removeMicroCell()
+	end
+	applyOrganelleVisibility()
+	updateZoom(animate)
+	lastMicroCount = shown
 	refreshMicroReadout()
-end
-
--- The viewport camera pulls BACK as the population climbs, showing a larger sample.
-local function microCameraDistance(): number
-	-- zoom out smoothly with log population: ~26 studs empty → ~46 at huge counts.
-	local zoom = 26 + math.clamp(math.log10(math.max(state.totalCount, 1)) * 2.4, 0, 22)
-	return zoom
 end
 
 -- Brownian motion + camera framing while the microscope is open.
@@ -514,27 +647,29 @@ local function runMicroSim()
 	task.spawn(function()
 		while microGui.Enabled do
 			local dt = RunService.Heartbeat:Wait()
-			local half = MICRO_REGION * 0.5
+			local half = currentRegion() * 0.5
 			for _, cell in microCells do
 				-- Brownian: random nudge + mild damping, bounce off the box walls.
 				local jitter = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 18
 				cell.vel = (cell.vel + jitter * dt) * 0.92
-				local nextPos = cell.pos + cell.vel * dt
-				if math.abs(nextPos.X) > half.X then cell.vel = Vector3.new(-cell.vel.X, cell.vel.Y, cell.vel.Z) end
-				if math.abs(nextPos.Y) > half.Y then cell.vel = Vector3.new(cell.vel.X, -cell.vel.Y, cell.vel.Z) end
-				if math.abs(nextPos.Z) > half.Z then cell.vel = Vector3.new(cell.vel.X, cell.vel.Y, -cell.vel.Z) end
+				local np = cell.pos + cell.vel * dt
+				if math.abs(np.X) > half.X then cell.vel = Vector3.new(-cell.vel.X, cell.vel.Y, cell.vel.Z) end
+				if math.abs(np.Y) > half.Y then cell.vel = Vector3.new(cell.vel.X, -cell.vel.Y, cell.vel.Z) end
+				if math.abs(np.Z) > half.Z then cell.vel = Vector3.new(cell.vel.X, cell.vel.Y, -cell.vel.Z) end
 				cell.pos = Vector3.new(
 					math.clamp(cell.pos.X + cell.vel.X * dt, -half.X, half.X),
 					math.clamp(cell.pos.Y + cell.vel.Y * dt, -half.Y, half.Y),
 					math.clamp(cell.pos.Z + cell.vel.Z * dt, -half.Z, half.Z)
 				)
-				placeMicroCell(cell)
+				if cell.model.PrimaryPart then
+					cell.model:PivotTo(CFrame.new(cell.pos)) -- moves body + organelles rigidly
+				end
 			end
-			-- Slow orbit of the camera for a living, lens-drifting feel.
-			local dist = microCameraDistance()
-			local a = os.clock() * 0.15
+			-- Camera frames the sample from the current (tweened) zoom distance.
+			local dist = zoomValue.Value
+			local a = os.clock() * 0.12
 			vpCamera.CFrame = CFrame.lookAt(
-				Vector3.new(math.sin(a) * 3, 2, dist),
+				Vector3.new(math.sin(a) * dist * 0.08, dist * 0.06, dist),
 				Vector3.zero
 			)
 		end
@@ -565,7 +700,7 @@ local function setMicroOpen(open: boolean)
 	microOpen = open
 
 	if open then
-		rebuildMicroSample()
+		syncMicroSample(false) -- build the sample to the current population (instant zoom)
 		microGui.Enabled = true
 		runMicroSim()
 
@@ -597,6 +732,8 @@ local function setMicroOpen(open: boolean)
 		shrink.Completed:Connect(function()
 			if not microOpen then
 				microGui.Enabled = false -- stops runMicroSim's loop
+				clearMicroCells()        -- free the cell parts while closed
+				builtDominant = nil      -- force a fresh build on next open
 			end
 		end)
 	end
@@ -640,11 +777,10 @@ local function recomputeState(cells)
 		burst:Emit(16)
 	end
 
-	-- Keep the open microscope sample in step with the population.
-	if microGui.Enabled and microCountForPopulation(total) ~= lastMicroCount then
-		rebuildMicroSample()
-	elseif microGui.Enabled then
-		refreshMicroReadout()
+	-- Keep the open microscope sample in step with the population in real time:
+	-- add cells (as divisions), fade organelles past their thresholds, ease the zoom.
+	if microGui.Enabled then
+		syncMicroSample(true)
 	end
 end
 
