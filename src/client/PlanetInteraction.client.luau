@@ -55,8 +55,9 @@ local PlanetInspectContext = require(script.Parent:WaitForChild("PlanetInspectCo
 -- All spends are server-authoritative; this module only requests + reflects them.
 local CellInterventionUI = require(script.Parent:WaitForChild("CellInterventionUI"))
 
--- Read-only preview of future (Epic 6) interventions, mounted below the live UI.
-local InterventionPreviewUI = require(script.Parent:WaitForChild("InterventionPreviewUI"))
+-- Interactive ecosystem interventions (Epic 6: Life Progress / Stability), mounted
+-- below the live cell UI.
+local EcosystemInterventionUI = require(script.Parent:WaitForChild("EcosystemInterventionUI"))
 
 local PROMPT_DISTANCE    = 170  -- show the prompt at/under this distance (studs)
 local PROMPT_HIDE_BUFFER = 20   -- ...and hide once you pass distance + this (=190)
@@ -420,9 +421,9 @@ local interventionHeader = makeInfoLabel(13, { font = Enum.Font.GothamBold, size
 interventionHeader.Text = "Life Interventions"
 CellInterventionUI.mount(infoScroll, { layoutOrder = 14 })
 
--- Read-only "Coming Soon" preview of future interventions (Epic 5, additive) — sits
--- below the live cell UI so players see where progression heads. No spend path.
-InterventionPreviewUI.mount(infoScroll, { layoutOrder = 30 })
+-- Ecosystem Interventions (Epic 6): Life Progress + Stability + the three live
+-- interventions, server-authoritative. Sits below Nova's Cell Cultures UI.
+EcosystemInterventionUI.mount(infoScroll, { layoutOrder = 30 })
 
 local exitLabel = makeInfoLabel(20, { size = 13, color = Color3.fromRGB(150, 170, 190) })
 

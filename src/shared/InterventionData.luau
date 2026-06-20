@@ -1,18 +1,17 @@
 -- Intervention definitions — the generic, data-driven format for planet
 -- interventions / upgrades (Epic 5 "Matter Core").
 --
--- This module is the FORMAT future interventions plug into. The active Tier-1
--- flow (Create Life + organelle upgrades) is owned by Nova's PlayerManager /
+-- This module is the FORMAT planet interventions plug into. The Tier-1 cell flow
+-- (Create Life + organelle upgrades) is owned by Nova's PlayerManager /
 -- OrganelleData / CellInterventionUI and is NOT duplicated here — `create_life`
--- appears only as the canonical reference example (state = "Active", handled
--- elsewhere). The other entries are FUTURE interventions (Epic 6: Early Evolution
--- Progression) surfaced now as read-only "Coming Soon" previews by
--- InterventionPreviewUI.
+-- appears only as the canonical reference (state = "Active", handled elsewhere).
 --
--- When Epic 6 implements LifeProgress / Stability, a "ComingSoon" entry becomes
--- live by: (1) flipping its `state`, and (2) adding a server handler that reads
--- this entry's `cost` / `requirements` / `effects` and applies them — without a
--- second purchase framework. See "Extension points" in docs/EPICS/Epic5.md.
+-- The `category = "Ecosystem"` entries are the live Epic 6 ecosystem interventions
+-- (Nourish Microbes / Stabilize Oceans / Accelerate Mutation). Both ends read this
+-- one table: the server `PlayerManager.onApplyIntervention` validates `requirements`
+-- /`cost` and applies `effects` (LifeProgress / Stability), and the client
+-- `EcosystemInterventionUI` renders the cards. Adding a new intervention is one
+-- entry here (+ a new `effects` branch on the server only if it's a new effect type).
 --
 -- Pure data + helpers — no services, no Instances. Safe to require on both sides.
 
