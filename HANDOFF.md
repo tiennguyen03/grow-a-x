@@ -15,11 +15,9 @@ Then `CLAUDE.md` for architecture/rules.
 
 ## Current Integration State
 
-**Already in `main`:** PR #10 (Epic 4 + Nova's #7/#8/#9 + Matter Core integration) and **PR #12 — Nova's Sprint 8C organelle upgrade path** (Archaea cells upgrade organelle-by-organelle into Eukaryotic cells; unlimited cells; the **whole intervention UI now lives in the inspect panel** via `CellInterventionUI`, making the old Matter Core panel obsolete).
+**Everything below is now in `main`** (as of 2026-06-20). The big merge wave landed: Epic 4 + Matter Core integration + polish (#10/#11), Nova's 8C/8D/8E (#12/#13), 1C Multicellular + dynamic pricing (#14), the dev menu (#15), and **Epic 5 Matter Core + Epic 6 Ecosystem Interventions** (#16). All shared-file conflicts (PlayerManager / Remotes / HANDOFF) were unioned.
 
-**In flight (this branch → `main`):** the post-#10 commits that didn't make the #10 merge — **misc polish** (denser Matter 360/1050, planet orbit 340→**460**, **sun-death** at star radius + `SUN_KILL_MARGIN`) and the **handoff split** (this global file + `HANDOFF-TIEN.md`/`HANDOFF-NOVA.md` + the `CLAUDE.md` workflow). `origin/main` (incl. 8C) has been merged into this branch and reconciled (only `HANDOFF.md` needed manual union).
-
-> After this lands, both devs branch off `main`. PRs #7/#8/#9 are superseded by #10 (close them).
+> **No open PRs.** Both devs branch fresh off `main` for the next work. Remaining: in-Studio playtest sign-off, and the dev menu must be removed before launch.
 
 ---
 
@@ -27,8 +25,8 @@ Then `CLAUDE.md` for architecture/rules.
 
 | Developer | Current lane | Branch | Lane handoff |
 |---|---|---|---|
-| **Tien** | Epic 4 polish + handoff split → `main` (then 4H playtest) | `tien/integration-matter-planets` | [`HANDOFF-TIEN.md`](HANDOFF-TIEN.md) |
-| **Nova** | Epic 3 organelle upgrades (8C shipped); next evolution tier | `nova/organelle-upgrades` (merged #12) | [`HANDOFF-NOVA.md`](HANDOFF-NOVA.md) |
+| **Tien** | Epic 5/6 shipped to `main`; next: playtest + next epic | (branch fresh off `main`) | [`HANDOFF-TIEN.md`](HANDOFF-TIEN.md) |
+| **Nova** | Epic 3 8C–8E + 1C shipped to `main`; next: tiers beyond Multicellular | (branch fresh off `main`) | [`HANDOFF-NOVA.md`](HANDOFF-NOVA.md) |
 
 ---
 
@@ -57,8 +55,9 @@ Then `CLAUDE.md` for architecture/rules.
 
 ## Current Global Blockers
 
-- **In-Studio playtest sign-off pending** for the merged work (Epic 4 4H + 8C organelle flow + polish).
-- The post-#10 polish + handoff-split (this branch) still needs to land on `main`.
+- **In-Studio playtest sign-off pending** for the full merged stack (Epic 4 4H, 8C–8E + 1C cell/organelle/multicellular flow, Epic 5/6 ecosystem interventions, polish).
+- ⚠️ **Dev menu must be removed before launch** (`DevMenu.client.luau` + `DevGrantMatter` remote + the handler in `PlayerManager.init`).
+- Epic 6 6G (Mass Algae Bloom event) deferred.
 
 ---
 
