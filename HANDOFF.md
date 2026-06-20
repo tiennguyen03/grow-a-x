@@ -47,7 +47,8 @@ Then `CLAUDE.md` for architecture/rules.
 | 8D | Eukaryotic Cascade (first Eukaryote evolves all cells + future cells born Eukaryotic) + permanent Dust Multiplier (`floor((tier+1)²/2)` Matter/mote, Tier 1 → ×2) | 🔶 this branch → `main` (Nova); playtest pending |
 | 8E | Biosphere View — Life Vessel orb + Microscope `ViewportFrame` overlay (zoom progression, purchase-gated organelles, cell divisions); toggle **M**/**Tab**. Replaced the orbiting planet cells (`CellVisuals`) + the C-key Matter Core panel (`MatterConverterUI`), both **removed** | 🔶 this branch → `main` (Nova); playtest pending |
 | — | Footstep mute fix; marker render order | ✅ in `main` (#10, Nova) |
-| — | Misc polish (denser Matter, planet farther from sun, sun-death) + handoff split | 🔶 this branch → `main` |
+| — | Misc polish (denser Matter, planet farther from sun, sun-death) + handoff split | ✅ in `main` (#11) |
+| 5A/5B | Epic 5 Matter Core: audit (MVP mostly pre-built by Nova) + additive intervention-definition format (`InterventionData`) + read-only "Coming Soon" preview cards in inspect; live generic pipeline deferred to Epic 6 | 🔶 `tien/epic5-matter-core`; pending playtest |
 
 ---
 
@@ -87,6 +88,8 @@ Then `CLAUDE.md` for architecture/rules.
 | `src/client/PlanetInspectContext.luau` | Seam: publishes active planet context + `Changed`/`OpenRequested` (no economy logic) | ⚠️ **Tien↔Nova boundary** — coordinate before changing its shape |
 | `src/client/PlanetStageVisuals.client.luau` | Archaea life-glow when `EvolutionTier≥1`/`EvolutionStage=="Archaea"` | ✅ Safe — self-contained (Tien) |
 | `src/shared/OrganelleData.luau` | Ordered Tier-1 organelle path (Archaea → Eukaryotic): id/name/cost/bonus/visual + helpers (`TOTAL_COST`=240). Pure data (Epic 3 / 8C) | ✅ Safe — pure data (Nova) |
+| `src/shared/InterventionData.luau` | Generic intervention/upgrade definition format (id/cost/requirements/effects/state) — `create_life` reference + future Life interventions as `ComingSoon`. The format Epic 6 interventions plug into (Epic 5) | ✅ Safe — pure data (Tien) |
+| `src/client/InterventionPreviewUI.luau` | Read-only "Coming Soon" preview cards (from `InterventionData`) mounted in the inspect panel below the live cell UI; no spend path (Epic 5) | ✅ Safe — self-contained module (Tien) |
 | `src/shared/GameConfig.luau` | Shared tuning constants (`DUST_*`, `MATTER_CONVERTER_*`, `ARCHAEA_*`) | ⚠️ **Shared** — append, don't reorganize |
 | `src/shared/Remotes.luau` | All RemoteEvents (`MatterUpdate`, `CreateArchaea`, `ConverterUpdate`, `PurchaseOrganelle`, `CascadeTriggered`) | ⚠️ **Shared** — add remotes here |
 | `src/shared/WorldConfig.luau` | World/star/orbit constants + `SUN_KILL_MARGIN` | ⚠️ **Shared** — append, don't reorganize |

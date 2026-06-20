@@ -1842,3 +1842,64 @@ future interventions both conform to, and write the Epic 6 extension docs — do
 with Nova, not on top of his unmerged branches.
 
 **Status:** 5A ✅ complete. 5B–5F gated on the scope decision below (coordinate with Nova).
+
+---
+
+# Sprint 5B (additive) + 5G — Intervention Framework Preview & Extension Notes (2026-06-20)
+
+Per the 5A finding, Epic 5 was executed as an **additive, Nova-aligned** layer — no parallel
+purchase pipeline, no edits to Nova's organelle code.
+
+## What shipped (this branch)
+
+- **`src/shared/InterventionData.luau`** (NEW, pure data) — the generic intervention/upgrade
+  definition format Epic 5 §7.2/§12.2 asks for: `{ id, displayName, category, description, flavor,
+  cost = { Matter = N }, repeatable, requirements = {…}, effects = {…}, state, unlockEpic, sortOrder }`.
+  Contains `create_life` as the canonical **reference** example (`state = "Active"`, handled by
+  Nova's `PlayerManager`/`CellInterventionUI` — NOT re-implemented), plus the future Life-era
+  interventions `nourish_microbes`, `stabilize_oceans`, `accelerate_mutation` (`state = "ComingSoon"`,
+  `unlockEpic = 6`). Helpers: `getAll` / `get` / `getPreviews` / `effectSummary`.
+- **`src/client/InterventionPreviewUI.luau`** (NEW, Tien-owned) — `mount(parent, opts)` renders
+  read-only "Coming Soon" cards (name, cost, effect summary, flavor, `Coming Soon · Epic 6` badge).
+  No buttons, no remotes, no spend.
+- **`src/client/PlanetInteraction.client.luau`** — mounts the preview section into the inspect
+  panel (`layoutOrder = 30`) **below** Nova's live `CellInterventionUI` (`layoutOrder = 14`).
+
+This satisfies Epic 5's "small now, flexible later" pillar: the format exists and is visible, the
+player sees the progression direction, and nothing competes with the working organelle flow.
+
+## Extension points — how Epic 6 makes a "ComingSoon" intervention live
+
+1. **Profile fields:** add `lifeProgress` / `stability` to the profile in `PlayerManager.createProfile`
+   (defaults), include them in the `ConverterUpdate` payload.
+2. **Server handler:** add a single generic handler (e.g. `onApplyIntervention(player, id)`) that:
+   looks up `InterventionData.get(id)`; checks `requirements` (e.g. `evolutionStage`, `lifeExists`)
+   against the profile/planet; checks `cost.Matter`; applies `effects` (`addLifeProgress`,
+   `addStability`, …); rejects unknown/locked/unaffordable safely. Reuse the existing
+   `MatterUpdate` + `ConverterUpdate` push pattern. One remote (`ApplyIntervention`) covers all
+   non-organelle interventions — no second framework.
+3. **Flip state:** change the definition's `state` from `"ComingSoon"` to `"Active"`, and have the
+   live card UI (extend `CellInterventionUI` or promote `InterventionPreviewUI` to interactive) fire
+   `ApplyIntervention(id)`.
+4. **Visuals:** `PlanetStageVisuals` / `BiosphereView` already react to planet attributes — drive
+   new feedback off `lifeProgress`/`stability` the same way.
+
+Because UI and server both read `InterventionData`, adding an intervention is one data entry + (if a
+new effect type) one `effects` branch in the handler. No duplicated costs/effects.
+
+## Deferred to Epic 6 (Early Evolution Progression)
+
+`LifeProgress` / `Stability` stats, the live (non-preview) implementation of Nourish Microbes /
+Stabilize Oceans / Accelerate Mutation, the first biological event (Mass Algae Bloom), and the
+fast-vs-stable strategic tension — all per `GameplayProgressionVision_UPDATED.md` §35/§45.
+
+## Test (preview layer)
+
+1. Inspect your Origin World → scroll the panel below the cell/organelle UI.
+2. Confirm a **"Future Interventions"** header + three greyed cards (Nourish Microbes, Stabilize
+   Oceans, Accelerate Mutation) with cost/effect/flavor and a "Coming Soon · Epic 6" badge.
+3. Confirm they are **non-interactive** (no buttons) and Nova's live Create Life / organelle flow is
+   unchanged.
+
+**Status:** 5A ✅, 5B/5G additive layer ✅ (pending in-Studio playtest). 5C–5F (live generic purchase
+pipeline) intentionally deferred to coordinate with Nova / Epic 6.

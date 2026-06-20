@@ -55,6 +55,9 @@ local PlanetInspectContext = require(script.Parent:WaitForChild("PlanetInspectCo
 -- All spends are server-authoritative; this module only requests + reflects them.
 local CellInterventionUI = require(script.Parent:WaitForChild("CellInterventionUI"))
 
+-- Read-only preview of future (Epic 6) interventions, mounted below the live UI.
+local InterventionPreviewUI = require(script.Parent:WaitForChild("InterventionPreviewUI"))
+
 local PROMPT_DISTANCE    = 170  -- show the prompt at/under this distance (studs)
 local PROMPT_HIDE_BUFFER = 20   -- ...and hide once you pass distance + this (=190)
 local UPDATE_INTERVAL    = 0.1  -- seconds between distance checks (no need per-frame)
@@ -381,6 +384,10 @@ makeDivider(12)
 local interventionHeader = makeInfoLabel(13, { font = Enum.Font.GothamBold, size = 15, color = CYAN })
 interventionHeader.Text = "Intervention"
 CellInterventionUI.mount(infoPanel, { layoutOrder = 14 })
+
+-- Read-only "Coming Soon" preview of future interventions (Epic 5, additive) — sits
+-- below the live cell UI so players see where progression heads. No spend path.
+InterventionPreviewUI.mount(infoPanel, { layoutOrder = 30 })
 
 local exitLabel = makeInfoLabel(20, { size = 13, color = Color3.fromRGB(150, 170, 190) })
 

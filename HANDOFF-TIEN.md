@@ -4,15 +4,18 @@ Tien's active lane handoff. Fast-changing day-to-day notes. Global/integration
 state lives in [`HANDOFF.md`](HANDOFF.md).
 
 ## Current Branch
-`tien/integration-matter-planets` (open as **PR #10** → `main`). This is the combined
-integration branch (Epic 4 + Nova's #7/#8/#9 + Matter Core integration + polish).
+`tien/epic5-matter-core` (off `main`). Epic 4 + the Matter Core integration + polish all merged to
+`main` (#10/#11). Now on **Epic 5 — Planet Upgrade System / Matter Core**.
 
 ## Current Focus
-Epic 4 **Planet Interaction & Inspection** + the **Matter Core ↔ inspect integration**.
-Currently in QA/polish while waiting on Nova's upgrade docs.
+**Epic 5.** 5A audit found the MVP is ~80% already built by Nova's Epic 3 (server-authoritative
+Create Life + organelles + inspect UI). Executing it **additively** (per the chosen scope): a
+generic intervention-definition format + read-only "Coming Soon" preview cards, **without** touching
+Nova's organelle code. Live generic purchase pipeline (5C–5F) deferred to coordinate with Nova / Epic 6.
 
 ## Active Sprint / Ticket
-- **Epic 4 Sprint 4H** — integration/QA/playtest sign-off (the only thing left on Epic 4).
+- **Epic 5 5A** ✅ audit + **5B/5G** ✅ additive layer (`InterventionData` + `InterventionPreviewUI` + extension docs). Pending in-Studio playtest.
+- (Carryover) Epic 4 **4H** playtest sign-off.
 
 ## Files I Am Touching
 - `src/client/PlanetInteraction.client.luau` (prompt + inspect camera + info panel + Create Life intervention)
