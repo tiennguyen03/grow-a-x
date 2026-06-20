@@ -38,6 +38,8 @@ local CONTENT_HEIGHT = 184 -- fixed height of the swappable list/detail area
 local localMatter = 0
 local cells = {}           -- array of { id, stage, purchased = {id=true}, purchasedCount, production }
 local totalProduction = 0
+local localDustMultiplier = 1 -- Matter awarded per dust mote (raised by tier evolutions)
+local localCascadeTriggered = false -- once true, newly created cells are born Eukaryotic
 local selectedCellId: number? = nil  -- nil = show the list; set = show that cell's detail
 local remotesRef = nil
 
@@ -370,16 +372,22 @@ function CellInterventionUI.render()
 		return
 	end
 
-	-- Header line: summed production.
-	refs.summary.Text = string.format("Production  %s", fmtRate(totalProduction))
+	-- Header line: summed production + the current dust value (Matter per mote).
+	refs.summary.Text = string.format(
+		"Production  %s     Dust Value  ×%d",
+		fmtRate(totalProduction),
+		localDustMultiplier
+	)
 
-	-- Create button affordability.
+	-- Create button affordability + label. After the Eukaryotic Cascade, new cells
+	-- are born Eukaryotic, so the button reflects the life form you'd actually create.
 	local createCost = GameConfig.MATTER_CONVERTER_COST_ARCHAEA
 	local canCreate = localMatter >= createCost
+	local createLifeform = localCascadeTriggered and "Eukaryotic" or "Archaea"
 	refs.createButton.AutoButtonColor = canCreate
 	refs.createButton.BackgroundColor3 = canCreate and GREEN_DEEP or Color3.fromRGB(40, 44, 56)
 	refs.createButton.TextColor3 = canCreate and Color3.fromRGB(220, 255, 235) or Color3.fromRGB(140, 150, 165)
-	refs.createButton.Text = string.format("+ Create Archaea Cell  (%d Matter)", createCost)
+	refs.createButton.Text = string.format("+ Create %s Cell  (%d Matter)", createLifeform, createCost)
 
 	-- A selected cell that no longer exists falls back to the list.
 	local cell = selectedCellId and findCell(selectedCellId) or nil
@@ -513,6 +521,8 @@ function CellInterventionUI.mount(parent: Instance, opts)
 		Remotes.ConverterUpdate.OnClientEvent:Connect(function(data)
 			cells = data.cells or {}
 			totalProduction = data.totalProduction or 0
+			localDustMultiplier = math.max(1, math.floor(data.dustMultiplier or 1))
+			localCascadeTriggered = data.cascadeTriggered == true
 			CellInterventionUI.render()
 		end)
 

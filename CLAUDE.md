@@ -100,19 +100,35 @@ The player is NOT a colonist or creature. They act from above, spending **Matter
 All systems are ModuleScripts with an `.init()` function. Entry points (`Main.server.luau`, `Main.client.luau`) only call `.init()` on each system. Keep systems single-responsibility.
 
 ```
+# Server
 src/server/Main.server.luau          → requires and inits all server systems
 src/server/WorldBuilder.luau         → builds the environment (gravity/lighting), centerpiece star, star field + collectible dust motes
-src/server/PlayerPlanetService.luau  → builds one deterministic procedural planet per player on join (Epic 7)
-src/server/PlayerManager.luau        → player profiles, dust collection + Matter awards, remote firing
+src/server/PlayerPlanetService.luau  → builds one deterministic procedural planet per player on join; server-side orbit + spin (Epic 2)
+src/server/PlayerManager.luau        → player profiles, dust collection + Matter awards, converter/cell state, organelle purchases, Eukaryotic Cascade + Dust Multiplier (Epic 1/3)
+
+# Client
 src/client/Main.client.luau          → requires and inits all client systems
 src/client/MatterUI.luau             → builds HUD, listens to MatterUpdate remote, shows "+N" popup
 src/client/SpaceMovement.client.luau → standalone LocalScript; floaty space movement (no module pattern — runs itself)
 src/client/DustAnimator.client.luau  → standalone LocalScript; bobs the dust motes locally (no module pattern)
-src/shared/GameConfig.luau           → shared constants (DUST_* tuning, etc.)
+src/client/PlanetMarker.client.luau  → standalone LocalScript; screen-space marker pointing to the local player's orbiting planet (Epic 2)
+src/client/PlanetInteraction.client.luau → standalone LocalScript; approach prompt + inspect camera + info panel; mounts the cell-intervention UI (Epic 4)
+src/client/PlanetInspectContext.luau → client seam publishing the active inspected-planet context to other UIs (Epic 4)
+src/client/PlanetStageVisuals.client.luau → standalone LocalScript; pulsing Archaea glow on the planet once life begins (Epic 4)
+src/client/CellInterventionUI.luau   → cell list + per-cell organelle-upgrade UI, mounted into the inspect panel (Epic 3)
+src/client/BiosphereView.client.luau → standalone LocalScript; Life Vessel orb (near camera, 1 speckle per cell) + Microscope ViewportFrame overlay (population zoom progression + fading organelles) + evolution/cascade celebration toasts; toggle M/Tab; client-only, no planet coupling (Epic 3)
+
+# Shared (ReplicatedStorage)
+src/shared/GameConfig.luau           → shared constants (DUST_* tuning, converter/organelle rates, etc.)
 src/shared/Remotes.luau              → creates RemoteEvents server-side, waits client-side
+src/shared/WorldConfig.luau          → world-level constants: star + planet/orbit composition; pure data (Epic 2)
+src/shared/PlanetArchetypes.luau     → planet archetype definitions (trait ranges + color palettes the generator rolls within); pure data (Epic 2)
+src/shared/PlanetGenerator.luau      → pure, deterministic planet descriptor generator (seed → archetype + traits); no Instances (Epic 2)
+src/shared/DustField.luau            → universe-wide dust spawn helper (getSpawnPosition) used by WorldBuilder + PlayerManager (Epic 1/2)
+src/shared/OrganelleData.luau        → ordered Tier 1 organelle path (cost/bonus/visual) + helpers; pure data (Epic 3)
 ```
 
-> **Note:** `SpaceMovement.client.luau` is a self-contained LocalScript, not a module. It does not follow the `Main → require → .init()` pattern because it has no dependencies and needs no coordination with other systems.
+> **Note:** the `*.client.luau` files marked "standalone LocalScript" (`SpaceMovement`, `DustAnimator`, `PlanetMarker`, `PlanetInteraction`, `PlanetStageVisuals`, `BiosphereView`) are self-contained — they do not follow the `Main → require → .init()` pattern because they need no coordination with other systems and run themselves.
 
 ### RemoteEvents
 All remotes are defined in `src/shared/Remotes.luau`. Server creates them on load; client waits for them. Never hardcode remote names elsewhere.
@@ -120,6 +136,11 @@ All remotes are defined in `src/shared/Remotes.luau`. Server creates them on loa
 | Remote | Direction | Payload |
 |---|---|---|
 | `MatterUpdate` | Server → Client | `{ matter: number }` (client shows a "+N" popup from the delta) |
+| `CreateArchaea` | Client → Server | *(none)* — request to spend Matter on one new cell (Epic 3) |
+| `ConverterUpdate` | Server → Client | `{ archaeaCount, totalProduction, cells = {…}, dustMultiplier }` — full converter/cell state (Epic 3) |
+| `PurchaseOrganelle` | Client → Server | `{ cellId, organelleId }` — buy the next organelle for a cell; server validates order + cost (Epic 3) |
+| `CellEvolved` | Server → Client | `{ cellId }` — a single cell became Eukaryotic; drives the unlock celebration (Epic 3) |
+| `CascadeTriggered` | Server → Client | `{ triggerCellId, cellIds, count, dustMultiplier }` — one-time Eukaryotic Cascade celebration + Dust Multiplier unlock (Epic 3) |
 
 ---
 
@@ -324,7 +345,7 @@ When resolving a merge (or reconciling two branches) that touches `CLAUDE.md`, `
 | Epic 0: World Traversal | `docs/EPICS/Epic0.md` | In Progress |
 | Epic 1: Core Matter Loop | `docs/EPICS/Epic1.md` | In Progress |
 | Epic 2: Procedural Planet Generation _(formerly Epic 7)_ | `docs/EPICS/Epic2.md` | In Progress |
-| Epic 3: Evolutionary Progression _(formerly Epic 8)_ | `docs/EPICS/Epic3.md` | Not Started |
+| Epic 3: Evolutionary Progression _(formerly Epic 8)_ | `docs/EPICS/Epic3.md` | In Progress (8B–8D built: converter, organelle path, Eukaryotic Cascade + Dust Multiplier; playtest pending) |
 | Epic 4: Planet Interaction & Inspection | `docs/EPICS/Epic4.md` | In Progress (4A–4G built; 4H playtest pending) |
 | Epic 5: Planet Upgrade System | `docs/EPICS/Epic5.md` | Not Started |
 | Epic 6: Planet Era Visuals | `docs/EPICS/Epic6.md` | Not Started |

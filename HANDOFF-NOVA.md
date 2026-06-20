@@ -7,39 +7,45 @@ state lives in [`HANDOFF.md`](HANDOFF.md).
 > Core integration). Nova/Claude should keep it current while Nova works.
 
 ## Current Branch
-`nova/organelle-upgrades` — **merged to `main` via PR #12**. Start the next lane from a
-fresh `nova/<topic>` branch off `main`. (Earlier: #7/#8/#9 folded into Tien's #10.)
+`nova/epic3-reconciled` — the post-8C Epic 3 work (8D Cascade, 8E Biosphere View, the
+microscope/organelle polish) reconciled on top of `origin/main`. → `main` via PR.
+Sprint **1C (Multicellular Path + dynamic pricing)** and the **dev menu** sit on their own
+branches (`nova/dynamic-pricing-1c`, `nova/dev-menu`), stacked on this one.
 
 ## Current Focus
-**Epic 3 "From Archaea to Universe"** — Sprint **8C organelle upgrade path shipped**; next is
-the following evolution tier(s) beyond the Eukaryotic Cell.
+**Epic 3 "From Archaea to Universe"** — 8C–8E shipped; **1C (Eukaryotic → Multicellular
+Organism)** built on its branch. Next: tiers beyond Multicellular.
 
 ## Active Sprint / Ticket
-- Epic 3 (formerly Epic 8): **8B** Archaea cells ✅, **8C** organelle upgrades (Archaea → Eukaryotic) ✅ — both in `main`, pending playtest. Next tier TBD.
+- Epic 3: **8B** Archaea cells ✅, **8C** organelle path ✅ (in `main`), **8D** Eukaryotic
+  Cascade + Dust Multiplier ✅, **8E** Biosphere View (Life Vessel + Microscope) ✅ — this
+  branch → `main`. **1C** Multicellular Path + dynamic pricing ✅ on `nova/dynamic-pricing-1c`.
+  All pending in-Studio playtest.
 
 ## Files I Am Touching
-- `src/shared/OrganelleData.luau` — ordered organelle path (pure data).
-- `src/client/CellInterventionUI.luau` — interactive cell/organelle UI, **mounted into the inspect panel** by `PlanetInteraction`.
-- `src/client/CellVisuals.client.luau` — per-cell planet visuals + Eukaryotic celebration.
-- `src/server/PlayerManager.luau` — converter state: cells array, `CreateArchaea` + `PurchaseOrganelle` handlers, production.
-- `src/client/MatterConverterUI.luau` — now **obsolete** (interventions moved to the inspect panel); slated for removal.
-- Shared (announce first): `src/shared/Remotes.luau`, `src/shared/GameConfig.luau` (`MATTER_CONVERTER_*`, `ARCHAEA_*`, organelle costs), `src/client/Main.client.luau`.
+- `src/shared/OrganelleData.luau` — ordered organelle path (pure data; + `TOTAL_PRODUCTION_BONUS`).
+- `src/client/CellInterventionUI.luau` — interactive cell/organelle UI in the inspect panel; now also shows Dust Value + (1C) the dynamic cell cost + the Multicellular Path section.
+- `src/client/BiosphereView.client.luau` (NEW, 8E) — Life Vessel orb + Microscope `ViewportFrame` overlay + evolution/cascade celebration toasts. Toggle **M**/**Tab**.
+- `src/server/PlayerManager.luau` — converter state + `CreateArchaea`/`PurchaseOrganelle`, 8D cascade + dust multiplier, (1C) dynamic cell cost + `PurchaseUpgrade`.
+- **REMOVED:** `src/client/CellVisuals.client.luau` (orbiting planet cells → moved into Biosphere View) and `src/client/MatterConverterUI.luau` (C-key panel → obsolete). Their `Main.client` wiring is gone too.
+- (1C, separate branch) NEW `src/shared/Pricing.luau`, `src/shared/MulticellularData.luau`.
+- Shared (announce first): `src/shared/Remotes.luau` (added `CascadeTriggered`, 1C `PurchaseUpgrade`/`UpgradePurchased`), `src/shared/GameConfig.luau`, `src/client/Main.client.luau`.
 
 ## Files I Should Avoid
 - Tien's inspect/traversal scripts: `PlanetInteraction.client.luau`, `PlanetStageVisuals.client.luau`, `PlanetMarker.client.luau`, `SpaceMovement.client.luau`.
 - Don't reshape `PlanetInspectContext.luau` (shared seam) without coordinating with Tien.
 
-## Recent Changes
-- **Sprint 8B Matter Converter** — spend Matter → Archaea Cell; server-authoritative cost/deduct/count; passive +1 Matter / 5s per cell.
-- **Footstep-mute fix** — robust re-mute that holds against the engine re-un-muting.
-- **Marker render order** — `DisplayOrder = -1` so the planet marker sits under the HUD.
-- **Folded into the Matter Core integration:** the converter panel became the read-only "Matter Core" overview; **Create Life is now a planet intervention in Tien's inspect panel** (still fires your `CreateArchaea`); on first cell the server sets `EvolutionTier=1`/`EvolutionStage="Archaea"`.
+## Recent Changes (this session, post-8C)
+- **8D Eukaryotic Cascade + Dust Multiplier** — first Eukaryote evolves all cells at once + future cells born Eukaryotic; permanent dust multiplier `floor((tier+1)²/2)` (Tier 1 → ×2). New profile fields `cascadeTriggered`/`dustMultiplier`/`maxTierEvolved`; remote `CascadeTriggered`.
+- **8E Biosphere View** — new `BiosphereView.client.luau`: Life Vessel orb (near camera, 1 speckle/cell) + Microscope `ViewportFrame` (population zoom progression; cells mirror real cells + draw only purchased organelles; cell divisions). Toggle **M**/**Tab**. Removed the orbiting planet cells (`CellVisuals`) and the C-key Matter Core panel (`MatterConverterUI`); celebration toasts moved into the vessel.
+- **1C Multicellular Path + dynamic pricing** (branch `nova/dynamic-pricing-1c`) — dynamic cell cost `15·(1+0.08n+0.001n²)` + upgrade cost `base·(1+0.1·bought)`; six Eukaryotic→Multicellular upgrades (`MulticellularData`) with a UI section + per-upgrade visual layers in both biosphere views; remotes `PurchaseUpgrade`/`UpgradePurchased`.
+- **Dev menu** (branch `nova/dev-menu`, ⚠️ remove before launch) — left-side GUI to grant Matter for testing (`DevGrantMatter`).
 
 ## How To Test My Work
-1. Collect ≥15 Matter.
-2. **Create Life** from the inspect panel (press **E** near your planet) → Matter drops 15, Owned→1.
-3. Wait 5s → Matter ticks +1 per cell. Button greys out when you can't afford it.
-4. **C** opens the Matter Core overview (balance/owned/production + planet context).
+1. Collect Matter, press **E** near your planet, **Create Cell** in the inspect panel (cost rises as you own more — 1C).
+2. Buy organelles in order; on the first full Eukaryotic evolution the **Cascade** fires (all cells evolve, Dust Value → ×2).
+3. Press **M** (or **Tab**) → the **Biosphere View**: Life Vessel orb + Microscope; create cells to watch the zoom progression + purchased organelles appear.
+4. (1C) After Eukaryotic, the **Multicellular Path** section unlocks — buy the six upgrades and watch the microscope/vessel layer up.
 
 ## Open Questions / Blockers
 - Persistence: cells reset on rejoin (waits on a DataStore epic).

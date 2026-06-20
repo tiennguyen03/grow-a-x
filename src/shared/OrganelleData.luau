@@ -18,8 +18,9 @@
 
 local OrganelleData = {}
 
--- The ordered Archaea → Eukaryotic organelle path. `visual` is a key the
--- client-side CellVisuals script maps to a cosmetic layer on the cell.
+-- The ordered Archaea → Eukaryotic organelle path. `visual` is a per-organelle
+-- cosmetic key (used by the old orbiting-cell visuals, now removed; kept for any
+-- future per-organelle rendering).
 OrganelleData.ORGANELLES = {
 	{
 		id = "membrane",
@@ -85,16 +86,23 @@ OrganelleData.STAGE_EUKARYOTIC = "Eukaryotic"
 
 -- Derived constants (computed once at require time).
 local total = 0
+local totalBonus = 0
 local byId = {}
 local indexById = {}
 for i, organelle in ipairs(OrganelleData.ORGANELLES) do
 	total += organelle.cost
+	totalBonus += organelle.productionBonus
 	byId[organelle.id] = organelle
 	indexById[organelle.id] = i
 end
 
 OrganelleData.COUNT = #OrganelleData.ORGANELLES -- 7
 OrganelleData.TOTAL_COST = total                -- 240
+-- Summed production bonus of the full path (≈ 3.5/sec). The server uses this to
+-- set a fully evolved cell's production in one shot when a cell becomes Eukaryotic
+-- without buying organelles one-by-one — the Eukaryotic Cascade and the
+-- post-cascade auto-Eukaryotic cell creation both rely on it.
+OrganelleData.TOTAL_PRODUCTION_BONUS = totalBonus
 
 -- The organelle definition for an id, or nil if unknown.
 function OrganelleData.get(id: string)

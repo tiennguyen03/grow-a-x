@@ -29,6 +29,43 @@ local function totalProduction(profile)
 	return sum
 end
 
+-- Production of a fully evolved (Eukaryotic) cell — its base rate plus every
+-- organelle bonus. Used when a cell becomes Eukaryotic in one shot (the Cascade,
+-- and post-cascade auto-Eukaryotic creation) instead of organelle-by-organelle.
+local function fullyEvolvedProduction()
+	return GameConfig.ARCHAEA_BASE_PRODUCTION + OrganelleData.TOTAL_PRODUCTION_BONUS
+end
+
+-- Turn a cell into a finished Eukaryotic Cell in place: mark every organelle owned,
+-- set the Eukaryotic stage, and apply the full evolved production rate.
+local function makeEukaryotic(cell)
+	cell.purchased = {}
+	for _, organelle in ipairs(OrganelleData.ORGANELLES) do
+		cell.purchased[organelle.id] = true
+	end
+	cell.purchasedCount = OrganelleData.COUNT
+	cell.stage = OrganelleData.STAGE_EUKARYOTIC
+	cell.production = fullyEvolvedProduction()
+end
+
+-- Permanent Dust Multiplier earned for evolving a life form into a new tier for the
+-- first time: floor((tier + 1)^2 / 2). Tier 1 (Eukaryotic) → 2, tier 2 → 4, tier 3
+-- → 8, tier 4 → 12 … so each dust mote is worth that many Matter. (Only tier 1
+-- exists today; the formula is ready for the higher tiers Epic 3+ will add.)
+local function dustMultiplierForTier(tier)
+	return math.floor(((tier + 1) ^ 2) / 2)
+end
+
+-- Record that the player evolved into `tier` for the first time and raise their
+-- permanent Dust Multiplier accordingly. Monotonic — a higher tier never lowers it.
+local function applyTierEvolution(profile, tier)
+	if tier <= profile.maxTierEvolved then
+		return
+	end
+	profile.maxTierEvolved = tier
+	profile.dustMultiplier = math.max(profile.dustMultiplier, dustMultiplierForTier(tier))
+end
+
 -- A replication-safe snapshot of one cell (no functions; `purchased` is a plain
 -- map of organelleId → true so the client can render slots in OrganelleData order).
 local function serializeCell(cell)
@@ -57,13 +94,26 @@ local function fireConverterUpdate(player, profile)
 		archaeaCount = #profile.cells,
 		totalProduction = totalProduction(profile),
 		cells = cells,
+		dustMultiplier = profile.dustMultiplier,   -- Matter awarded per dust mote (UI "Dust Value")
+		cascadeTriggered = profile.cascadeTriggered, -- once true, new cells are born Eukaryotic (drives the Create button label)
 	})
 end
 
 local function createProfile(player)
 	-- matter is a FLOAT now (production rates are fractional per second). cells is
 	-- an array of per-cell tables; nextCellId hands out stable ids for the UI.
-	local profile = { matter = 0, cells = {}, nextCellId = 1 }
+	-- cascadeTriggered: has the one-time Eukaryotic Cascade fired yet? dustMultiplier:
+	-- Matter awarded per dust mote (starts at 1, raised permanently by tier evolutions).
+	-- maxTierEvolved: highest life-form tier the player has ever evolved into.
+	-- (None of these persist yet — they reset on rejoin until the DataStore epic.)
+	local profile = {
+		matter = 0,
+		cells = {},
+		nextCellId = 1,
+		cascadeTriggered = false,
+		dustMultiplier = 1,
+		maxTierEvolved = 0,
+	}
 	profiles[player.UserId] = profile
 
 	-- Push initial state immediately so the HUD shows "Matter: 0" right away
@@ -93,7 +143,10 @@ local function collect(player, mote)
 	local light = mote:FindFirstChildWhichIsA("PointLight")
 	if light then light.Enabled = false end
 
-	addMatter(player, 1)
+	-- One mote is worth the player's permanent Dust Multiplier in Matter (1 until
+	-- they first evolve a life form, then 2/4/8/… as they reach higher tiers).
+	local profile = profiles[player.UserId]
+	addMatter(player, profile and profile.dustMultiplier or 1)
 
 	task.delay(GameConfig.DUST_RESPAWN_TIME, function()
 		if not mote.Parent then return end
@@ -201,6 +254,14 @@ local function onCreateArchaea(player)
 		production = GameConfig.ARCHAEA_BASE_PRODUCTION, -- Matter/sec; grows per organelle
 	}
 	profile.nextCellId += 1
+
+	-- After the Eukaryotic Cascade, the player's lineage is "post-Archaea": every
+	-- new cell is born already fully Eukaryotic (no need to re-walk the organelle
+	-- path). They still pay the same creation cost — the Cascade is the reward.
+	if profile.cascadeTriggered then
+		makeEukaryotic(cell)
+	end
+
 	table.insert(profile.cells, cell)
 
 	-- The very first cell sparks life: flip the planet to the Archaea stage so the
@@ -266,13 +327,49 @@ local function onPurchaseOrganelle(player, payload)
 		evolved = true
 	end
 
-	fireUpdate(player, profile)          -- Matter went down
-	fireConverterUpdate(player, profile) -- this cell's state changed
+	-- The FIRST time a player ever completes a Eukaryotic Cell, the Eukaryotic
+	-- Cascade fires: every OTHER cell they own evolves to Eukaryotic instantly, and
+	-- reaching Tier 1 permanently raises their Dust Multiplier. It happens once.
+	local cascadeFired = false
+	local cascadedIds = nil
+	if evolved and not profile.cascadeTriggered then
+		profile.cascadeTriggered = true
+		cascadeFired = true
 
-	if evolved then
-		-- One-shot announcement for the client celebration (green pulse, burst,
-		-- "Eukaryotic Cell Unlocked!" toast). The authoritative state already went
-		-- out via ConverterUpdate above; this is purely the feedback trigger.
+		cascadedIds = {}
+		for _, other in ipairs(profile.cells) do
+			if other.id ~= cell.id and other.stage ~= OrganelleData.STAGE_EUKARYOTIC then
+				makeEukaryotic(other)
+				table.insert(cascadedIds, other.id)
+			end
+		end
+
+		applyTierEvolution(profile, 1) -- Eukaryotic is Tier 1 → Dust Multiplier becomes 2
+
+		-- Reflect the leap on the planet itself (the inspect panel + glow read this).
+		local planet = findPlayerPlanet(player)
+		if planet then
+			planet:SetAttribute("EvolutionStage", "Eukaryotic")
+		end
+	end
+
+	fireUpdate(player, profile)          -- Matter went down
+	fireConverterUpdate(player, profile) -- this cell (and any cascaded cells) changed
+
+	if cascadeFired then
+		-- One celebration for the whole moment: bursts across every cell that just
+		-- turned Eukaryotic + the "Eukaryotic Evolution Cascade!" / "Dust Value ×N"
+		-- announcement. Authoritative state already went out via ConverterUpdate.
+		Remotes.CascadeTriggered:FireClient(player, {
+			triggerCellId = cell.id,
+			cellIds = cascadedIds,
+			count = #cascadedIds,
+			dustMultiplier = profile.dustMultiplier,
+		})
+	elseif evolved then
+		-- A lone cell finishing the path after the cascade already happened. New cells
+		-- are born Eukaryotic so this is unreachable in normal play, but kept so the
+		-- single-cell "Eukaryotic Cell Unlocked!" feedback survives any future change.
 		Remotes.CellEvolved:FireClient(player, { cellId = cell.id })
 	end
 end
