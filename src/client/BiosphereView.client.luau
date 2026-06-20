@@ -30,6 +30,7 @@ local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local OrganelleData = require(ReplicatedStorage:WaitForChild("OrganelleData"))
+local MulticellularData = require(ReplicatedStorage:WaitForChild("MulticellularData"))
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -70,6 +71,7 @@ local state = {
 	dominant = nil,        -- "Archaea" | "Eukaryotic" | nil(empty)
 	tier = 1,              -- 1-based index into VESSEL_TIERS
 	cells = {},            -- the latest per-cell list from ConverterUpdate (id, stage, purchased, purchasedCount)
+	upgrades = 0,          -- multicellular upgrades bought (0..6) — drives the organized-body progression
 }
 
 local function tierForCount(n: number): number
@@ -223,37 +225,46 @@ RunService.RenderStepped:Connect(function(dt)
 
 	local def = VESSEL_TIERS[state.tier]
 
+	-- Multicellular structure (0 → 1 across the six 1C upgrades): as it rises the loose
+	-- cloud of dots becomes an ORGANIZED body — the speckles stop wandering, draw inward
+	-- into a tighter form, and pulse together in a stronger, coordinated heartbeat.
+	local structure = math.clamp(state.upgrades / MulticellularData.COUNT, 0, 1)
+
 	-- Target spot: a fixed offset in camera space (a companion orb at the lower right).
 	local targetCFrame = camera.CFrame * CFrame.new(VESSEL_OFFSET)
 	local goalPos = targetCFrame.Position
 	local alpha = math.clamp(VESSEL_FOLLOW_SPEED * dt, 0, 1)
 	local pos = orb.Position:Lerp(goalPos, alpha)
 
-	-- Heartbeat pulse (double-thump feel via |sin| shaped curve).
+	-- Heartbeat pulse (double-thump feel via |sin| shaped curve). Coordinated pulse
+	-- grows stronger as the body organizes.
 	local t = os.clock()
 	local beat = math.abs(math.sin(t * HEARTBEAT_RATE * math.pi))
-	local pulse = 1 + beat * HEARTBEAT_AMPLITUDE * (state.totalCount > 0 and 1 or 0.3)
+	local pulse = 1 + beat * HEARTBEAT_AMPLITUDE * (state.totalCount > 0 and 1 or 0.3) * (1 + structure)
 	orb.Size = Vector3.one * (VESSEL_BASE_SIZE * pulse)
 	orb.CFrame = CFrame.new(pos)
 
-	-- Ease the glow toward the tier's target so changes feel organic.
+	-- Ease the glow toward the tier's target so changes feel organic; an organized body
+	-- glows a touch brighter and more steadily.
 	curLight += (def.light - curLight) * math.clamp(6 * dt, 0, 1)
-	orbLight.Brightness = curLight * (0.85 + beat * 0.3)
+	orbLight.Brightness = curLight * (0.85 + beat * 0.3) * (1 + structure * 0.4)
 	orbLight.Range = VESSEL_BASE_SIZE * (3 + state.tier)
 
 	-- Swirl: rotate the speckle cloud; place each speckle at its stable local offset.
-	speckleSpin += def.swirl * dt
+	speckleSpin += def.swirl * (1 - structure * 0.7) * dt
 	local spin = CFrame.Angles(0, speckleSpin, speckleSpin * 0.4)
+	local coherent = 1 + beat * structure * 0.14   -- speckles breathe together with the orb
+	local draw = 1 - structure * 0.25              -- and draw inward into a tighter body
 	for _, p in speckleParts do
 		local off = p:GetAttribute("LocalOffset")
 		if typeof(off) == "Vector3" then
-			-- Gentle internal drift so the cloud feels alive at higher tiers.
+			-- Internal drift, damped as the body organizes (loose cloud → ordered structure).
 			local wobble = Vector3.new(
 				math.sin(t * 1.3 + off.X) * 0.04,
 				math.cos(t * 1.1 + off.Y) * 0.04,
 				math.sin(t * 0.9 + off.Z) * 0.04
-			) * def.swirl
-			p.CFrame = CFrame.new(pos) * spin * CFrame.new(off + wobble)
+			) * def.swirl * (1 - structure * 0.85)
+			p.CFrame = CFrame.new(pos) * spin * CFrame.new(off * (draw * coherent) + wobble)
 		end
 	end
 end)
@@ -668,19 +679,99 @@ local function syncMicroSample(animate: boolean)
 	refreshMicroReadout()
 end
 
--- Brownian motion + camera framing while the microscope is open.
+-- ---- Multicellular visual progression in the Microscope (Tier 1C) -------------
+-- Each upgrade adds a layer to the swimming sample (driven by state.upgrades 0..6):
+--   1 Adhesion        → cells pull together into a cluster (no longer free-floating)
+--   2 Signaling       → signal pulses ripple out from the cluster centre
+--   3 Matrix          → a translucent extracellular-matrix hull wraps the cluster
+--   4 Cell Cycle      → the cluster breathes — cells contract/expand in unison
+--   5 Differentiation → cells take on varied tints (they specialize)
+--   6 Tissue          → the body tightens + the matrix hull brightens (organized tissue)
+
+-- Translucent extracellular-matrix hull around the cluster (shown from upgrade #3).
+local matrixHull = Instance.new("Part")
+matrixHull.Name = "MatrixHull"
+matrixHull.Shape = Enum.PartType.Ball
+matrixHull.Anchored = true
+matrixHull.CanCollide = false
+matrixHull.CanQuery = false
+matrixHull.CastShadow = false
+matrixHull.Material = Enum.Material.ForceField
+matrixHull.Color = Color3.fromRGB(150, 215, 205)
+matrixHull.Transparency = 1
+matrixHull.Size = Vector3.one
+matrixHull.Parent = microWorld
+
+-- A one-shot expanding "signal pulse" ring from the cluster centre (upgrade #2).
+local function emitSignalPulse(center: Vector3, color: Color3)
+	local ring = Instance.new("Part")
+	ring.Shape = Enum.PartType.Ball
+	ring.Anchored = true
+	ring.CanCollide = false
+	ring.CanQuery = false
+	ring.CastShadow = false
+	ring.Material = Enum.Material.ForceField
+	ring.Color = color
+	ring.Transparency = 0.45
+	ring.Size = Vector3.one * 2
+	ring.CFrame = CFrame.new(center)
+	ring.Parent = microWorld
+	local grow = TweenService:Create(ring,
+		TweenInfo.new(1.0, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ Size = Vector3.one * 30, Transparency = 1 })
+	grow:Play()
+	grow.Completed:Connect(function()
+		ring:Destroy()
+	end)
+end
+
+-- Differentiation tint (upgrade #5): a stable per-index colour shift toward warm/cool.
+local function differentiatedColor(i: number): Color3
+	local base = colorForDominant(state.dominant)
+	local k = (i % 3)
+	if k == 0 then
+		return base:Lerp(Color3.fromRGB(255, 200, 120), 0.45) -- warm specialization
+	elseif k == 1 then
+		return base:Lerp(Color3.fromRGB(150, 200, 255), 0.35) -- cool specialization
+	end
+	return base
+end
+
+-- Brownian motion + multicellular layers + camera framing while the scope is open.
 local microRunning = false
 local function runMicroSim()
 	if microRunning then return end
 	microRunning = true
 	task.spawn(function()
+		local signalTimer = 0
 		while microGui.Enabled do
 			local dt = RunService.Heartbeat:Wait()
 			local half = currentRegion() * 0.5
-			for _, cell in microCells do
-				-- Brownian: random nudge + mild damping, bounce off the box walls.
-				local jitter = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 18
-				cell.vel = (cell.vel + jitter * dt) * 0.92
+			local n = #microCells
+			local upg = state.upgrades
+			local structure = math.clamp(upg / MulticellularData.COUNT, 0, 1)
+
+			-- Cluster centre — cells pull toward it as the body adheres/organizes.
+			local center = Vector3.zero
+			if n > 0 then
+				for _, c in microCells do
+					center += c.pos
+				end
+				center /= n
+			end
+			-- Cell-cycle "breathing" (upgrade #4): the pull strength oscillates so the
+			-- whole cluster contracts and expands in unison.
+			local breathe = (upg >= 4) and (0.55 + 0.45 * math.sin(os.clock() * 1.4)) or 1
+			local pull = structure * 2.4 * breathe
+			local jitterScale = 18 * (1 - structure * 0.65) -- calmer motion as it organizes
+
+			local maxR = 0
+			for i, cell in microCells do
+				local jitter = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * jitterScale
+				cell.vel = (cell.vel + jitter * dt) * (0.92 - structure * 0.05)
+				if pull > 0 then
+					cell.vel += (center - cell.pos) * pull * dt -- adhesion → clustering
+				end
 				local np = cell.pos + cell.vel * dt
 				if math.abs(np.X) > half.X then cell.vel = Vector3.new(-cell.vel.X, cell.vel.Y, cell.vel.Z) end
 				if math.abs(np.Y) > half.Y then cell.vel = Vector3.new(cell.vel.X, -cell.vel.Y, cell.vel.Z) end
@@ -693,7 +784,32 @@ local function runMicroSim()
 				if cell.model.PrimaryPart then
 					cell.model:PivotTo(CFrame.new(cell.pos)) -- moves body + organelles rigidly
 				end
+				-- Differentiation (upgrade #5): specialize cell colours by index.
+				if cell.body then
+					cell.body.Color = (upg >= 5) and differentiatedColor(i) or colorForDominant(state.dominant)
+				end
+				local d = (cell.pos - center).Magnitude
+				if d > maxR then maxR = d end
 			end
+
+			-- Extracellular matrix hull (upgrade #3; brighter at tissue, upgrade #6).
+			if upg >= 3 and n > 0 then
+				matrixHull.CFrame = CFrame.new(center)
+				matrixHull.Size = Vector3.one * (maxR * 2 + 4)
+				matrixHull.Transparency = (upg >= 6) and 0.7 or 0.85
+			else
+				matrixHull.Transparency = 1
+			end
+
+			-- Intercellular signaling (upgrade #2): periodic pulse from the centre.
+			if upg >= 2 and n > 0 then
+				signalTimer += dt
+				if signalTimer >= 1.8 then
+					signalTimer = 0
+					emitSignalPulse(center, colorForDominant(state.dominant))
+				end
+			end
+
 			-- Camera frames the sample from the current (tweened) zoom distance.
 			local dist = zoomValue.Value
 			local a = os.clock() * 0.12
@@ -778,7 +894,8 @@ end)
 -- =================================================================================
 --  DATA WIRING  (derive shared state from ConverterUpdate; bursts from events)
 -- =================================================================================
-local function recomputeState(cells)
+local function recomputeState(cells, upgrades)
+	state.upgrades = math.clamp(upgrades or 0, 0, MulticellularData.COUNT)
 	local total = #cells
 	local archaea, eukaryotic = 0, 0
 	for _, cell in ipairs(cells) do
@@ -898,13 +1015,25 @@ task.spawn(function()
 	local Remotes = require(ReplicatedStorage:WaitForChild("Remotes"))
 
 	Remotes.ConverterUpdate.OnClientEvent:Connect(function(data)
-		recomputeState(data.cells or {})
+		recomputeState(data.cells or {}, data.multicellularUpgrades or 0)
 	end)
 
 	-- A single cell finished its organelle path → flare the vessel + announce it.
 	Remotes.CellEvolved.OnClientEvent:Connect(function()
 		burst:Emit(24)
 		playToast("Eukaryotic Cell Unlocked!")
+	end)
+
+	-- A multicellular upgrade was bought → flare the vessel + name it (Tier 1C).
+	Remotes.UpgradePurchased.OnClientEvent:Connect(function(data)
+		burst:Emit(30)
+		local upgrade = data and MulticellularData.at(data.step)
+		local name = upgrade and upgrade.name or "Multicellular Upgrade"
+		if data and data.step == MulticellularData.COUNT then
+			playCascadeToast("Multicellular Organism!", name .. " — the body is whole")
+		else
+			playToast(name)
+		end
 	end)
 
 	-- The one-time Eukaryotic Cascade → bigger flare + two-line announcement.
