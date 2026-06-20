@@ -490,7 +490,10 @@ local function updateInfoPanel(planet: Model?)
 	end
 	rowStage.Text = field("Stage", stage)
 	rowLife.Text = field("Life", alive and "Microbial" or "Dormant")
-	rowCiv.Text = field("Civilization", "None")
+	-- Civilization Identity emerges from sentience tendencies (Epic 7). Server writes
+	-- the CivIdentity attribute once Complex Life begins; until then it's "None".
+	local identity = planet:GetAttribute("CivIdentity")
+	rowCiv.Text = field("Civilization", (typeof(identity) == "string" and identity ~= "") and identity or "None")
 
 	rowWater.Text = field("Water", formatPct(planet:GetAttribute("WaterCoverage")))
 	rowClouds.Text = field("Clouds", formatPct(planet:GetAttribute("CloudCoverage")))

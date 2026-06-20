@@ -12,6 +12,7 @@
 -- Usage (from PlanetInteraction): SentienceUI.mount(parent, { layoutOrder = 40 })
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local InterventionData = require(ReplicatedStorage:WaitForChild("InterventionData"))
 
@@ -324,6 +325,12 @@ function SentienceUI.mount(parent: Instance, opts)
 		milestone.Visible = sentienceProgress >= sentienceProgressMax
 	end)
 
+	-- Brief success pulse on the bar when Sentience Progress rises (7E feedback).
+	local function pulseFill()
+		fill.BackgroundColor3 = Color3.fromRGB(232, 224, 255)
+		TweenService:Create(fill, TweenInfo.new(0.45, Enum.EasingStyle.Quad), { BackgroundColor3 = PURPLE }):Play()
+	end
+
 	refreshAll()
 
 	task.spawn(function()
@@ -334,6 +341,7 @@ function SentienceUI.mount(parent: Instance, opts)
 			refreshAll()
 		end)
 		Remotes.ConverterUpdate.OnClientEvent:Connect(function(data)
+			local prev = sentienceProgress
 			sentienceProgress = data.sentienceProgress or sentienceProgress
 			sentienceProgressMax = data.sentienceProgressMax or sentienceProgressMax
 			tendencies = data.tendencies or tendencies
@@ -341,6 +349,9 @@ function SentienceUI.mount(parent: Instance, opts)
 				complexLife = data.complexLifeReached
 			end
 			refreshAll()
+			if sentienceProgress > prev and complexLife then
+				pulseFill()
+			end
 		end)
 	end)
 

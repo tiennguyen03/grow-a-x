@@ -256,4 +256,9 @@ Built additively on the Epic 5/6 pipeline; Nova's cell/organelle/Multicellular l
 
 **Test:** complete the Multicellular path → Sentience section unlocks → apply interventions (Matter drops, Sentience bar rises, identity updates, Stability tradeoffs clamp) → at 100 the Tool Use milestone shows. Cells/organelles/ecosystem unchanged.
 
-**Status:** 7B–7F ✅ (pending in-Studio playtest); optional event deferred.
+**Polish (full DoD):** 7F — Civilization Identity now also surfaces in the top planet-info block
+(`rowCiv` reads the `CivIdentity` attribute). 7E — a brief bar pulse plays when Sentience Progress
+rises, plus the Tool Use milestone banner at 100.
+
+**Status:** 7B–7G ✅ complete (pending in-Studio playtest sign-off + Nova gate confirmation); optional
+Complex Life event deferred.
