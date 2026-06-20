@@ -1,153 +1,143 @@
-# Handoff / Current State
+# HANDOFF — Global Project State
 
-**Last updated:** 2026-06-19 by Nova (+ Claude) — **new branch `nova/organelle-upgrades`** adds the Epic 3 / Tier 1 **organelle upgrade path** (Sprint 8C): each Archaea Cell is upgraded organelle-by-organelle (Membrane → … → Nucleus) until it evolves into a **Eukaryotic Cell**; players own any number of cells, each with its own path; **all UI now lives in the planet inspect panel** (the Matter Core panel is obsolete). Pending in-Studio playtest. See the prior integration note below.
+The stable, project-wide snapshot. Day-to-day active-lane notes live in the
+per-developer handoffs so we're not both editing this file constantly.
 
-**Earlier:** **integration branch `tien/integration-matter-planets` combines both devs' work:** Tien's **Epic 4 Planet Interaction** (Sprints 4A–4G: approach prompt, inspect camera with player ride-along, info panel, Matter Converter seam, Archaea life-glow, marker/prompt coordination, own-planet-only) + Nova's **Sprint 8B Matter Converter** (spend Matter on Archaea Cells for passive income; on-screen "Create Life" button / **C**) + Nova's **footstep-mute fix**. Nice tie-in: Epic 4's `PlanetInspectContext` seam ("Open Matter Converter" button) is built to hand off to Nova's `MatterConverterUI`. Prior: Epic 7 planet-generator foundation + **Sprint 7H** star-system composition in `WorldConfig`, planets orbit the star, universe-wide dust (`DustField`), planet marker, return-home tracks the orbit.
-**Active branches:** Tien → `tien/integration-matter-planets` (this combined branch) · Nova → `matter-converter` / `mute-footsteps` / `planet-marker-render-order` (PRs #7/#8/#9, now folded in here) · all merge to `main` via PR.
+## Read Order
+1. Read this file first.
+2. Read the **active developer's** lane handoff: [`HANDOFF-TIEN.md`](HANDOFF-TIEN.md) or [`HANDOFF-NOVA.md`](HANDOFF-NOVA.md).
+3. Read the **other** developer's handoff only if the task touches shared files or their lane.
+4. Read the relevant [`docs/EPICS/Epic<N>.md`](docs/EPICS/) for detail.
 
-This is the "where are we right now" doc. Read this first, then `CLAUDE.md` for architecture and `docs/EPICS/` for detail.
-
----
-
-## Current Branch & Recent Changes
-
-The currency/earn loop was reworked on the active Matter branch (see "Active branches" above). It's **rebased onto the latest `main`** but **not merged yet** — the remote copy of the branch still holds the older pre-rebase commits, so syncing it will need a force-push (`git push --force-with-lease`).
-
-What changed:
-- **Renamed the currency to `Matter`** everywhere (code, UI label, docs). The remote is `MatterUpdate`, the HUD module is `MatterUI.luau`, and the constant prefix is `DUST_*`.
-- **Replaced passive +1/sec generation with dust collection.** `WorldBuilder` spawns 80 glowing motes (tagged `DustParticle`); `PlayerManager` awards +1 by a server-side proximity check and respawns the mote after `DUST_RESPAWN_TIME`. `DustAnimator.client.luau` bobs them locally (no per-frame replication).
-- **Fixes after the first playtest:**
-  - HUD took ~10s to appear → the runtime remotes folder was named `Remotes`, colliding with the `Remotes` ModuleScript. Folder renamed to **`RemoteEvents`** (see gotcha in the File Map).
-  - HUD now builds *before* resolving the remote, so `Matter: 0` shows instantly.
-  - Motes were too small/dim/far to see → now bigger (1.8–2.6 studs), brighter (PointLight 5 / range 30), and spawn from 30 studs out.
-
-⚠️ **Needs an in-Studio retest to confirm:** `Matter: 0` shows immediately, motes are visible, and flying through one awards +1 with a "+1" popup. Tuning knobs: `DUST_*` in `GameConfig.luau`, mote size/glow in `WorldBuilder.buildDust`, `BOB_AMPLITUDE` in `DustAnimator`.
+Then `CLAUDE.md` for architecture/rules.
 
 ---
 
-## Getting Started (Nova — do this once)
+## Current Integration State
+
+**Already in `main`:** PR #10 (Epic 4 + Nova's #7/#8/#9 + Matter Core integration) and **PR #12 — Nova's Sprint 8C organelle upgrade path** (Archaea cells upgrade organelle-by-organelle into Eukaryotic cells; unlimited cells; the **whole intervention UI now lives in the inspect panel** via `CellInterventionUI`, making the old Matter Core panel obsolete).
+
+**In flight (this branch → `main`):** the post-#10 commits that didn't make the #10 merge — **misc polish** (denser Matter 360/1050, planet orbit 340→**460**, **sun-death** at star radius + `SUN_KILL_MARGIN`) and the **handoff split** (this global file + `HANDOFF-TIEN.md`/`HANDOFF-NOVA.md` + the `CLAUDE.md` workflow). `origin/main` (incl. 8C) has been merged into this branch and reconciled (only `HANDOFF.md` needed manual union).
+
+> After this lands, both devs branch off `main`. PRs #7/#8/#9 are superseded by #10 (close them).
+
+---
+
+## Active Lanes
+
+| Developer | Current lane | Branch | Lane handoff |
+|---|---|---|---|
+| **Tien** | Epic 4 polish + handoff split → `main` (then 4H playtest) | `tien/integration-matter-planets` | [`HANDOFF-TIEN.md`](HANDOFF-TIEN.md) |
+| **Nova** | Epic 3 organelle upgrades (8C shipped); next evolution tier | `nova/organelle-upgrades` (merged #12) | [`HANDOFF-NOVA.md`](HANDOFF-NOVA.md) |
+
+---
+
+## What Is Done (global)
+
+| Sprint | What | Status |
+|---|---|---|
+| 0A–0D | Void environment, floaty 6-axis flight, soaring pose + banking, boost/FOV/VFX/return-home | ✅ in `main` |
+| 0B | Centerpiece star + 200-star field | ✅ in `main` |
+| 1A | Matter via dust motes; HUD + "+1" popup | ✅ (integrated) |
+| 7A | Procedural planet **descriptor** foundation | ✅ in `main` |
+| 7B–7H | Per-player procedural planets, noise continents, biomes, server orbit/spin, star-system composition, universe dust, planet marker | ✅ (in `main` / PR #10) |
+| 4A–4G | Planet interaction (prompt, inspect camera, info panel, Converter seam, life-glow, coordination, own-planet-only) | ✅ in `main` (#10); 4H playtest pending |
+| 8B | Matter Converter — Archaea Cell + passive income | ✅ in `main` (#10, Nova) |
+| 8C | Organelle upgrade path — cells upgrade organelle-by-organelle into Eukaryotic cells; unlimited cells; per-cell planet visuals + evolution celebration; **all UI in the inspect panel** | ✅ in `main` (#12, Nova); playtest pending |
+| — | Footstep mute fix; marker render order | ✅ in `main` (#10, Nova) |
+| — | Misc polish (denser Matter, planet farther from sun, sun-death) + handoff split | 🔶 this branch → `main` |
+
+---
+
+## Current Global Blockers
+
+- **In-Studio playtest sign-off pending** for the merged work (Epic 4 4H + 8C organelle flow + polish).
+- The post-#10 polish + handoff-split (this branch) still needs to land on `main`.
+
+---
+
+## Shared Coordination Files (announce before restructuring)
+
+`src/server/Main.server.luau` · `src/client/Main.client.luau` · `src/shared/Remotes.luau` ·
+`src/shared/GameConfig.luau` · `src/shared/WorldConfig.luau` ·
+`src/client/PlanetInspectContext.luau` (Tien↔Nova boundary — the inspect→converter seam).
+
+> **Gotcha:** the runtime RemoteEvents folder is named **`RemoteEvents`** (NOT `Remotes`) so it doesn't collide with the `Remotes` ModuleScript — don't rename it back.
+
+---
+
+## File Map / Ownership Summary
+
+| File | Purpose | Touch safety |
+|---|---|---|
+| `src/server/Main.server.luau` | Server entry point; inits systems | ⚠️ **Shared** — keep edits to single lines |
+| `src/server/WorldBuilder.luau` | Environment (gravity/lighting), star + star field, dust motes | ✅ Safe — self-contained |
+| `src/server/PlayerManager.luau` | Matter profiles + dust collection + `MatterUpdate`; **converter:** `CreateArchaea` handler + production loop, sets `EvolutionTier/Stage` on first cell | ✅ Safe — Matter server logic (Nova's economy lane) |
+| `src/server/PlayerPlanetService.luau` | Builds per-player planet on join; server-side **orbit + spin**; exposes descriptor attributes (incl. `CloudCoverage`) | ✅ Safe — owns per-player planets |
+| `src/client/Main.client.luau` | Client entry point; inits client systems | ⚠️ **Shared** |
+| `src/client/SpaceMovement.client.luau` | Floaty movement + pose + banking; honors `PlanetInspectLocked` (rides the orbit during inspect); **sun-death** kill check | ✅ Safe — self-contained (Tien) |
+| `src/client/DustAnimator.client.luau` | Bobs dust motes locally (cosmetic) | ✅ Safe — self-contained |
+| `src/client/MatterUI.luau` | HUD, listens to `MatterUpdate`, "+N" popup | ✅ Safe — Matter UI |
+| `src/client/MatterConverterUI.luau` | **Obsolete** "Matter Core" panel — all interventions moved into the inspect panel (8C). Left in place, no interactive role; slated for removal | ✅ Safe — Nova, slated for removal |
+| `src/client/CellInterventionUI.luau` | Interactive cell-list + per-cell organelle-detail UI (create cells, buy organelles in order, progress-to-Eukaryotic bar). **Mounted into the inspect panel** by `PlanetInteraction`; server-authoritative via `PurchaseOrganelle` (Epic 3 / 8C) | ✅ Safe — self-contained (Nova) |
+| `src/client/CellVisuals.client.luau` | Per-cell, per-organelle planet visuals (cells orbit the planet) + "Eukaryotic Cell Unlocked!" celebration (Epic 3 / 8C) | ✅ Safe — self-contained LocalScript (Nova) |
+| `src/client/PlanetMarker.client.luau` | Screen marker to the local orbiting planet; hides during prompt/inspect (`PlanetPromptVisible`/`InspectingPlanet`) | ✅ Safe — self-contained (Tien) |
+| `src/client/PlanetInteraction.client.luau` | Approach prompt + inspect camera + info panel; **mounts `CellInterventionUI`** so the full organelle/cell UI lives in the inspect panel (Epic 4 + 8C) | ⚠️ **Tien file, edited cross-lane by Nova (8C)** — coordinate before further edits |
+| `src/client/PlanetInspectContext.luau` | Seam: publishes active planet context + `Changed`/`OpenRequested` (no economy logic) | ⚠️ **Tien↔Nova boundary** — coordinate before changing its shape |
+| `src/client/PlanetStageVisuals.client.luau` | Archaea life-glow when `EvolutionTier≥1`/`EvolutionStage=="Archaea"` | ✅ Safe — self-contained (Tien) |
+| `src/shared/OrganelleData.luau` | Ordered Tier-1 organelle path (Archaea → Eukaryotic): id/name/cost/bonus/visual + helpers (`TOTAL_COST`=240). Pure data (Epic 3 / 8C) | ✅ Safe — pure data (Nova) |
+| `src/shared/GameConfig.luau` | Shared tuning constants (`DUST_*`, `MATTER_CONVERTER_*`, `ARCHAEA_*`) | ⚠️ **Shared** — append, don't reorganize |
+| `src/shared/Remotes.luau` | All RemoteEvents (`MatterUpdate`, `CreateArchaea`, `ConverterUpdate`) | ⚠️ **Shared** — add remotes here |
+| `src/shared/WorldConfig.luau` | World/star/orbit constants + `SUN_KILL_MARGIN` | ⚠️ **Shared** — append, don't reorganize |
+| `src/shared/PlanetArchetypes.luau` | Archetype defs + trait ranges | ✅ Safe — planet-gen |
+| `src/shared/PlanetGenerator.luau` | Pure deterministic descriptor + surface/biome generator | ✅ Safe — don't reorder its rng calls |
+| `src/shared/DustField.luau` | Universe-wide dust spawn helper (`getSpawnPosition`) | ✅ Safe — server-only helper |
+
+**Rule of thumb:** ✅ files are owned by one feature and safe solo; ⚠️ files are coordination points.
+
+---
+
+## Merge / PR Notes
+
+- **PR #10** is the live integration branch → `main`. Merge it first; then Nova rebases onto the new base (note: epics were renumbered **7→2, 8→3**, so his 8B docs now live in `Epic3.md`).
+- Documentation is **unioned, never overwritten** on merge (see CLAUDE.md "Documentation Preservation on Merge").
+
+---
+
+## Getting Started (once)
 
 ```bash
 git clone https://github.com/tiennguyen03/grow-a-x.git
 cd grow-a-x
 rokit install      # installs Rojo 7.4.4
-rojo serve         # keep running; connect the Rojo Studio plugin to localhost:34872
+rojo serve         # keep running; connect the Rojo Studio plugin (localhost:34872)
 ```
 
-> ✅ A blank baseplate place works fine — `WorldBuilder.luau` sets gravity, lighting, and removes the baseplate on Play. Just connect Rojo and hit **Play**.
+> ✅ A blank baseplate place works — `WorldBuilder.luau` builds gravity/lighting/objects on Play. Connect Rojo (in **Edit** mode first), then hit **Play**.
+
+**World is fully reproducible from source:** gravity, lighting, baseplate removal, and visuals are built by `WorldBuilder.luau` on server start — no manual Studio setup. Tune via the constants at the top of `WorldBuilder.luau`; don't change Lighting in Studio (it's overwritten on Play).
 
 ---
 
-## What's Done
+## Branching — never commit straight to `main`
 
-| Sprint | What | Status |
-|---|---|---|
-| 1A | Matter collected by flying through dust motes; HUD + "+1" popup | ✅ Done (on `matter-dust-collection`) |
-| 0A | Void environment + floaty 6-axis movement | ✅ Done (in `main`) |
-| 0B | Centerpiece star + 200-star field (motion reference) | ✅ Done (in `main`) |
-| 0C | Soaring flight pose + banking into turns | ✅ Done (in `main`) |
-| 0D | Boost, look-based 3D flight, FOV, boost VFX, return-home | ✅ Done (in `main`) |
-| 7A | Procedural planet **descriptor** foundation (data only) | ✅ Done (in `main`) |
-| 4A–4G | Planet interaction: approach prompt, inspect camera (+ player ride-along), info panel, Matter Converter seam, life-stage glow, marker/prompt coordination, own-planet-only | 🔶 Integrated here; pending in-Studio playtest (4H) |
-| 8B | Matter Converter — spend Matter on an Archaea Cell (passive Matter income); on-screen "Create Life" button + **C** | ✅ Integrated here (Nova, PR #7) |
-| 8C | Organelle upgrade path — upgrade each Archaea Cell organelle-by-organelle into a Eukaryotic Cell; unlimited cells; per-cell planet visuals + evolution celebration; **all UI in the inspect panel** | 🔶 On `nova/organelle-upgrades`; pending in-Studio playtest |
-| — | Footstep sound muted | ✅ Fixed — robust re-mute that holds against the engine re-un-muting (Nova, PR #8); integrated here |
+Each dev works on a personal branch; `main` changes only via PR.
 
-**Still pending:** Nova's Epic 0 home-planet (0D-01) is **not** in `main` yet. The Matter rework (1A dust collection) lives on `matter-dust-collection`, rebased on latest `main` and awaiting an in-Studio retest before merge — coordinate so 7B/0D-01 planet work doesn't collide with the dust field in `WorldBuilder.luau`.
-
-> **Matter Core ↔ Inspect integration — ✅ v0 done (2026-06-19), pending playtest.** Unified the two flows into one planet-contextual path: **Create Life** is now an Intervention in the inspect panel (the old "Open Matter Converter" button is gone); the global button is renamed **"Matter Core"** and its panel is a read-only overview that shows the inspected planet's name (consumes `PlanetInspectContext`). On first Create Life the server sets `EvolutionTier=1`/`EvolutionStage="Archaea"` so the glow + panel update fire automatically. Full plan + status: [`docs/Plans/MatterCore-Inspect-Integration.md`](docs/Plans/MatterCore-Inspect-Integration.md).
-
----
-
-## File Map — what each file does & how risky it is to touch
-
-| File | Purpose | Touch safety |
-|---|---|---|
-| `src/server/Main.server.luau` | Server entry point; calls each system's init/build | ⚠️ **Shared** — both of us edit this when adding a system. Coordinate / expect merge conflicts. Keep edits to single lines. |
-| `src/server/WorldBuilder.luau` | Builds environment (gravity/lighting), star + star field, and the collectible dust motes | ✅ Safe — self-contained |
-| `src/server/PlayerManager.luau` | Player profiles + server-side dust collection + fires `MatterUpdate` | ✅ Safe — owns the Matter server logic |
-| `src/client/Main.client.luau` | Client entry point; inits client systems | ⚠️ **Shared** — same as server Main |
-| `src/client/SpaceMovement.client.luau` | Floaty movement + soaring pose + banking. Also honors the `PlanetInspectLocked` player attribute (set by `PlanetInteraction`) — when set it carries the player along with the orbiting planet (rides the orbit, stays framed) and skips input (Epic 4 inspect mode) | ✅ Safe — self-contained LocalScript |
-| `src/client/DustAnimator.client.luau` | Bobs the dust motes locally (cosmetic) | ✅ Safe — self-contained LocalScript |
-| `src/client/MatterUI.luau` | Builds HUD, listens to `MatterUpdate`, shows "+N" popup | ✅ Safe — owns the Matter UI |
-| `src/client/MatterConverterUI.luau` | **Matter Core** panel (toggle **C** / on-screen button) — read-only overview. **Now OBSOLETE/vestigial:** all interventions moved into the inspect panel (8C). Left in place but no interactive role; reads the back-compat `archaeaCount` field only | ✅ Safe — self-contained, but slated for removal |
-| `src/shared/OrganelleData.luau` | Ordered Tier 1 organelle path (Archaea → Eukaryotic): id/name/cost/productionBonus/visual + helpers (`nextOrganelle`, `isComplete`, `indexOf`, `TOTAL_COST`=240). Pure data (Epic 3 / 8C) | ✅ Safe — pure data, owned by progression work |
-| `src/client/CellInterventionUI.luau` | The interactive cell-list + per-cell organelle-detail UI (create cells, buy organelles in order, progress-to-Eukaryotic bar). **Mounted into the inspect panel** by `PlanetInteraction`; server-authoritative spends via `PurchaseOrganelle` (Epic 3 / 8C) | ✅ Safe — self-contained module (Nova) |
-| `src/client/CellVisuals.client.luau` | Per-cell, per-organelle planet visuals (cells orbit the planet; each organelle adds a cosmetic layer) + the "Eukaryotic Cell Unlocked!" green-pulse/particle celebration. Self-contained LocalScript, no Main wiring (Epic 3 / 8C) | ✅ Safe — self-contained LocalScript (Nova) |
-| `src/server/PlayerManager.luau` (converter) | Also owns converter state: `CreateArchaea` handler + passive Archaea production loop (8B). On the first Archaea Cell it sets `EvolutionTier=1`/`EvolutionStage="Archaea"` on the player's planet (Matter Core integration) | ✅ Safe — same owner as Matter logic |
-| `src/shared/GameConfig.luau` | Shared tuning constants | ⚠️ **Shared** — append new keys, don't reorganize, to avoid conflicts |
-| `src/shared/Remotes.luau` | Defines all RemoteEvents | ⚠️ **Shared** — add new remotes here; coordinate. **Gotcha:** the runtime folder is named `RemoteEvents` (NOT `Remotes`) so it doesn't collide with this ModuleScript's name — don't rename it back. |
-| `src/shared/WorldConfig.luau` | World/home-planet constants (Epic 7) | ⚠️ **Shared** — used by WorldBuilder + future planet scripts; append, don't reorganize |
-| `src/shared/PlanetArchetypes.luau` | Planet archetype defs + trait ranges (Epic 7) | ✅ Safe — owned by planet-generation work |
-| `src/shared/PlanetGenerator.luau` | Pure deterministic descriptor + surface/biome generator (Epic 7) | ✅ Safe — pure data, no Instances; don't reorder its rng calls |
-| `src/server/PlayerPlanetService.luau` | Builds one per-player planet on join; server-side **orbit around the star + own-axis spin** (Epic 7). Exposes planet descriptor data as model attributes (incl. `CloudCoverage`, added for the Epic 4 inspect panel) | ✅ Safe — owns per-player planets; orbit/spin lives here (authoritative, no client motion) |
-| `src/shared/DustField.luau` | Universe-wide dust spawn helper (`getSpawnPosition`) used by WorldBuilder + PlayerManager (Epic 7/1) | ✅ Safe — server-only helper; pure-ish (reads planet positions to avoid them) |
-| `src/client/PlanetMarker.client.luau` | Screen-space marker pointing to the local player's orbiting planet (Epic 7). Hides while the Epic 4 approach prompt or inspect mode is active (reads `PlanetPromptVisible` / `InspectingPlanet` player attributes) | ✅ Safe — self-contained LocalScript |
-| `src/client/PlanetInteraction.client.luau` | Approach prompt + inspect camera + info panel + **Intervention section** — `[E] Inspect <planet>`, E enters a scriptable inspect camera that tracks the orbit, shows the planet info panel; the old inline "Create Life" button was replaced by a `CellInterventionUI.mount(...)` so the **full organelle/cell-management UI lives here** (Epic 4 4A–4F + Epic 3 / 8C). E/Backspace exits | ⚠️ **Tien-owned file edited cross-lane (8C)** — Nova mounted the organelle UI here per the "do it all in the inspect panel" directive. Coordinate before further edits |
-| `src/client/PlanetInspectContext.luau` | Client seam between Tien's inspect mode and Nova's Matter Converter — publishes the active planet context + `OpenRequested`/`Changed` signals (no economy logic) (Epic 4, Sprint 4D) | ⚠️ **Boundary with Nova** — Nova's Converter UI consumes this; coordinate before changing its shape |
-| `src/client/PlanetStageVisuals.client.luau` | Early life-stage visual hook — adds a pulsing teal Archaea glow to the local planet when `EvolutionTier`≥1 / `EvolutionStage=="Archaea"` (Epic 4, Sprint 4E) | ✅ Safe — self-contained LocalScript |
-
-**Rule of thumb:** the ✅ files are owned by one feature and safe to work in solo. The ⚠️ files are coordination points — tell each other before restructuring them.
-
----
-
-## ✅ World is fully reproducible from source
-
-Gravity, lighting, baseplate removal, and all visual objects are built by
-`src/server/WorldBuilder.luau` on server start. There is **no manual Studio
-setup** — clone, `rojo serve`, hit Play, and any place becomes the correct
-space environment.
-
-To tweak the look, edit the constants at the top of `WorldBuilder.luau`
-(`GRAVITY`, `BRIGHTNESS`, `AMBIENT`, `OUTDOOR_AMBIENT`, star settings).
-Don't change Lighting in Studio directly — it gets overwritten on the next Play.
-
----
-
-## Suggested Next Tasks (pick non-overlapping lanes)
-
-To stay out of each other's files:
-
-- **Bread's lane (traversal/world feel):** Sprint 0 polish — flying animation, dash/boost, camera FOV kick. Files: `SpaceMovement.client.luau`, `WorldBuilder.luau`.
-- **Open lane for Nova (Matter systems):** Sprint 1B — spend Matter on the first planet *intervention* (e.g. a richer dust field). Files: `PlayerManager.luau`, `MatterUI.luau`, plus one new remote in `Remotes.luau` and a constant in `GameConfig.luau`.
-
-Both lanes only collide in the ⚠️ shared files (`Remotes`, `GameConfig`, the two `Main` files) — a quick "hey I'm adding X" message avoids any conflict.
-
-See `docs/EPICS/` for the full sprint breakdowns and tuning constants.
-
----
-
-## Branching — work on your own branch, never commit straight to `main`
-
-We each work on a personal branch so two live Rojo sessions don't fight over the same history. `main` is the integration branch — it only changes via pull request.
-
-- **Bread:** `bread/world-feel`
-- **Nova:** create your own — `git checkout -b nova/<topic>` (e.g. `nova/matter-upgrades`), then `git push -u origin nova/<topic>`
-
-> Git branches don't affect Rojo — each of you serves your own files from your own branch. Branching only separates the commit history.
-
-### Daily workflow (on your own branch)
+- **Tien:** `tien/<topic>` · **Nova:** `nova/<topic>`
 
 ```bash
-git checkout bread/world-feel   # make sure you're on YOUR branch, not main
+git checkout <your-branch>   # confirm you're on YOUR branch
 # ...work...
-git add <files>
-git commit -m "..."
-git push                        # goes to your branch
+git add <files> && git commit -m "..." && git push
+git fetch origin && git merge origin/main   # pull in merged work periodically
 ```
 
-### Pull in the other person's merged work (do this periodically)
-
-```bash
-git fetch origin
-git merge origin/main           # bring main's latest into your branch; keeps the eventual PR small
-```
-
-### Ship your work to `main`
-
-Open a PR: `https://github.com/tiennguyen03/grow-a-x/pull/new/<your-branch>`.
-The ⚠️ shared files (`Remotes`, `GameConfig`, the two `Main` files) are where conflicts show up — resolve those carefully when merging.
+Ship via PR. The ⚠️ shared files are where conflicts show up — resolve carefully (union docs).
 
 ---
 
-> 🛠️ **Maintenance:** update this file's "Last updated" line, the **What's Done** table, and the **File Map** whenever you finish a sprint or start working in a new file.
+## Maintenance Rules
+
+- **Update `HANDOFF.md` only when global/integration state changes:** a branch merges, a sprint completes, a new system/file is added, ownership changes, a global blocker appears, or integration state moves.
+- **Day-to-day active work goes in the per-dev file** (`HANDOFF-TIEN.md` / `HANDOFF-NOVA.md`): current branch, focus, files being touched, recent changes, blockers, next steps.
+- Don't edit the other dev's lane handoff unless explicitly asked or it's a coordination/merge task.
