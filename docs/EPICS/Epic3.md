@@ -2,7 +2,7 @@
 
 > **Formerly Epic 8** (file was `Epic8.md`) — renumbered to close the old `0,1,7,8` gap. Sprint IDs keep their original `8A`–`8H` labels; only the epic number changed.
 
-**Status:** 🔶 In Progress — Tier 1 organelle path (8C) + Eukaryotic Cascade & Dust Multiplier (8D) built, pending in-Studio playtest  
+**Status:** 🔶 In Progress — Tier 1 organelle path (8C) + Eukaryotic Cascade & Dust Multiplier (8D) + Biosphere View (8E) built, pending in-Studio playtest  
 **Dependency:** Epic 1 (Matter Loop) must be complete (Sprint 1A ✅, Sprint 1B in progress)  
 **Estimated Sprints:** 8 sprints (8A–8H)  
 **Core Designer:** Nova (Matter / economy lane)
@@ -187,3 +187,25 @@ local EvolutionTiers = {
 **New profile fields:** `cascadeTriggered` (bool), `dustMultiplier` (number, starts 1), `maxTierEvolved` (number, starts 0).
 
 **Not in scope for 8D:** persistence (all three new fields reset on rejoin — waits on the DataStore epic), Tier 2+ evolutions (the formula is wired but no tier-2 life form exists yet), and removing the vestigial Matter Core panel.
+
+---
+
+### Sprint 8E: Biosphere View (Life Vessel + Microscope)
+
+**Goal:** Give the player a dedicated, planet-independent way to *see* their biosphere with two togglable modes that share the same data (total cell count + dominant life form, derived client-side from `ConverterUpdate`).
+
+**Owner/files (Nova):**
+- `src/client/BiosphereView.client.luau` (NEW) — self-contained LocalScript; owns both modes. No `Main.client` wiring, no server changes, and **it never touches the planet visuals**.
+
+**Life Vessel (always active):**
+- A glass `Part` orb (`Material = Glass` + inner `PointLight` + a trail `ParticleEmitter` + a one-shot burst emitter) that floats at a fixed camera-relative offset (lower-right companion orb), eased toward its spot each `RenderStepped`.
+- Richness scales through **7 tiers by cell count** (0 / 1–9 / 10–99 / 100–999 / 1e3–1e6 / 1e6–1e9 / 1e9+): more internal neon "speckles", brighter glow, and stronger swirl as the population climbs. Speckles only rebuild when the tier changes (perf).
+- Gentle **heartbeat pulse** (size + glow), **tints toward the dominant life form** (Archaea teal → Eukaryotic green), trails subtle particles, and **bursts** when a cell is created (count increases), on `CellEvolved`, and on `CascadeTriggered`.
+
+**Microscope View (toggleable overlay):**
+- A `ScreenGui` + `ViewportFrame` "drop of water" panel. Cells swim with **Brownian motion** inside a bounded box, each a translucent body + bright nucleus (+ orange organelle specks once the dominant form is Eukaryotic).
+- Displayed cell count scales **log-ically** with population (`~4·(log10(n)+1)`, capped at 50) so it grows dense; the viewport camera **pulls back** as population rises to show a larger sample. A readout shows population / shown / dominant form.
+
+**Toggle + transition:** **M** (or **Tab**) toggles the microscope. Opening tweens the panel up from the vessel's on-screen position (a "zoom in"); closing shrinks it back to the vessel ("zoom out"). The vessel keeps running underneath, so the two modes stay continuous.
+
+**Not in scope for 8E:** persistence, any server change (purely a client visualization of existing `ConverterUpdate` data), and real per-cell identity in the microscope (it's a representative sample, not a 1:1 render of owned cells). The high tiers (1e3+) are forward-looking — current play only reaches the low tiers.

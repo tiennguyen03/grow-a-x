@@ -95,6 +95,7 @@ src/client/PlanetInspectContext.luau → client seam publishing the active inspe
 src/client/PlanetStageVisuals.client.luau → standalone LocalScript; pulsing Archaea glow on the planet once life begins (Epic 4)
 src/client/CellInterventionUI.luau   → cell list + per-cell organelle-upgrade UI, mounted into the inspect panel (Epic 3)
 src/client/CellVisuals.client.luau   → standalone LocalScript; per-cell/organelle planet visuals + evolution & cascade celebrations (Epic 3)
+src/client/BiosphereView.client.luau → standalone LocalScript; Life Vessel orb (near camera) + Microscope ViewportFrame overlay; toggle M/Tab; client-only, no planet coupling (Epic 3)
 src/client/MatterConverterUI.luau    → vestigial "Matter Core" overview panel (toggle C): balance / owned / Dust Value (Epic 3 — obsolete, slated for removal)
 
 # Shared (ReplicatedStorage)
@@ -107,7 +108,7 @@ src/shared/DustField.luau            → universe-wide dust spawn helper (getSpa
 src/shared/OrganelleData.luau        → ordered Tier 1 organelle path (cost/bonus/visual) + helpers; pure data (Epic 3)
 ```
 
-> **Note:** the `*.client.luau` files marked "standalone LocalScript" (`SpaceMovement`, `DustAnimator`, `PlanetMarker`, `PlanetInteraction`, `PlanetStageVisuals`, `CellVisuals`) are self-contained — they do not follow the `Main → require → .init()` pattern because they need no coordination with other systems and run themselves.
+> **Note:** the `*.client.luau` files marked "standalone LocalScript" (`SpaceMovement`, `DustAnimator`, `PlanetMarker`, `PlanetInteraction`, `PlanetStageVisuals`, `CellVisuals`, `BiosphereView`) are self-contained — they do not follow the `Main → require → .init()` pattern because they need no coordination with other systems and run themselves.
 
 ### RemoteEvents
 All remotes are defined in `src/shared/Remotes.luau`. Server creates them on load; client waits for them. Never hardcode remote names elsewhere.
