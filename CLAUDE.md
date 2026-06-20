@@ -117,6 +117,7 @@ src/client/PlanetInspectContext.luau → client seam publishing the active inspe
 src/client/PlanetStageVisuals.client.luau → standalone LocalScript; pulsing Archaea glow on the planet once life begins (Epic 4)
 src/client/CellInterventionUI.luau   → cell list + per-cell organelle-upgrade UI, mounted into the inspect panel (Epic 3)
 src/client/BiosphereView.client.luau → standalone LocalScript; Life Vessel orb (near camera, 1 speckle per cell) + Microscope ViewportFrame overlay (population zoom progression + fading organelles) + evolution/cascade celebration toasts; toggle M/Tab; client-only, no planet coupling (Epic 3)
+src/client/DevMenu.client.luau       → ⚠️ DEV/TESTING ONLY (remove before launch); standalone LocalScript; left-side pop-up that grants Matter via the DevGrantMatter remote
 
 # Shared (ReplicatedStorage)
 src/shared/GameConfig.luau           → shared constants (DUST_* tuning, converter/organelle rates, etc.)
@@ -145,6 +146,7 @@ All remotes are defined in `src/shared/Remotes.luau`. Server creates them on loa
 | `CascadeTriggered` | Server → Client | `{ triggerCellId, cellIds, count, dustMultiplier }` — one-time Eukaryotic Cascade celebration + Dust Multiplier unlock (Epic 3) |
 | `PurchaseUpgrade` | Client → Server | *(none)* — buy the next player-wide multicellular upgrade; server validates gate/order/dynamic cost (Epic 3 / 1C) |
 | `UpgradePurchased` | Server → Client | `{ step, upgradeId }` — a multicellular upgrade was bought; drives the biosphere visual progression + a toast (Epic 3 / 1C) |
+| `DevGrantMatter` | Client → Server | `{ amount: number }` — ⚠️ **DEV/TESTING ONLY** (remove before launch); grants the player Matter (server caps it) |
 
 ---
 
