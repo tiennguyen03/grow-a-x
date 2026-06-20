@@ -347,7 +347,7 @@ When resolving a merge (or reconciling two branches) that touches `CLAUDE.md`, `
 | Epic 2: Procedural Planet Generation _(formerly Epic 7)_ | `docs/EPICS/Epic2.md` | In Progress |
 | Epic 3: Evolutionary Progression _(formerly Epic 8)_ | `docs/EPICS/Epic3.md` | In Progress (8B–8D built: converter, organelle path, Eukaryotic Cascade + Dust Multiplier; playtest pending) |
 | Epic 4: Planet Interaction & Inspection | `docs/EPICS/Epic4.md` | In Progress (4A–4G built; 4H playtest pending) |
-| Epic 5: Planet Upgrade System | `docs/EPICS/Epic5.md` | Not Started |
+| Epic 5: Planet Upgrade System / Matter Core | `docs/EPICS/Epic5.md` | In Progress (5A audit done; MVP largely pre-built by Nova's Epic 3 — see 5A) |
 | Epic 6: Planet Era Visuals | `docs/EPICS/Epic6.md` | Not Started |
 | Epic 7: Events & Disasters | `docs/EPICS/Epic7.md` | Not Started |
 | Epic 8: DataStore / Saving | `docs/EPICS/Epic8.md` | Not Started |
