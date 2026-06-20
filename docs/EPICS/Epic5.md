@@ -1903,3 +1903,20 @@ fast-vs-stable strategic tension — all per `GameplayProgressionVision_UPDATED.
 
 **Status:** 5A ✅, 5B/5G additive layer ✅ (pending in-Studio playtest). 5C–5F (live generic purchase
 pipeline) intentionally deferred to coordinate with Nova / Epic 6.
+
+---
+
+## Ecosystem Intervention Preview Clarification (2026-06-20)
+
+The preview cards below Cell Cultures are intentionally **not** a second upgrade system. They are
+future planet-level **ecosystem interventions** that will support Nova's cell/evolution path in
+Epic 6. Plan: [`docs/Plans/Ecosystem-Interventions-UI-Clarity.md`](../Plans/Ecosystem-Interventions-UI-Clarity.md).
+
+- **Cell Cultures** = microscopic life progression (Nova's live cell/organelle system).
+- **Ecosystem Interventions** = planet-condition strategy around that life (preview-only now).
+
+UI/copy changes (no live logic): parent header `Intervention` → **`Life Interventions`**; preview
+section `Future Interventions` → **`Ecosystem Interventions`** + bridge subtitle ("Shape the world
+around your cells so life can grow, stabilize, and evolve."); the three cards are now
+`category = "Ecosystem"` with finalized copy/flavor. Still preview-only — no remotes, no
+`LifeProgress`/`Stability`, no Matter spend; those stay deferred to Epic 6.

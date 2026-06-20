@@ -417,7 +417,7 @@ makeDivider(12)
 -- are server-authoritative; the module only requests them and re-renders from the
 -- server's ConverterUpdate. It owns its own remote subscriptions and state.
 local interventionHeader = makeInfoLabel(13, { font = Enum.Font.GothamBold, size = 15, color = CYAN })
-interventionHeader.Text = "Intervention"
+interventionHeader.Text = "Life Interventions"
 CellInterventionUI.mount(infoScroll, { layoutOrder = 14 })
 
 -- Read-only "Coming Soon" preview of future interventions (Epic 5, additive) — sits

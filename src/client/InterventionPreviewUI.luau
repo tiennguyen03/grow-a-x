@@ -135,11 +135,26 @@ function InterventionPreviewUI.mount(parent: Instance, opts)
 	header.TextSize = 14
 	header.TextXAlignment = Enum.TextXAlignment.Left
 	header.TextColor3 = CYAN
-	header.Text = "Future Interventions"
+	header.Text = "Ecosystem Interventions"
 	header.Parent = section
 
+	-- Bridge copy: makes clear these support the cells, not a separate system.
+	local subtitle = Instance.new("TextLabel")
+	subtitle.Name = "Subtitle"
+	subtitle.LayoutOrder = 2
+	subtitle.AutomaticSize = Enum.AutomaticSize.Y
+	subtitle.Size = UDim2.new(1, 0, 0, 14)
+	subtitle.BackgroundTransparency = 1
+	subtitle.Font = Enum.Font.Gotham
+	subtitle.TextSize = 12
+	subtitle.TextWrapped = true
+	subtitle.TextXAlignment = Enum.TextXAlignment.Left
+	subtitle.TextColor3 = Color3.fromRGB(150, 166, 186)
+	subtitle.Text = "Shape the world around your cells so life can grow, stabilize, and evolve."
+	subtitle.Parent = section
+
 	for i, def in previews do
-		makeCard(def, i + 1).Parent = section
+		makeCard(def, i + 2).Parent = section
 	end
 
 	return section

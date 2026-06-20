@@ -15,7 +15,14 @@ Nova's organelle code. Live generic purchase pipeline (5C–5F) deferred to coor
 
 ## Active Sprint / Ticket
 - **Epic 5 5A** ✅ audit + **5B/5G** ✅ additive layer (`InterventionData` + `InterventionPreviewUI` + extension docs). Pending in-Studio playtest.
+- **Ecosystem-Interventions UI clarity pass** ✅ — renamed preview section `Future Interventions` → **Ecosystem Interventions** + bridge copy; parent header → **Life Interventions**; cards now `category="Ecosystem"`. No live logic (`docs/Plans/Ecosystem-Interventions-UI-Clarity.md`). Also fixed the inspect-panel overflow (capped height + scroll).
 - (Carryover) Epic 4 **4H** playtest sign-off.
+
+## Recent Changes
+- Renamed the read-only future-intervention preview section to **Ecosystem Interventions**; added bridge copy explaining it shapes planet conditions around the cells.
+- Parent intervention header → **Life Interventions** (reads: Life Interventions › Cell Cultures [Nova] › Ecosystem Interventions [preview]).
+- Finalized the three card descriptions/effect summaries; `category = "Ecosystem"`. **No** remotes / `LifeProgress` / `Stability` / Matter spend added.
+- Inspect panel now scrolls + caps height (was overflowing the screen).
 
 ## Files I Am Touching
 - `src/client/PlanetInteraction.client.luau` (prompt + inspect camera + info panel + Create Life intervention)
