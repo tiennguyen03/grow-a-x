@@ -286,11 +286,19 @@ infoGui.DisplayOrder = 12
 infoGui.Enabled = false
 infoGui.Parent = player:WaitForChild("PlayerGui")
 
+-- Wider, TABBED panel: a fixed header (planet name + tab row) over a page area, so
+-- the four sections (Overview / Cells / Ecosystem / Sentience) each get their own
+-- short page instead of one endlessly-scrolling column crammed on the right.
+local PANEL_W = 430
+local PANEL_FRAC = 0.84 -- panel height as a fraction of the viewport
+local HEADER_H = 78
+local DIM_TEXT = Color3.fromRGB(150, 166, 186)
+
 local infoPanel = Instance.new("CanvasGroup")
 infoPanel.Name = "InfoPanel"
 infoPanel.AnchorPoint = Vector2.new(1, 0.5)
 infoPanel.Position = UDim2.new(1, -36, 0.5, 0) -- right side, vertically centered
-infoPanel.Size = UDim2.fromOffset(316, 0) -- height is set dynamically below (capped to viewport)
+infoPanel.Size = UDim2.fromOffset(PANEL_W, 480) -- height set from the viewport below
 infoPanel.BackgroundColor3 = Color3.fromRGB(11, 15, 23)
 infoPanel.BackgroundTransparency = 0.06
 infoPanel.BorderSizePixel = 0
@@ -319,47 +327,12 @@ infoGradient.Color = ColorSequence.new({
 })
 infoGradient.Parent = infoPanel
 
--- Content lives in a ScrollingFrame so a tall panel (info + cells + previews)
--- scrolls instead of running off the top/bottom of the screen. The CanvasGroup
--- above keeps the rounded bg/stroke/gradient + fade animation; this fills it.
-local infoScroll = Instance.new("ScrollingFrame")
-infoScroll.Name = "Scroll"
-infoScroll.Size = UDim2.fromScale(1, 1)
-infoScroll.BackgroundTransparency = 1
-infoScroll.BorderSizePixel = 0
-infoScroll.CanvasSize = UDim2.new() -- driven by AutomaticCanvasSize
-infoScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-infoScroll.ScrollingDirection = Enum.ScrollingDirection.Y
-infoScroll.ScrollBarThickness = 5
-infoScroll.ScrollBarImageColor3 = CYAN
-infoScroll.ScrollBarImageTransparency = 0.4
-infoScroll.Active = true
-infoScroll.Parent = infoPanel
-
-local infoPadding = Instance.new("UIPadding")
-infoPadding.PaddingTop = UDim.new(0, 16)
-infoPadding.PaddingBottom = UDim.new(0, 16)
-infoPadding.PaddingLeft = UDim.new(0, 18)
-infoPadding.PaddingRight = UDim.new(0, 18)
-infoPadding.Parent = infoScroll
-
-local infoLayout = Instance.new("UIListLayout")
-infoLayout.FillDirection = Enum.FillDirection.Vertical
-infoLayout.SortOrder = Enum.SortOrder.LayoutOrder
-infoLayout.Padding = UDim.new(0, 6)
-infoLayout.Parent = infoScroll
-
--- Cap the panel to a fraction of screen height; below that it shrinks to fit so a
--- short panel (just planet info) isn't a tall box with empty space.
-local MAX_PANEL_FRAC = 0.9
+-- Fixed, comfortable size; tabs keep each section short so the whole panel never scrolls.
 local function updateInfoPanelHeight()
 	local camera = Workspace.CurrentCamera
 	local viewportH = (camera and camera.ViewportSize.Y) or 600
-	local contentH = infoLayout.AbsoluteContentSize.Y
-		+ infoPadding.PaddingTop.Offset + infoPadding.PaddingBottom.Offset
-	infoPanel.Size = UDim2.fromOffset(316, math.min(contentH, viewportH * MAX_PANEL_FRAC))
+	infoPanel.Size = UDim2.fromOffset(PANEL_W, math.floor(viewportH * PANEL_FRAC))
 end
-infoLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateInfoPanelHeight)
 do
 	local cam0 = Workspace.CurrentCamera
 	if cam0 then
@@ -368,7 +341,139 @@ do
 end
 updateInfoPanelHeight()
 
--- Small factory for a left-aligned text row inside the panel.
+-- ---- Header (planet name + tab row), fixed at the top ----
+local headerFrame = Instance.new("Frame")
+headerFrame.Name = "Header"
+headerFrame.Size = UDim2.new(1, 0, 0, HEADER_H)
+headerFrame.BackgroundTransparency = 1
+headerFrame.Parent = infoPanel
+local headerPad = Instance.new("UIPadding")
+headerPad.PaddingLeft = UDim.new(0, 18)
+headerPad.PaddingRight = UDim.new(0, 18)
+headerPad.PaddingTop = UDim.new(0, 12)
+headerPad.Parent = headerFrame
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "Title"
+titleLabel.Size = UDim2.new(1, 0, 0, 26)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 22
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.TextColor3 = Color3.fromRGB(228, 240, 255)
+titleLabel.Text = "Origin World"
+titleLabel.Parent = headerFrame
+
+local tabBar = Instance.new("Frame")
+tabBar.Name = "Tabs"
+tabBar.Position = UDim2.fromOffset(0, 36)
+tabBar.Size = UDim2.new(1, 0, 0, 28)
+tabBar.BackgroundTransparency = 1
+tabBar.Parent = headerFrame
+local tabLayout = Instance.new("UIListLayout")
+tabLayout.FillDirection = Enum.FillDirection.Horizontal
+tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+tabLayout.Padding = UDim.new(0, 4)
+tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+tabLayout.Parent = tabBar
+
+local headerDivider = Instance.new("Frame")
+headerDivider.Position = UDim2.new(0, 0, 0, HEADER_H - 1)
+headerDivider.Size = UDim2.new(1, 0, 0, 1)
+headerDivider.BackgroundColor3 = CYAN
+headerDivider.BackgroundTransparency = 0.7
+headerDivider.BorderSizePixel = 0
+headerDivider.Parent = infoPanel
+
+-- ---- Page area (below the header) ----
+local pagesHost = Instance.new("Frame")
+pagesHost.Name = "Pages"
+pagesHost.Position = UDim2.fromOffset(0, HEADER_H)
+pagesHost.Size = UDim2.new(1, 0, 1, -HEADER_H)
+pagesHost.BackgroundTransparency = 1
+pagesHost.Parent = infoPanel
+
+-- A page is a scrolling frame (only the active page scrolls, and only if it's long).
+local function makePage()
+	local p = Instance.new("ScrollingFrame")
+	p.Size = UDim2.fromScale(1, 1)
+	p.BackgroundTransparency = 1
+	p.BorderSizePixel = 0
+	p.CanvasSize = UDim2.new()
+	p.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	p.ScrollingDirection = Enum.ScrollingDirection.Y
+	p.ScrollBarThickness = 5
+	p.ScrollBarImageColor3 = CYAN
+	p.ScrollBarImageTransparency = 0.4
+	p.Active = true
+	p.Visible = false
+	p.Parent = pagesHost
+	local pad = Instance.new("UIPadding")
+	pad.PaddingTop = UDim.new(0, 12)
+	pad.PaddingBottom = UDim.new(0, 14)
+	pad.PaddingLeft = UDim.new(0, 18)
+	pad.PaddingRight = UDim.new(0, 18)
+	pad.Parent = p
+	local lay = Instance.new("UIListLayout")
+	lay.FillDirection = Enum.FillDirection.Vertical
+	lay.SortOrder = Enum.SortOrder.LayoutOrder
+	lay.Padding = UDim.new(0, 8)
+	lay.Parent = p
+	return p
+end
+
+local overviewPage = makePage()
+local cellsPage = makePage()
+local ecoPage = makePage()
+local sentiencePage = makePage()
+local infoScroll = overviewPage -- planet-info rows live on the Overview page
+
+-- ---- Tabs ----
+local tabs = {}
+local function setActiveTab(idx)
+	for i, t in tabs do
+		t.page.Visible = (i == idx)
+		t.button.TextColor3 = (i == idx) and CYAN or DIM_TEXT
+		t.underline.Visible = (i == idx)
+	end
+end
+local function makeTab(name, page, order)
+	local b = Instance.new("TextButton")
+	b.Name = "Tab_" .. name
+	b.AutomaticSize = Enum.AutomaticSize.X
+	b.Size = UDim2.fromOffset(0, 28)
+	b.BackgroundTransparency = 1
+	b.AutoButtonColor = false
+	b.Font = Enum.Font.GothamMedium
+	b.TextSize = 14
+	b.TextColor3 = DIM_TEXT
+	b.Text = name
+	b.LayoutOrder = order
+	b.Parent = tabBar
+	local bp = Instance.new("UIPadding")
+	bp.PaddingLeft = UDim.new(0, 7)
+	bp.PaddingRight = UDim.new(0, 7)
+	bp.Parent = b
+	local underline = Instance.new("Frame")
+	underline.AnchorPoint = Vector2.new(0.5, 1)
+	underline.Position = UDim2.new(0.5, 0, 1, 0)
+	underline.Size = UDim2.new(1, -6, 0, 2)
+	underline.BackgroundColor3 = CYAN
+	underline.BorderSizePixel = 0
+	underline.Visible = false
+	underline.Parent = b
+	local idx = #tabs + 1
+	b.Activated:Connect(function()
+		setActiveTab(idx)
+	end)
+	table.insert(tabs, { button = b, page = page, underline = underline })
+end
+makeTab("Overview", overviewPage, 1)
+makeTab("Cells", cellsPage, 2)
+makeTab("Ecosystem", ecoPage, 3)
+makeTab("World Direction", sentiencePage, 4)
+
+-- A left-aligned text row on a page (defaults to the Overview page).
 local function makeInfoLabel(order: number, opts)
 	opts = opts or {}
 	local l = Instance.new("TextLabel")
@@ -384,19 +489,8 @@ local function makeInfoLabel(order: number, opts)
 	l.TextWrapped = opts.wrap or false
 	l.RichText = true
 	l.Text = ""
-	l.Parent = infoScroll
+	l.Parent = opts.parent or infoScroll
 	return l
-end
-
-local function makeDivider(order: number)
-	local d = Instance.new("Frame")
-	d.LayoutOrder = order
-	d.Size = UDim2.new(1, 0, 0, 1)
-	d.BackgroundColor3 = CYAN
-	d.BackgroundTransparency = 0.7
-	d.BorderSizePixel = 0
-	d.Parent = infoScroll
-	return d
 end
 
 -- A "Field   value" row string with the field name dimmed (RichText).
@@ -404,36 +498,28 @@ local function field(name: string, value: string): string
 	return string.format('<font color="%s">%s</font>   %s', DIM_COLOR, name, value)
 end
 
-local titleLabel    = makeInfoLabel(1, { font = Enum.Font.GothamBold, size = 22, height = 28 })
-makeDivider(2)
-local rowArchetype  = makeInfoLabel(3)
-local rowStage      = makeInfoLabel(4)
-local rowLife       = makeInfoLabel(5)
-local rowCiv        = makeInfoLabel(6)
-local rowWater      = makeInfoLabel(8)
-local rowClouds     = makeInfoLabel(9)
-local rowAtmos      = makeInfoLabel(10)
-local debugLabel    = makeInfoLabel(11, { wrap = true, size = 13, color = Color3.fromRGB(150, 170, 190) })
-makeDivider(12)
+-- Overview page. World Overview first (what the world is *becoming* — V3 framing:
+-- K-Rating / Era / Next Milestone / Species Identity), then planet identity + conditions.
+local rowKRating    = makeInfoLabel(1, { font = Enum.Font.GothamBold, size = 18, height = 22, color = CYAN })
+local rowEra        = makeInfoLabel(2)
+local rowMilestone  = makeInfoLabel(3)
+local rowCiv        = makeInfoLabel(4)
+local rowArchetype  = makeInfoLabel(7)
+local rowStage      = makeInfoLabel(8)
+local rowLife       = makeInfoLabel(9)
+local rowWater      = makeInfoLabel(11)
+local rowClouds     = makeInfoLabel(12)
+local rowAtmos      = makeInfoLabel(13)
+local debugLabel    = makeInfoLabel(14, { wrap = true, size = 13, color = Color3.fromRGB(150, 170, 190) })
+local exitLabel     = makeInfoLabel(20, { size = 13, color = DIM_TEXT })
 
--- Intervention section — the full organelle/cell-management UI (create cells, buy
--- organelles in order, watch a cell evolve Archaea → Eukaryotic) is built by the
--- CellInterventionUI module and mounted right here in the inspect panel. All spends
--- are server-authoritative; the module only requests them and re-renders from the
--- server's ConverterUpdate. It owns its own remote subscriptions and state.
-local interventionHeader = makeInfoLabel(13, { font = Enum.Font.GothamBold, size = 15, color = CYAN })
-interventionHeader.Text = "Life Interventions"
-CellInterventionUI.mount(infoScroll, { layoutOrder = 14 })
+-- Each gameplay system mounts into its own tab page (server-authoritative; the
+-- modules own their remotes/state — they just parent into whatever frame we pass).
+CellInterventionUI.mount(cellsPage, { layoutOrder = 1 })
+EcosystemInterventionUI.mount(ecoPage, { layoutOrder = 1 })
+SentienceUI.mount(sentiencePage, { layoutOrder = 1 })
 
--- Ecosystem Interventions (Epic 6): Life Progress + Stability + the three live
--- interventions, server-authoritative. Sits below Nova's Cell Cultures UI.
-EcosystemInterventionUI.mount(infoScroll, { layoutOrder = 30 })
-
--- Sentience (Epic 7): Complex Life interventions + Civilization Identity, gated until
--- the Multicellular path completes. Sits below Ecosystem Interventions.
-SentienceUI.mount(infoScroll, { layoutOrder = 40 })
-
-local exitLabel = makeInfoLabel(20, { size = 13, color = Color3.fromRGB(150, 170, 190) })
+setActiveTab(1) -- default to Overview
 
 -- ---- Formatting helpers -------------------------------------------------------
 -- "TemperateOcean" / "young_habitable" -> "Temperate Ocean" / "Young Habitable"
@@ -490,10 +576,68 @@ local function updateInfoPanel(planet: Model?)
 	end
 	rowStage.Text = field("Stage", stage)
 	rowLife.Text = field("Life", alive and "Microbial" or "Dormant")
-	-- Civilization Identity emerges from sentience tendencies (Epic 7). Server writes
-	-- the CivIdentity attribute once Complex Life begins; until then it's "None".
+
+	-- ---- World Overview (Epic 7 / V3): K-Rating · Era · Next Milestone · Species Identity ----
+	-- All derived client-side from mirrored attributes (no server change). Complex Life is
+	-- reached at the Multicellular stage / Life Progress maxed; K-Rating is display-only and
+	-- spans K0.45–K0.70 across Complex Life (Tool Use at K0.70 — see Epic7.md §1).
+	local lifeProgress = tonumber(planet:GetAttribute("LifeProgress")) or 0
+	local lifeProgressMax = tonumber(planet:GetAttribute("LifeProgressMax")) or 0
+	local sentience = tonumber(planet:GetAttribute("SentienceProgress")) or 0
+	local stageLower = stage:lower()
+	local toolUse = stageLower == "tooluse"
+	local complexLife = toolUse
+		or stageLower == "multicellular"
+		or (lifeProgressMax > 0 and lifeProgress >= lifeProgressMax)
+
+	local kRating
+	if toolUse then
+		kRating = 0.70
+	elseif complexLife then
+		kRating = 0.45 + (math.clamp(sentience, 0, 100) / 100) * 0.25
+	elseif lifeProgressMax > 0 then
+		kRating = 0.20 + math.clamp(lifeProgress / lifeProgressMax, 0, 1) * 0.25
+	elseif alive then
+		kRating = 0.20
+	else
+		kRating = 0.10
+	end
+	rowKRating.Text = field("K-Rating", string.format("K%.2f", kRating))
+
+	local era
+	if toolUse then
+		era = "Tool Use"
+	elseif complexLife then
+		era = "Complex Life"
+	elseif alive then
+		era = "Early Life"
+	else
+		era = "Prebiotic"
+	end
+	rowEra.Text = field("Era", era)
+
+	local milestone
+	if not complexLife then
+		milestone = "Complex Life (K0.45)"
+	elseif not toolUse then
+		milestone = "Tool Use (K0.70)"
+	else
+		milestone = "Civilization era"
+	end
+	rowMilestone.Text = field("Next Milestone", milestone)
+
+	-- Species Identity emerges from sentience tendencies. Server writes the CivIdentity
+	-- attribute once Complex Life begins; "Emerging…" once Complex Life starts, else "—".
 	local identity = planet:GetAttribute("CivIdentity")
-	rowCiv.Text = field("Civilization", (typeof(identity) == "string" and identity ~= "") and identity or "None")
+	local identityText
+	if typeof(identity) == "string" and identity ~= "" and identity ~= "—" then
+		identityText = identity
+	elseif complexLife then
+		identityText = "Emerging…"
+	else
+		identityText = "—"
+	end
+	rowCiv.Text = field("Species Identity", identityText)
 
 	rowWater.Text = field("Water", formatPct(planet:GetAttribute("WaterCoverage")))
 	rowClouds.Text = field("Clouds", formatPct(planet:GetAttribute("CloudCoverage")))

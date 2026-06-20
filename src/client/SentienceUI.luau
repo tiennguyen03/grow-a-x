@@ -1,9 +1,9 @@
--- Sentience UI (Epic 7) — Complex Life: guide sentience + civilization identity.
+-- World Direction UI (Epic 7 / V3) — Complex Life: guide your species' direction + identity.
 --
--- Mounted in the inspect panel BELOW Ecosystem Interventions. Gated until Complex
--- Life (Nova's Multicellular path complete / Life Progress 100). Shows a Sentience
--- Progress bar, the emerging Civilization Identity (top tendencies), and the five
--- sentience interventions as interactive cards — each raises Sentience Progress and
+-- Mounted as the inspect panel's "World Direction" tab. Gated until Complex Life
+-- (Nova's Multicellular path complete / Life Progress 100). Shows a Sentience
+-- Progress bar, the emerging Species Identity (top tendencies), and the five World
+-- Direction branch choices as interactive cards — each raises Sentience Progress and
 -- builds a tendency. Clicking fires the server-authoritative ApplyIntervention
 -- remote (same pipeline as Epic 6). At Sentience 100 a Tool Use milestone shows.
 --
@@ -186,7 +186,7 @@ function SentienceUI.mount(parent: Instance, opts)
 	header.TextSize = 14
 	header.TextXAlignment = Enum.TextXAlignment.Left
 	header.TextColor3 = PURPLE
-	header.Text = "Sentience"
+	header.Text = "World Direction"
 	header.Parent = section
 
 	-- Locked note (shown until Complex Life).
@@ -200,7 +200,7 @@ function SentienceUI.mount(parent: Instance, opts)
 	locked.TextWrapped = true
 	locked.TextXAlignment = Enum.TextXAlignment.Left
 	locked.TextColor3 = Color3.fromRGB(150, 166, 186)
-	locked.Text = "Reach Complex Life — complete the Multicellular path — to guide sentience."
+	locked.Text = "Reach Complex Life — complete the Multicellular path — to choose your species' direction."
 	locked.Parent = section
 
 	-- Body (bar + identity + milestone + cards), hidden until Complex Life.
@@ -227,7 +227,7 @@ function SentienceUI.mount(parent: Instance, opts)
 	subtitle.TextWrapped = true
 	subtitle.TextXAlignment = Enum.TextXAlignment.Left
 	subtitle.TextColor3 = Color3.fromRGB(150, 166, 186)
-	subtitle.Text = "Shape what kind of mind — and civilization — emerges from your world."
+	subtitle.Text = "Choose how your species develops — each branch shapes its emerging identity (and future civilization)."
 	subtitle.Parent = body
 
 	-- Sentience Progress bar.
@@ -321,7 +321,7 @@ function SentienceUI.mount(parent: Instance, opts)
 			'<font color="%s">Sentience</font>  %d / %d', DIM, sentienceProgress, sentienceProgressMax
 		)
 		fill.Size = UDim2.fromScale(math.clamp(sentienceProgress / sentienceProgressMax, 0, 1), 1)
-		identity.Text = string.format('<font color="%s">Civilization Identity</font>  %s', DIM, identityText())
+		identity.Text = string.format('<font color="%s">Species Identity</font>  %s', DIM, identityText())
 		milestone.Visible = sentienceProgress >= sentienceProgressMax
 	end)
 
