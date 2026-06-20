@@ -2,7 +2,11 @@
 
 Working title is **Grow A [X]** (final name TBD). Developed by **Tien** and **Nova**.
 
-> 📋 **Starting a session? Read [`HANDOFF.md`](HANDOFF.md) first** — current state, which files are safe to touch, which are shared coordination points, and what's NOT in source control.
+> 📋 **Starting a session?** Read [`HANDOFF.md`](HANDOFF.md) first (global state), then the active developer's lane handoff:
+> - Tien work → [`HANDOFF-TIEN.md`](HANDOFF-TIEN.md)
+> - Nova work → [`HANDOFF-NOVA.md`](HANDOFF-NOVA.md)
+>
+> If the task touches shared files or the other developer's lane, also read their handoff before editing. `HANDOFF.md` tells you which files are safe to touch, which are shared coordination points, and what's NOT in source control.
 
 ---
 
@@ -12,20 +16,38 @@ Claude should behave like a senior engineer on a two-person Roblox/Rojo project.
 
 **Before starting any task:**
 
-1. Read `HANDOFF.md`.
+1. Read `HANDOFF.md` (global state), then the active developer's lane handoff (`HANDOFF-TIEN.md` or `HANDOFF-NOVA.md`); read the other dev's handoff too if the task touches shared files or their lane.
 2. Check the relevant epic doc in `docs/EPICS/`.
 3. Identify the current sprint and the exact ticket/task being worked on.
-4. Identify which developer owns the task: **Tien** or **Nova**.
+4. Identify which developer is active / owns the task: **Tien** or **Nova**.
 5. Identify the files that are safe to edit.
 6. Identify files that are shared coordination points or conflict-prone.
 7. Avoid touching shared coordination files unless the task explicitly requires it.
 8. Confirm what is explicitly out of scope.
 9. Keep the implementation small and aligned with the current sprint.
-10. Leave the next developer with a clean starting point.
+10. Identify which handoff file to update afterward, and whether `HANDOFF.md` needs a global update or only the per-developer file does (see [Handoff File Workflow](#handoff-file-workflow)).
+11. Leave the next developer with a clean starting point.
 
-**When finishing any task**, provide a handoff summary (see [Required Handoff Summary Format](#required-handoff-summary-format)) covering: what changed, files touched, how to test in Roblox Studio, known issues / unfinished work, what Tien or Nova should do next, and whether `HANDOFF.md`, an epic doc, or `AI_CONTEXT.md` (if present) needs updating.
+**When finishing any task**, provide a handoff summary (see [Required Handoff Summary Format](#required-handoff-summary-format)) covering: what changed, files touched, how to test in Roblox Studio, known issues / unfinished work, what Tien or Nova should do next, and which handoff file (per-dev vs global) plus epic doc needs updating.
 
 Handoff context is **mandatory after every implementation task** — Claude should not wait for the user to ask for it. If the task is unclear, ask for clarification before editing shared or high-risk files; if it's clear and low-risk, proceed without over-planning.
+
+---
+
+## Handoff File Workflow
+
+The project uses **one global handoff file plus one per-developer lane file**, so Tien and Nova aren't constantly editing the same file for day-to-day updates (which caused merge conflicts).
+
+- **`HANDOFF.md`** — the global integration snapshot (project status, integration/branch state, active-lanes table, global blockers, shared-coordination files, stable file map/ownership, merge/PR notes). **Not a daily scratchpad.**
+- **`HANDOFF-TIEN.md`** — Tien's active-lane handoff (current branch, focus, files being touched, recent changes, blockers, next steps).
+- **`HANDOFF-NOVA.md`** — Nova's active-lane handoff (same shape).
+
+**Read order:** always read `HANDOFF.md` first, then the **active** developer's lane file, then the other developer's only if the task touches shared files or their lane.
+
+**Update rules:**
+- During normal implementation, update the **active developer's** lane file (Tien work → `HANDOFF-TIEN.md`; Nova work → `HANDOFF-NOVA.md`).
+- Update **`HANDOFF.md`** *only* when global/integration state changes: a sprint completes, a branch merges, a new system/file is added, file ownership changes, a global blocker appears, or integration state moves.
+- **Do not edit the other developer's lane file** unless explicitly asked, or the task is a coordination/merge task.
 
 ---
 
@@ -105,6 +127,8 @@ src/shared/PlanetArchetypes.luau     → planet archetype definitions (trait ran
 src/shared/PlanetGenerator.luau      → pure, deterministic planet descriptor generator (seed → archetype + traits); no Instances (Epic 2)
 src/shared/DustField.luau            → universe-wide dust spawn helper (getSpawnPosition) used by WorldBuilder + PlayerManager (Epic 1/2)
 src/shared/OrganelleData.luau        → ordered Tier 1 organelle path (cost/bonus/visual) + helpers; pure data (Epic 3)
+src/shared/MulticellularData.luau    → ordered Tier 1C path (Eukaryotic → Multicellular): the six upgrades + helpers; pure data (Epic 3)
+src/shared/Pricing.luau              → dynamic cost formulas (cellCost, upgradeCost) shared by server + client; pure functions (Epic 3)
 ```
 
 > **Note:** the `*.client.luau` files marked "standalone LocalScript" (`SpaceMovement`, `DustAnimator`, `PlanetMarker`, `PlanetInteraction`, `PlanetStageVisuals`, `BiosphereView`) are self-contained — they do not follow the `Main → require → .init()` pattern because they need no coordination with other systems and run themselves.
@@ -116,10 +140,12 @@ All remotes are defined in `src/shared/Remotes.luau`. Server creates them on loa
 |---|---|---|
 | `MatterUpdate` | Server → Client | `{ matter: number }` (client shows a "+N" popup from the delta) |
 | `CreateArchaea` | Client → Server | *(none)* — request to spend Matter on one new cell (Epic 3) |
-| `ConverterUpdate` | Server → Client | `{ archaeaCount, totalProduction, cells = {…}, dustMultiplier }` — full converter/cell state (Epic 3) |
+| `ConverterUpdate` | Server → Client | `{ archaeaCount, totalProduction, cells = {…}, dustMultiplier, cascadeTriggered, cellCost, multicellularUpgrades, nextUpgradeCost }` — full converter/cell state + live dynamic prices (Epic 3) |
 | `PurchaseOrganelle` | Client → Server | `{ cellId, organelleId }` — buy the next organelle for a cell; server validates order + cost (Epic 3) |
 | `CellEvolved` | Server → Client | `{ cellId }` — a single cell became Eukaryotic; drives the unlock celebration (Epic 3) |
 | `CascadeTriggered` | Server → Client | `{ triggerCellId, cellIds, count, dustMultiplier }` — one-time Eukaryotic Cascade celebration + Dust Multiplier unlock (Epic 3) |
+| `PurchaseUpgrade` | Client → Server | *(none)* — buy the next player-wide multicellular upgrade; server validates gate/order/dynamic cost (Epic 3 / 1C) |
+| `UpgradePurchased` | Server → Client | `{ step, upgradeId }` — a multicellular upgrade was bought; drives the biosphere visual progression + a toast (Epic 3 / 1C) |
 | `DevGrantMatter` | Client → Server | `{ amount: number }` — ⚠️ **DEV/TESTING ONLY** (remove before launch); grants the player Matter (server caps it) |
 
 ---
@@ -249,6 +275,9 @@ At the end of every implementation task, output this handoff block:
 
 ### Docs To Update
 -
+
+### Handoff File Updated
+- HANDOFF-TIEN.md / HANDOFF-NOVA.md / HANDOFF.md / None
 ```
 
 Rules:

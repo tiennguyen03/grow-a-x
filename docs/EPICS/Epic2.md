@@ -6,6 +6,8 @@
 
 **Status:** ✅ Sprints 7A–7H complete. **Refactor (per-player + noise continents):** planets are built per player by `PlayerPlanetService` on join (seed = `UserId + WORLD_SEED_SALT`), under `workspace.SpaceEnvironment.PlayerPlanets`. Land is generated from coherent `math.noise` over the sphere (connected continents/islands) instead of clustered blobs; `WorldBuilder` no longer builds a planet (backdrop only); atmosphere is a thin shell (scale 1.04–1.08). See `PlayerPlanetService.luau` + `PlanetGenerator.generateSurface`. **Sprint 7G** added climate-based biomes (temperate/desert/mountain/tundra), moved planet rotation to the server (fixing the snap-back bug), and rebalanced the planet/star composition.
 
+> **Polish pass (2026-06-19):** **Orbit distance** — `WorldConfig.PLANET_ORBIT_BASE_RADIUS` 340→**460** so the planet isn't cramped against the star (return-home / inspect / marker all derive from the live planet position, so nothing else needed updating). _(A per-tile terrain-variation experiment — size/shape/roll/color jitter — was tried the same day and **reverted**: the original clean tiled surface looked better. `PlanetGenerator.generateSurface` + `PlayerPlanetService.buildTile` are back to their pre-experiment state.)_
+
 ---
 
 ## One-sentence goal

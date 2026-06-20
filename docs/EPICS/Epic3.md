@@ -2,7 +2,7 @@
 
 > **Formerly Epic 8** (file was `Epic8.md`) — renumbered to close the old `0,1,7,8` gap. Sprint IDs keep their original `8A`–`8H` labels; only the epic number changed.
 
-**Status:** 🔶 In Progress — Tier 1 organelle path (8C) + Eukaryotic Cascade & Dust Multiplier (8D) + Biosphere View (8E) built, pending in-Studio playtest  
+**Status:** 🔶 In Progress — Tier 1 organelle path (8C) + Eukaryotic Cascade & Dust Multiplier (8D) + Biosphere View (8E) + Multicellular Path & Dynamic Pricing (1C) built, pending in-Studio playtest  
 **Dependency:** Epic 1 (Matter Loop) must be complete (Sprint 1A ✅, Sprint 1B in progress)  
 **Estimated Sprints:** 8 sprints (8A–8H)  
 **Core Designer:** Nova (Matter / economy lane)
@@ -215,3 +215,40 @@ local EvolutionTiers = {
 **Update (microscope zoom progression):** the Microscope now **zooms out as the population grows** (visible-cell cap raised to 200). A `NumberValue` camera distance is **TweenService-animated** on a log curve (`9 + 21·log10(count)`, clamped 9–140 studs): ~1 cell fills the frame up close, scaling out through clusters to a packed field. The swim region grows sub-linearly with zoom so cells pack denser as the lens pulls back. New cells **animate as divisions** (bud off an existing cell and grow in); visible count stays `min(real, 200)`, so division is tied to real cell creation, never phantom cells.
 
 **Update (purchase-gated organelles + neater cells):** each microscope cell now **mirrors a real cell** (matched by array index) and draws **only the organelles that cell has actually purchased** — a fresh Archaea Cell is a bare blob, and organelles appear one at a time as the player buys them (membrane → cytoplasm → ribosomes → nucleoid → plasmids → mitochondria → nucleus). Each cell carries a draw signature (`stage / purchasedCount / zoomBucket`); when it changes, that cell's organelles are rebuilt in place (new ones fade in). An organelle still also hides once the population passes its **zoom ceiling** (ribosomes/plasmids ≤20, nucleoid/mitochondria ≤50, nucleus ≤60, membrane/cytoplasm ≤200) so far-out views stay clean. The layout was redone for neatness — the protruding flagella tail and oversized membrane were removed; every organelle now sits inside the body radius (membrane is a thin surface rim, cytoplasm fills/opacifies the body, ribosomes use a golden-angle scatter, plasmids a tidy ring).
+---
+
+### Sprint 1C: Multicellular Path + Dynamic Pricing
+
+**Goal:** Carry the player from the Eukaryotic Cell to a **Multicellular Organism** through six player-wide upgrades, and put **dynamic pricing** on both cells and upgrades so progression has a meaningful (but fair) cost curve. All prices update live in the UI and are server-authoritative.
+
+**Owner/files (Nova):**
+- `src/shared/Pricing.luau` (NEW) — the two cost formulas, shared so client display == server charge.
+- `src/shared/MulticellularData.luau` (NEW) — the ordered six 1C upgrades (id/name/baseCost/visual/description). *(This is the "EvolutionTiers" store the brief referred to; named to match the existing `OrganelleData` pattern.)*
+- `src/shared/Remotes.luau` (⚠️ shared — appended) — `PurchaseUpgrade` (C→S), `UpgradePurchased` (S→C).
+- `src/server/PlayerManager.luau` — dynamic cell cost in `onCreateArchaea`; `profile.multicellularUpgrades`; `onPurchaseUpgrade` (gated on Eukaryotic, ordered, dynamic cost); `ConverterUpdate` now carries `cellCost` / `multicellularUpgrades` / `nextUpgradeCost`.
+- `src/client/CellInterventionUI.luau` — Create button shows the **dynamic** cell cost; a new **Multicellular Path** section lists the six upgrades with live costs + Buy.
+- `src/client/BiosphereView.client.luau` — the six upgrades each add a visual layer in the Microscope, and the Life Vessel organizes from a loose cloud into a coordinated body.
+
+**Pricing — cells (dynamic, grows with cells owned):**
+- `cellCost(n) = 15 · (1 + 0.08·n + 0.001·n²)` → 0→15, 1→16.2, 5→21, 10→28.5, 20→45, 50→~113, 100→285.
+- **Note:** the brief also wrote `15·(1 + n·0.08)^1.2`, but that does not reproduce the brief's own example table (it gives ~209 at 100 cells, not 285). The quadratic above matches the examples and is the implemented source of truth (one-line swap in `Pricing.luau` if the power form is preferred).
+
+**Pricing — upgrades (dynamic, +10% per upgrade already bought):**
+- `upgradeCost(base, bought) = base · (1 + bought·0.1)`. Bases 80/100/120/150/200/250 bought in order → **80, 110, 144, 195, 280, 375**.
+
+**Organelle pricing stays FIXED** (per cell): membrane 5, cytoplasm 10, ribosomes 15, nucleoid 25, plasmids 40, mitochondria 60, nucleus 85 (240 total to Eukaryotic).
+
+**The six upgrades (gated behind reaching Eukaryotic) + their visual layer:**
+
+| # | Upgrade | Base | Microscope layer | Life Vessel |
+|---|---|---|---|---|
+| 1 | Cell Adhesion Molecules | 80 | cells pull together into a cluster | speckles stop wandering, draw inward |
+| 2 | Intercellular Signaling | 100 | signal pulses ripple out from the cluster | — |
+| 3 | Extracellular Matrix | 120 | a translucent matrix hull wraps the cluster | — |
+| 4 | Cell Cycle Coordination | 150 | the cluster breathes (contracts/expands in unison) | coordinated heartbeat strengthens |
+| 5 | Early Differentiation | 200 | cells take on varied tints (specialize) | — |
+| 6 | Tissue Scaffolding | 250 | body tightens + matrix hull brightens (organized tissue) | brightest, most ordered, strongest pulse |
+
+**How it works:** the six upgrades are PLAYER-WIDE (not per-cell), bought strictly in order via `PurchaseUpgrade`; the server validates the Eukaryotic gate + order + dynamic cost, deducts, increments `multicellularUpgrades`, and fires `UpgradePurchased` (drives a toast + vessel flare). The biosphere views read `multicellularUpgrades` off `ConverterUpdate` and layer their effects from it (`state.upgrades`). The final upgrade sets the planet `EvolutionStage = "Multicellular"`.
+
+**Not in scope for 1C:** persistence (`multicellularUpgrades` resets on rejoin — waits on the DataStore epic), tiers beyond Multicellular, and per-cell differentiation logic on the server (differentiation is a client visual). The visual layers are tasteful/representative, not a full biological simulation.

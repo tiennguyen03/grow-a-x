@@ -28,11 +28,17 @@ WorldConfig.PLAYER_START_POS = Vector3.new(0, 0, 0) -- where players spawn
 WorldConfig.CENTERPIECE_STAR_POS    = Vector3.new(0, 0, -900)
 WorldConfig.CENTERPIECE_STAR_RADIUS = 200 -- dominant; ~1.7x the previous 116
 
+-- Sun death: flying within (star radius + this margin) of the star center kills
+-- the player. Normal flight never gets this close (spawn is ~900 studs out and
+-- planets orbit hundreds of studs from the star), so it only triggers on a real
+-- dive into the star. Bump this to make the danger zone bigger.
+WorldConfig.SUN_KILL_MARGIN = 15 -- studs beyond the star surface (kill radius = 215)
+
 -- Player-planet orbit (deterministic VISUAL orbit, not physics). Orbit radius is
 -- small vs. the star distance, so a planet always reads as "near the star,
 -- offset" from spawn regardless of its starting angle. Per-player variation in
 -- angle/radius/height keeps multiple players' planets from stacking.
-WorldConfig.PLANET_ORBIT_BASE_RADIUS      = 340 -- studs from the star center
+WorldConfig.PLANET_ORBIT_BASE_RADIUS      = 460 -- studs from the star center (raised from 340 so the planet isn't cramped against the sun)
 WorldConfig.PLANET_ORBIT_RADIUS_VARIATION = 70  -- +/- spread so orbits differ
 WorldConfig.PLANET_ORBIT_HEIGHT_VARIATION = 40  -- +/- vertical spread
 WorldConfig.PLANET_ORBIT_PERIOD_SECONDS   = 900 -- one lap ~15 min (slow/celestial)

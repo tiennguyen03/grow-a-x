@@ -19,6 +19,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local OrganelleData = require(ReplicatedStorage:WaitForChild("OrganelleData"))
+local MulticellularData = require(ReplicatedStorage:WaitForChild("MulticellularData"))
+local Pricing = require(ReplicatedStorage:WaitForChild("Pricing"))
 
 local CellInterventionUI = {}
 
@@ -40,6 +42,9 @@ local cells = {}           -- array of { id, stage, purchased = {id=true}, purch
 local totalProduction = 0
 local localDustMultiplier = 1 -- Matter awarded per dust mote (raised by tier evolutions)
 local localCascadeTriggered = false -- once true, newly created cells are born Eukaryotic
+local localCellCost = Pricing.cellCost(0) -- dynamic Matter cost of the next cell (from server)
+local localUpgrades = 0          -- player-wide multicellular upgrades bought (0..6)
+local localNextUpgradeCost = nil -- dynamic Matter cost of the next multicellular upgrade
 local selectedCellId: number? = nil  -- nil = show the list; set = show that cell's detail
 local remotesRef = nil
 
@@ -366,6 +371,147 @@ local function renderDetail(content, cell)
 	end
 end
 
+-- ---- Multicellular path (Tier 1C) ---------------------------------------------
+local function buildUpgradeRow(parent, upgrade, step)
+	local owned = step <= localUpgrades
+	local isNext = step == localUpgrades + 1
+	local locked = (not owned) and (not isNext)
+
+	local row = Instance.new("Frame")
+	row.Name = "Upgrade_" .. upgrade.id
+	row.LayoutOrder = step
+	row.Size = UDim2.new(1, 0, 0, 40)
+	row.BackgroundColor3 = owned and GREEN_DEEP or (isNext and ROW_BG or LOCKED_BG)
+	row.BackgroundTransparency = locked and 0.35 or 0
+	row.BorderSizePixel = 0
+	row.Parent = parent
+	corner(row, 8)
+	stroke(row, owned and GREEN or CYAN, locked and 0.85 or 0.6)
+
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft = UDim.new(0, 10)
+	pad.PaddingRight = UDim.new(0, 8)
+	pad.PaddingTop = UDim.new(0, 5)
+	pad.Parent = row
+
+	local name = Instance.new("TextLabel")
+	name.Size = UDim2.new(1, -78, 0, 16)
+	name.BackgroundTransparency = 1
+	name.Font = Enum.Font.GothamSemibold
+	name.TextSize = 13
+	name.TextXAlignment = Enum.TextXAlignment.Left
+	name.TextColor3 = owned and GREEN or (isNext and Color3.fromRGB(224, 236, 248) or DIM)
+	name.Text = (locked and "🔒 " or "") .. upgrade.name
+	name.Parent = row
+
+	-- The cost the next upgrade actually costs comes from the server (localNextUpgradeCost);
+	-- locked rows show their static base for reference.
+	local nextCost = localNextUpgradeCost or Pricing.upgradeCost(upgrade.baseCost, localUpgrades)
+	local sub = Instance.new("TextLabel")
+	sub.Position = UDim2.fromOffset(0, 19)
+	sub.Size = UDim2.new(1, -78, 0, 14)
+	sub.BackgroundTransparency = 1
+	sub.Font = Enum.Font.Gotham
+	sub.TextSize = 11
+	sub.TextXAlignment = Enum.TextXAlignment.Left
+	sub.TextColor3 = DIM
+	sub.Text = owned and "Acquired"
+		or (isNext and string.format("%d Matter", Pricing.display(nextCost))
+		or string.format("Base %d Matter", upgrade.baseCost))
+	sub.Parent = row
+
+	if owned then
+		local check = Instance.new("TextLabel")
+		check.AnchorPoint = Vector2.new(1, 0.5)
+		check.Position = UDim2.new(1, 0, 0.5, 0)
+		check.Size = UDim2.fromOffset(66, 24)
+		check.BackgroundTransparency = 1
+		check.Font = Enum.Font.GothamBold
+		check.TextSize = 13
+		check.TextXAlignment = Enum.TextXAlignment.Right
+		check.TextColor3 = GREEN
+		check.Text = "✓ Owned"
+		check.Parent = row
+	elseif isNext then
+		local canBuy = localMatter >= nextCost
+		local buy = Instance.new("TextButton")
+		buy.AnchorPoint = Vector2.new(1, 0.5)
+		buy.Position = UDim2.new(1, 0, 0.5, 0)
+		buy.Size = UDim2.fromOffset(66, 26)
+		buy.BackgroundColor3 = canBuy and GREEN_DEEP or Color3.fromRGB(44, 48, 60)
+		buy.BorderSizePixel = 0
+		buy.AutoButtonColor = canBuy
+		buy.Font = Enum.Font.GothamBold
+		buy.TextSize = 13
+		buy.TextColor3 = canBuy and Color3.fromRGB(220, 255, 235) or Color3.fromRGB(140, 150, 165)
+		buy.Text = "Buy"
+		buy.Parent = row
+		corner(buy, 6)
+		stroke(buy, CYAN, 0.55)
+		buy.Activated:Connect(function()
+			-- Visual guard only; the server re-validates order + affordability.
+			if remotesRef and localMatter >= nextCost then
+				remotesRef.PurchaseUpgrade:FireServer()
+			end
+		end)
+	else
+		local lock = Instance.new("TextLabel")
+		lock.AnchorPoint = Vector2.new(1, 0.5)
+		lock.Position = UDim2.new(1, 0, 0.5, 0)
+		lock.Size = UDim2.fromOffset(66, 24)
+		lock.BackgroundTransparency = 1
+		lock.Font = Enum.Font.Gotham
+		lock.TextSize = 11
+		lock.TextXAlignment = Enum.TextXAlignment.Right
+		lock.TextColor3 = DIM
+		lock.Text = "Locked"
+		lock.Parent = row
+	end
+end
+
+local function renderMulticellular()
+	if not refs then
+		return
+	end
+	clearContent(refs.mcList)
+
+	-- Gated: the path is only available once the player has reached the Eukaryotic
+	-- stage (the cascade fired). Before then, show a hint.
+	if not localCascadeTriggered then
+		refs.mc.Visible = true
+		local hint = Instance.new("TextLabel")
+		hint.Size = UDim2.new(1, 0, 0, 30)
+		hint.BackgroundTransparency = 1
+		hint.Font = Enum.Font.Gotham
+		hint.TextSize = 12
+		hint.TextWrapped = true
+		hint.TextXAlignment = Enum.TextXAlignment.Left
+		hint.TextColor3 = DIM
+		hint.Text = "Reach the Eukaryotic stage (fully evolve a cell) to unlock the multicellular path."
+		hint.Parent = refs.mcList
+		return
+	end
+	refs.mc.Visible = true
+
+	local complete = MulticellularData.isComplete(localUpgrades)
+	local prog = Instance.new("TextLabel")
+	prog.LayoutOrder = 0
+	prog.Size = UDim2.new(1, 0, 0, 14)
+	prog.BackgroundTransparency = 1
+	prog.Font = Enum.Font.GothamSemibold
+	prog.TextSize = 12
+	prog.TextXAlignment = Enum.TextXAlignment.Left
+	prog.TextColor3 = complete and GREEN or Color3.fromRGB(190, 170, 255)
+	prog.Text = complete
+		and "✓ Multicellular Organism — all 6 upgrades acquired"
+		or string.format("%d / %d upgrades toward Multicellular Organism", localUpgrades, MulticellularData.COUNT)
+	prog.Parent = refs.mcList
+
+	for step, upgrade in ipairs(MulticellularData.UPGRADES) do
+		buildUpgradeRow(refs.mcList, upgrade, step)
+	end
+end
+
 -- ---- Render dispatch ----------------------------------------------------------
 function CellInterventionUI.render()
 	if not refs then
@@ -379,15 +525,18 @@ function CellInterventionUI.render()
 		localDustMultiplier
 	)
 
-	-- Create button affordability + label. After the Eukaryotic Cascade, new cells
-	-- are born Eukaryotic, so the button reflects the life form you'd actually create.
-	local createCost = GameConfig.MATTER_CONVERTER_COST_ARCHAEA
+	-- Create button: DYNAMIC cost (rises with cells owned) + the life form you'd make
+	-- (Eukaryotic after the cascade, else Archaea). Cost mirrors the server exactly.
+	local createCost = localCellCost
 	local canCreate = localMatter >= createCost
 	local createLifeform = localCascadeTriggered and "Eukaryotic" or "Archaea"
 	refs.createButton.AutoButtonColor = canCreate
 	refs.createButton.BackgroundColor3 = canCreate and GREEN_DEEP or Color3.fromRGB(40, 44, 56)
 	refs.createButton.TextColor3 = canCreate and Color3.fromRGB(220, 255, 235) or Color3.fromRGB(140, 150, 165)
-	refs.createButton.Text = string.format("+ Create %s Cell  (%d Matter)", createLifeform, createCost)
+	refs.createButton.Text = string.format("+ Create %s Cell  (%d Matter)", createLifeform, Pricing.display(createCost))
+
+	-- Multicellular progression section (Tier 1C) — only after reaching Eukaryotic.
+	renderMulticellular()
 
 	-- A selected cell that no longer exists falls back to the list.
 	local cell = selectedCellId and findCell(selectedCellId) or nil
@@ -472,7 +621,7 @@ function CellInterventionUI.mount(parent: Instance, opts)
 	stroke(createButton, CYAN, 0.55)
 
 	createButton.Activated:Connect(function()
-		if remotesRef and localMatter >= GameConfig.MATTER_CONVERTER_COST_ARCHAEA then
+		if remotesRef and localMatter >= localCellCost then
 			remotesRef.CreateArchaea:FireServer()
 		end
 	end)
@@ -498,11 +647,56 @@ function CellInterventionUI.mount(parent: Instance, opts)
 	contentLayout.Padding = UDim.new(0, 6)
 	contentLayout.Parent = content
 
+	-- Multicellular progression (Tier 1C). A self-sizing section below the cell area;
+	-- renderMulticellular() fills its list and shows/hides it based on whether the
+	-- player has reached the Eukaryotic stage yet.
+	local mc = Instance.new("Frame")
+	mc.Name = "Multicellular"
+	mc.LayoutOrder = 5
+	mc.BackgroundTransparency = 1
+	mc.Size = UDim2.new(1, 0, 0, 0)
+	mc.AutomaticSize = Enum.AutomaticSize.Y
+	mc.Parent = container
+
+	local mcLayout = Instance.new("UIListLayout")
+	mcLayout.FillDirection = Enum.FillDirection.Vertical
+	mcLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	mcLayout.Padding = UDim.new(0, 6)
+	mcLayout.Parent = mc
+
+	local mcHeading = Instance.new("TextLabel")
+	mcHeading.Name = "Heading"
+	mcHeading.LayoutOrder = 1
+	mcHeading.Size = UDim2.new(1, 0, 0, 18)
+	mcHeading.BackgroundTransparency = 1
+	mcHeading.Font = Enum.Font.GothamBold
+	mcHeading.TextSize = 15
+	mcHeading.TextXAlignment = Enum.TextXAlignment.Left
+	mcHeading.TextColor3 = Color3.fromRGB(190, 170, 255)
+	mcHeading.Text = "Multicellular Path"
+	mcHeading.Parent = mc
+
+	local mcList = Instance.new("Frame")
+	mcList.Name = "List"
+	mcList.LayoutOrder = 2
+	mcList.BackgroundTransparency = 1
+	mcList.Size = UDim2.new(1, 0, 0, 0)
+	mcList.AutomaticSize = Enum.AutomaticSize.Y
+	mcList.Parent = mc
+
+	local mcListLayout = Instance.new("UIListLayout")
+	mcListLayout.FillDirection = Enum.FillDirection.Vertical
+	mcListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	mcListLayout.Padding = UDim.new(0, 5)
+	mcListLayout.Parent = mcList
+
 	refs = {
 		container = container,
 		summary = summary,
 		createButton = createButton,
 		content = content,
+		mc = mc,
+		mcList = mcList,
 	}
 
 	CellInterventionUI.render()
@@ -523,6 +717,9 @@ function CellInterventionUI.mount(parent: Instance, opts)
 			totalProduction = data.totalProduction or 0
 			localDustMultiplier = math.max(1, math.floor(data.dustMultiplier or 1))
 			localCascadeTriggered = data.cascadeTriggered == true
+			localCellCost = data.cellCost or Pricing.cellCost(#cells)
+			localUpgrades = data.multicellularUpgrades or 0
+			localNextUpgradeCost = data.nextUpgradeCost
 			CellInterventionUI.render()
 		end)
 
