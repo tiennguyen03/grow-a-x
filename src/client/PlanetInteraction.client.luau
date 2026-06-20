@@ -59,6 +59,10 @@ local CellInterventionUI = require(script.Parent:WaitForChild("CellInterventionU
 -- below the live cell UI.
 local EcosystemInterventionUI = require(script.Parent:WaitForChild("EcosystemInterventionUI"))
 
+-- Sentience interventions (Epic 7: Complex Life — Sentience Progress + tendencies),
+-- mounted below the ecosystem section; gated until Complex Life.
+local SentienceUI = require(script.Parent:WaitForChild("SentienceUI"))
+
 local PROMPT_DISTANCE    = 170  -- show the prompt at/under this distance (studs)
 local PROMPT_HIDE_BUFFER = 20   -- ...and hide once you pass distance + this (=190)
 local UPDATE_INTERVAL    = 0.1  -- seconds between distance checks (no need per-frame)
@@ -424,6 +428,10 @@ CellInterventionUI.mount(infoScroll, { layoutOrder = 14 })
 -- Ecosystem Interventions (Epic 6): Life Progress + Stability + the three live
 -- interventions, server-authoritative. Sits below Nova's Cell Cultures UI.
 EcosystemInterventionUI.mount(infoScroll, { layoutOrder = 30 })
+
+-- Sentience (Epic 7): Complex Life interventions + Civilization Identity, gated until
+-- the Multicellular path completes. Sits below Ecosystem Interventions.
+SentienceUI.mount(infoScroll, { layoutOrder = 40 })
 
 local exitLabel = makeInfoLabel(20, { size = 13, color = Color3.fromRGB(150, 170, 190) })
 

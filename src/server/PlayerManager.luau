@@ -85,6 +85,37 @@ local function serializeCell(cell)
 	}
 end
 
+-- Epic 7: the planet reaches Complex Life once the Multicellular path is complete
+-- (Nova's 1C) OR Life Progress is maxed. This gates the Sentience interventions.
+local function complexLifeReached(profile)
+	return MulticellularData.isComplete(profile.multicellularUpgrades) or profile.lifeProgress >= 100
+end
+
+-- Epic 7: the player-facing Civilization Identity = the top 1–2 tendencies by points.
+local TENDENCY_LABELS = {
+	cooperative = "Cooperative", curious = "Curious", adaptive = "Adaptive",
+	competitive = "Competitive", strategic = "Strategic",
+}
+local function civIdentity(profile)
+	local ranked = {}
+	for id, pts in profile.tendencies do
+		if pts > 0 then
+			table.insert(ranked, { id = id, pts = pts })
+		end
+	end
+	if #ranked == 0 then
+		return "Emerging…"
+	end
+	table.sort(ranked, function(a, b)
+		return a.pts > b.pts
+	end)
+	local parts = {}
+	for i = 1, math.min(2, #ranked) do
+		table.insert(parts, TENDENCY_LABELS[ranked[i].id] or ranked[i].id)
+	end
+	return table.concat(parts, " · ")
+end
+
 -- Push the player's full converter state: how many cells they own, the summed
 -- production, and each cell's per-organelle state. `archaeaCount` is kept for the
 -- older read-only overview UI (it now means "number of cells").
@@ -109,6 +140,11 @@ local function fireConverterUpdate(player, profile)
 		lifeProgress = profile.lifeProgress,
 		lifeProgressMax = 100,
 		stability = profile.stability,
+		-- Epic 7 Complex Life state (drives the Sentience UI).
+		sentienceProgress = profile.sentienceProgress,
+		sentienceProgressMax = 100,
+		tendencies = profile.tendencies,
+		complexLifeReached = complexLifeReached(profile),
 	})
 end
 
@@ -131,6 +167,11 @@ local function createProfile(player)
 		-- Initialized here but only meaningful/shown once life exists. 0–100 each.
 		lifeProgress = 0,
 		stability = 75,
+		-- Epic 7 Complex Life: Sentience Progress + civilization tendencies. Gated to
+		-- Complex Life (Multicellular complete / Life Progress 100); shown only then.
+		sentienceProgress = 0,
+		tendencies = { cooperative = 0, curious = 0, adaptive = 0, competitive = 0, strategic = 0 },
+		toolUseReached = false,
 	}
 	profiles[player.UserId] = profile
 
@@ -413,8 +454,13 @@ local function interventionRequirementsMet(profile, player, def)
 			return false
 		end
 	end
+	if req.complexLife and not complexLifeReached(profile) then -- Epic 7 gate
+		return false
+	end
 	return true
 end
+
+local SENTIENCE_PROGRESS_MAX = 100
 
 local function onApplyIntervention(player, payload)
 	local profile = profiles[player.UserId]
@@ -429,9 +475,10 @@ local function onApplyIntervention(player, payload)
 	if not interventionRequirementsMet(profile, player, def) then return end
 
 	local effects = def.effects or {}
-	-- Don't run a Life-Progress action once maxed; don't run a pure Stability action at max.
+	-- Don't run a maxed-out progress action; don't run a pure Stability action at max.
 	if (effects.addLifeProgress or 0) > 0 and profile.lifeProgress >= LIFE_PROGRESS_MAX then return end
-	if (effects.addStability or 0) > 0 and not effects.addLifeProgress and profile.stability >= 100 then return end
+	if (effects.addSentienceProgress or 0) > 0 and profile.sentienceProgress >= SENTIENCE_PROGRESS_MAX then return end
+	if (effects.addStability or 0) > 0 and not effects.addLifeProgress and not effects.addSentienceProgress and profile.stability >= 100 then return end
 
 	local cost = (def.cost and def.cost.Matter) or 0
 	if profile.matter < cost then return end -- can't afford
@@ -441,8 +488,25 @@ local function onApplyIntervention(player, payload)
 	if effects.addLifeProgress then
 		profile.lifeProgress = math.clamp(profile.lifeProgress + effects.addLifeProgress, 0, LIFE_PROGRESS_MAX)
 	end
+	if effects.addSentienceProgress then
+		profile.sentienceProgress = math.clamp(profile.sentienceProgress + effects.addSentienceProgress, 0, SENTIENCE_PROGRESS_MAX)
+	end
 	if effects.addStability then
 		profile.stability = math.clamp(profile.stability + effects.addStability, 0, 100)
+	end
+	-- Epic 7: build the long-term civilization tendency this intervention favors.
+	if def.tendency and profile.tendencies[def.tendency] ~= nil then
+		profile.tendencies[def.tendency] += 1
+	end
+
+	-- Epic 7: Sentience 100 → one-time Tool Use milestone (milestone only — no Tool
+	-- Use gameplay yet; the stage flip is idempotent and doesn't fight Nova's stages).
+	if profile.sentienceProgress >= SENTIENCE_PROGRESS_MAX and not profile.toolUseReached then
+		profile.toolUseReached = true
+		local p = findPlayerPlanet(player)
+		if p then
+			p:SetAttribute("EvolutionStage", "ToolUse")
+		end
 	end
 
 	-- Mirror to the planet so the inspect UI / visuals can read it (own planet only).
@@ -451,6 +515,8 @@ local function onApplyIntervention(player, payload)
 		planet:SetAttribute("LifeProgress", profile.lifeProgress)
 		planet:SetAttribute("Stability", profile.stability)
 		planet:SetAttribute("LifeProgressMax", LIFE_PROGRESS_MAX)
+		planet:SetAttribute("SentienceProgress", profile.sentienceProgress)
+		planet:SetAttribute("CivIdentity", civIdentity(profile))
 	end
 
 	fireUpdate(player, profile)          -- Matter changed
