@@ -175,7 +175,7 @@ local EvolutionTiers = {
 
 **Eukaryotic Cascade (one-time, per player):**
 - Triggered when a player completes their **first** Eukaryotic Cell (buys the Nucleus on any cell). The server sets `profile.cascadeTriggered = true`, then loops every **other** cell and calls `makeEukaryotic` on it (all organelles owned, stage = Eukaryotic, full production) in one shot.
-- From then on, `onCreateArchaea` spawns each new cell **already Eukaryotic** (same creation cost — the cascade is the reward).
+- From then on, `onCreateArchaea` spawns each new cell **already Eukaryotic** (same creation cost — the cascade is the reward). `ConverterUpdate` carries `cascadeTriggered` so the inspect panel's create button relabels from **"Create Archaea Cell"** to **"Create Eukaryotic Cell"** once the cascade has fired (otherwise it kept saying "Archaea" while actually spawning Eukaryotes).
 - Fires `CascadeTriggered { triggerCellId, cellIds (the others), count, dustMultiplier }`. `CellVisuals` plays a green pulse + particle burst on every affected cell and shows a big two-line **"Eukaryotic Evolution Cascade!"** toast listing how many cells evolved. The planet's `EvolutionStage` attribute flips to `"Eukaryotic"`.
 - If the player had only the one cell, the cascade still fires (marking the milestone + dust multiplier) and the toast reads **"First Eukaryotic Cell!"**.
 

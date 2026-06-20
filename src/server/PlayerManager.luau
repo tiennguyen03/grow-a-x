@@ -94,7 +94,8 @@ local function fireConverterUpdate(player, profile)
 		archaeaCount = #profile.cells,
 		totalProduction = totalProduction(profile),
 		cells = cells,
-		dustMultiplier = profile.dustMultiplier, -- Matter awarded per dust mote (UI "Dust Value")
+		dustMultiplier = profile.dustMultiplier,   -- Matter awarded per dust mote (UI "Dust Value")
+		cascadeTriggered = profile.cascadeTriggered, -- once true, new cells are born Eukaryotic (drives the Create button label)
 	})
 end
 
