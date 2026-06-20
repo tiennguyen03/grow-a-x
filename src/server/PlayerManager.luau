@@ -6,6 +6,8 @@ local GameConfig = require(ReplicatedStorage.GameConfig)
 local Remotes = require(ReplicatedStorage.Remotes)
 local DustField = require(ReplicatedStorage.DustField)
 local OrganelleData = require(ReplicatedStorage.OrganelleData)
+local MulticellularData = require(ReplicatedStorage.MulticellularData)
+local Pricing = require(ReplicatedStorage.Pricing)
 local InterventionData = require(ReplicatedStorage.InterventionData) -- Epic 6 ecosystem interventions
 
 local DUST_TAG = "DustParticle"
@@ -91,12 +93,18 @@ local function fireConverterUpdate(player, profile)
 	for _, cell in ipairs(profile.cells) do
 		table.insert(cells, serializeCell(cell))
 	end
+	-- Dynamic next-cell cost (grows with cells owned) and next multicellular upgrade
+	-- cost (grows with upgrades bought) so the UI can show live, server-matching prices.
+	local nextUpgrade = MulticellularData.next(profile.multicellularUpgrades)
 	Remotes.ConverterUpdate:FireClient(player, {
 		archaeaCount = #profile.cells,
 		totalProduction = totalProduction(profile),
 		cells = cells,
 		dustMultiplier = profile.dustMultiplier,   -- Matter awarded per dust mote (UI "Dust Value")
 		cascadeTriggered = profile.cascadeTriggered, -- once true, new cells are born Eukaryotic (drives the Create button label)
+		cellCost = Pricing.cellCost(#profile.cells), -- Matter for the NEXT cell (dynamic)
+		multicellularUpgrades = profile.multicellularUpgrades, -- 0..6 player-wide upgrades bought
+		nextUpgradeCost = nextUpgrade and Pricing.upgradeCost(nextUpgrade.baseCost, profile.multicellularUpgrades) or nil,
 		-- Epic 6 ecosystem state (drives the Ecosystem Interventions UI).
 		lifeProgress = profile.lifeProgress,
 		lifeProgressMax = 100,
@@ -118,6 +126,7 @@ local function createProfile(player)
 		cascadeTriggered = false,
 		dustMultiplier = 1,
 		maxTierEvolved = 0,
+		multicellularUpgrades = 0, -- player-wide Eukaryotic→Multicellular upgrades bought (0..6)
 		-- Epic 6 ecosystem progression (planet-level, distinct from the cell economy).
 		-- Initialized here but only meaningful/shown once life exists. 0–100 each.
 		lifeProgress = 0,
@@ -250,7 +259,9 @@ local function onCreateArchaea(player)
 	local profile = profiles[player.UserId]
 	if not profile then return end
 
-	local cost = GameConfig.MATTER_CONVERTER_COST_ARCHAEA
+	-- Dynamic cell pricing: the cost of the next cell grows with how many the player
+	-- already owns (Pricing.cellCost). Server is authoritative over the price.
+	local cost = Pricing.cellCost(#profile.cells)
 	if profile.matter < cost then return end -- can't afford it; ignore
 
 	profile.matter -= cost
@@ -446,6 +457,41 @@ local function onApplyIntervention(player, payload)
 	fireConverterUpdate(player, profile) -- lifeProgress / stability changed
 end
 
+-- Multicellular upgrade (Tier 1C): a player spends Matter on the NEXT player-wide
+-- Eukaryotic→Multicellular upgrade. Server-authoritative and order-enforced: only
+-- available once the Eukaryotic stage is reached, bought strictly in order, priced
+-- dynamically (each prior upgrade makes the next 10% costlier). One purchase per call.
+local function onPurchaseUpgrade(player)
+	local profile = profiles[player.UserId]
+	if not profile then return end
+	if not profile.cascadeTriggered then return end -- must be Eukaryotic first
+	if MulticellularData.isComplete(profile.multicellularUpgrades) then return end -- already a Multicellular Organism
+
+	local nextUpgrade = MulticellularData.next(profile.multicellularUpgrades)
+	if not nextUpgrade then return end
+
+	local cost = Pricing.upgradeCost(nextUpgrade.baseCost, profile.multicellularUpgrades)
+	if profile.matter < cost then return end -- can't afford it; ignore
+
+	profile.matter -= cost
+	profile.multicellularUpgrades += 1
+	local step = profile.multicellularUpgrades
+
+	-- The final upgrade completes the Multicellular Organism stage.
+	if MulticellularData.isComplete(profile.multicellularUpgrades) then
+		local planet = findPlayerPlanet(player)
+		if planet then
+			planet:SetAttribute("EvolutionStage", "Multicellular")
+		end
+	end
+
+	fireUpdate(player, profile)          -- Matter went down
+	fireConverterUpdate(player, profile) -- upgrade count + next cost changed
+
+	-- One-shot feedback: drives the biosphere visual progression + a toast.
+	Remotes.UpgradePurchased:FireClient(player, { step = step, upgradeId = nextUpgrade.id })
+end
+
 -- Passive Matter income: every PRODUCTION_TICK_INTERVAL seconds, each player earns
 -- their summed per-second production (across all cells) × the elapsed interval. One
 -- shared timer drives every player's production so it stays cheap as cell counts
@@ -478,7 +524,19 @@ function PlayerManager.init()
 
 	Remotes.CreateArchaea.OnServerEvent:Connect(onCreateArchaea)
 	Remotes.PurchaseOrganelle.OnServerEvent:Connect(onPurchaseOrganelle)
+	Remotes.PurchaseUpgrade.OnServerEvent:Connect(onPurchaseUpgrade)
 	Remotes.ApplyIntervention.OnServerEvent:Connect(onApplyIntervention)
+
+	-- ⚠️ DEV/TESTING ONLY — remove before launch (along with the DevGrantMatter remote
+	-- and DevMenu.client.luau). Grants the requesting player Matter so we don't have to
+	-- replay every stage to test late-game. Capped so a stray value can't break things.
+	Remotes.DevGrantMatter.OnServerEvent:Connect(function(player, amount)
+		if typeof(amount) ~= "number" or amount ~= amount then return end -- nil/NaN guard
+		amount = math.clamp(math.floor(amount), 0, 1e9)
+		if amount > 0 then
+			addMatter(player, amount)
+		end
+	end)
 
 	runCollection()
 	runProduction()

@@ -54,10 +54,24 @@ return {
 	-- ConverterUpdate (which now also carries dustMultiplier); this is feedback only.
 	CascadeTriggered = get("CascadeTriggered", "RemoteEvent"),
 
+	-- Multicellular upgrades (Epic 3, Tier 1C). PurchaseUpgrade: client asks to buy the
+	-- next player-wide Eukaryotic→Multicellular upgrade — no payload; the server
+	-- validates order + (dynamic) cost. The new global state (multicellularUpgrades +
+	-- the next dynamic cost) rides back on ConverterUpdate; UpgradePurchased fires as a
+	-- one-shot feedback signal — payload { step, upgradeId } — to drive the biosphere
+	-- visual progression + a toast.
+	PurchaseUpgrade  = get("PurchaseUpgrade", "RemoteEvent"),
+	UpgradePurchased = get("UpgradePurchased", "RemoteEvent"),
+
 	-- Ecosystem interventions (Epic 6). ApplyIntervention: client asks to apply a
 	-- planet-level intervention — payload { interventionId } (e.g. "nourish_microbes");
 	-- the server validates against InterventionData and updates LifeProgress/Stability.
 	-- Result state arrives via the existing ConverterUpdate (extended with
 	-- lifeProgress / lifeProgressMax / stability), so no separate result remote.
 	ApplyIntervention = get("ApplyIntervention", "RemoteEvent"),
+
+	-- ⚠️ DEV/TESTING ONLY — remove before launch. DevGrantMatter: the dev menu asks the
+	-- server to grant the requesting player Matter (payload: amount:number). Server caps
+	-- it so a stray value can't break things. See PlayerManager dev handler + DevMenu.client.
+	DevGrantMatter = get("DevGrantMatter", "RemoteEvent"),
 }

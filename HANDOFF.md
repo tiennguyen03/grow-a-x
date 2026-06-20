@@ -46,6 +46,8 @@ Then `CLAUDE.md` for architecture/rules.
 | 8C | Organelle upgrade path — cells upgrade organelle-by-organelle into Eukaryotic cells; unlimited cells; per-cell planet visuals + evolution celebration; **all UI in the inspect panel** | ✅ in `main` (#12, Nova); playtest pending |
 | 8D | Eukaryotic Cascade (first Eukaryote evolves all cells + future cells born Eukaryotic) + permanent Dust Multiplier (`floor((tier+1)²/2)` Matter/mote, Tier 1 → ×2) | 🔶 this branch → `main` (Nova); playtest pending |
 | 8E | Biosphere View — Life Vessel orb + Microscope `ViewportFrame` overlay (zoom progression, purchase-gated organelles, cell divisions); toggle **M**/**Tab**. Replaced the orbiting planet cells (`CellVisuals`) + the C-key Matter Core panel (`MatterConverterUI`), both **removed** | 🔶 this branch → `main` (Nova); playtest pending |
+| 1C | Multicellular Path + dynamic pricing (`Pricing`, `MulticellularData`, `PurchaseUpgrade`); cell cost grows with cells owned; six Eukaryotic→Multicellular upgrades | ✅ in `main` (#14, Nova) |
+| — | ⚠️ **Dev menu** (`DevMenu.client.luau` + `DevGrantMatter`) — grant Matter for testing; **remove before launch** | 🔶 `nova/dev-menu` (PR #15) |
 | — | Footstep mute fix; marker render order | ✅ in `main` (#10, Nova) |
 | — | Misc polish (denser Matter, planet farther from sun, sun-death) + handoff split | ✅ in `main` (#11) |
 | 5A/5B | Epic 5 Matter Core: audit + additive intervention-definition format (`InterventionData`) + inspect-panel overflow fix | 🔶 on Tien branch; pending playtest |
@@ -81,6 +83,7 @@ Then `CLAUDE.md` for architecture/rules.
 | `src/client/Main.client.luau` | Client entry point; inits client systems | ⚠️ **Shared** |
 | `src/client/SpaceMovement.client.luau` | Floaty movement + pose + banking; honors `PlanetInspectLocked` (rides the orbit during inspect); **sun-death** kill check | ✅ Safe — self-contained (Tien) |
 | `src/client/DustAnimator.client.luau` | Bobs dust motes locally (cosmetic) | ✅ Safe — self-contained |
+| `src/client/DevMenu.client.luau` | ⚠️ **DEV/TESTING ONLY** left-side GUI to grant Matter (`DevGrantMatter`); **delete before launch** | ✅ Safe — self-contained (Nova) |
 | `src/client/MatterUI.luau` | HUD, listens to `MatterUpdate`, "+N" popup | ✅ Safe — Matter UI |
 | `src/client/CellInterventionUI.luau` | Interactive cell-list + per-cell organelle-detail UI (create cells, buy organelles in order, progress-to-Eukaryotic bar). **Mounted into the inspect panel** by `PlanetInteraction`; server-authoritative via `PurchaseOrganelle` (Epic 3 / 8C) | ✅ Safe — self-contained (Nova) |
 | `src/client/BiosphereView.client.luau` | Biosphere View — always-on Life Vessel orb (grows with cell count) + Microscope `ViewportFrame` overlay (toggle **M**/**Tab**), both driven by `ConverterUpdate`; evolution/cascade celebration toasts. Replaced `CellVisuals` + the C-key Matter Core panel (Epic 3 / 8E) | ✅ Safe — self-contained LocalScript (Nova) |
@@ -91,8 +94,10 @@ Then `CLAUDE.md` for architecture/rules.
 | `src/shared/OrganelleData.luau` | Ordered Tier-1 organelle path (Archaea → Eukaryotic): id/name/cost/bonus/visual + helpers (`TOTAL_COST`=240). Pure data (Epic 3 / 8C) | ✅ Safe — pure data (Nova) |
 | `src/shared/InterventionData.luau` | Generic intervention definition format (id/cost/requirements/effects/state); `create_life` reference + the **live** Epic 6 `category="Ecosystem"` interventions. Read by both `onApplyIntervention` (server) and `EcosystemInterventionUI` (Epic 5/6) | ✅ Safe — pure data (Tien) |
 | `src/client/EcosystemInterventionUI.luau` | Interactive Ecosystem Interventions: Life Progress + Stability bars + cards that fire `ApplyIntervention`; mounted in the inspect panel below Cell Cultures (Epic 6) | ✅ Safe — self-contained module (Tien) |
+| `src/shared/Pricing.luau` | Shared dynamic cost formulas: `cellCost(n)` (grows with cells owned) + `upgradeCost(base, bought)`. Pure functions (Epic 3 / 1C) | ✅ Safe — pure data (Nova) |
+| `src/shared/MulticellularData.luau` | The six Eukaryotic→Multicellular upgrades (id/name/baseCost/visual) + helpers (`next`, `COUNT`=6). Pure data (Epic 3 / 1C) | ✅ Safe — pure data (Nova) |
 | `src/shared/GameConfig.luau` | Shared tuning constants (`DUST_*`, `MATTER_CONVERTER_*`, `ARCHAEA_*`) | ⚠️ **Shared** — append, don't reorganize |
-| `src/shared/Remotes.luau` | All RemoteEvents (`MatterUpdate`, `CreateArchaea`, `ConverterUpdate`, `PurchaseOrganelle`, `CascadeTriggered`, `ApplyIntervention`) | ⚠️ **Shared** — add remotes here |
+| `src/shared/Remotes.luau` | All RemoteEvents (`MatterUpdate`, `CreateArchaea`, `ConverterUpdate`, `PurchaseOrganelle`, `CascadeTriggered`, `PurchaseUpgrade`, `UpgradePurchased`, `ApplyIntervention`, `DevGrantMatter`⚠️dev) | ⚠️ **Shared** — add remotes here |
 | `src/shared/WorldConfig.luau` | World/star/orbit constants + `SUN_KILL_MARGIN` | ⚠️ **Shared** — append, don't reorganize |
 | `src/shared/PlanetArchetypes.luau` | Archetype defs + trait ranges | ✅ Safe — planet-gen |
 | `src/shared/PlanetGenerator.luau` | Pure deterministic descriptor + surface/biome generator | ✅ Safe — don't reorder its rng calls |
