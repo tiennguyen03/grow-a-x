@@ -80,16 +80,15 @@ Then `CLAUDE.md` for architecture/rules.
 | `src/client/SpaceMovement.client.luau` | Floaty movement + pose + banking; honors `PlanetInspectLocked` (rides the orbit during inspect); **sun-death** kill check | ✅ Safe — self-contained (Tien) |
 | `src/client/DustAnimator.client.luau` | Bobs dust motes locally (cosmetic) | ✅ Safe — self-contained |
 | `src/client/MatterUI.luau` | HUD, listens to `MatterUpdate`, "+N" popup | ✅ Safe — Matter UI |
-| `src/client/MatterConverterUI.luau` | **Obsolete** "Matter Core" panel — all interventions moved into the inspect panel (8C). Left in place, no interactive role; slated for removal | ✅ Safe — Nova, slated for removal |
 | `src/client/CellInterventionUI.luau` | Interactive cell-list + per-cell organelle-detail UI (create cells, buy organelles in order, progress-to-Eukaryotic bar). **Mounted into the inspect panel** by `PlanetInteraction`; server-authoritative via `PurchaseOrganelle` (Epic 3 / 8C) | ✅ Safe — self-contained (Nova) |
-| `src/client/CellVisuals.client.luau` | Per-cell, per-organelle planet visuals (cells orbit the planet) + "Eukaryotic Cell Unlocked!" celebration (Epic 3 / 8C) | ✅ Safe — self-contained LocalScript (Nova) |
+| `src/client/BiosphereView.client.luau` | Biosphere View — always-on Life Vessel orb (grows with cell count) + Microscope `ViewportFrame` overlay (toggle **M**/**Tab**), both driven by `ConverterUpdate`; evolution/cascade celebration toasts. Replaced `CellVisuals` + the C-key Matter Core panel (Epic 3 / 8E) | ✅ Safe — self-contained LocalScript (Nova) |
 | `src/client/PlanetMarker.client.luau` | Screen marker to the local orbiting planet; hides during prompt/inspect (`PlanetPromptVisible`/`InspectingPlanet`) | ✅ Safe — self-contained (Tien) |
 | `src/client/PlanetInteraction.client.luau` | Approach prompt + inspect camera + info panel; **mounts `CellInterventionUI`** so the full organelle/cell UI lives in the inspect panel (Epic 4 + 8C) | ⚠️ **Tien file, edited cross-lane by Nova (8C)** — coordinate before further edits |
 | `src/client/PlanetInspectContext.luau` | Seam: publishes active planet context + `Changed`/`OpenRequested` (no economy logic) | ⚠️ **Tien↔Nova boundary** — coordinate before changing its shape |
 | `src/client/PlanetStageVisuals.client.luau` | Archaea life-glow when `EvolutionTier≥1`/`EvolutionStage=="Archaea"` | ✅ Safe — self-contained (Tien) |
 | `src/shared/OrganelleData.luau` | Ordered Tier-1 organelle path (Archaea → Eukaryotic): id/name/cost/bonus/visual + helpers (`TOTAL_COST`=240). Pure data (Epic 3 / 8C) | ✅ Safe — pure data (Nova) |
 | `src/shared/GameConfig.luau` | Shared tuning constants (`DUST_*`, `MATTER_CONVERTER_*`, `ARCHAEA_*`) | ⚠️ **Shared** — append, don't reorganize |
-| `src/shared/Remotes.luau` | All RemoteEvents (`MatterUpdate`, `CreateArchaea`, `ConverterUpdate`) | ⚠️ **Shared** — add remotes here |
+| `src/shared/Remotes.luau` | All RemoteEvents (`MatterUpdate`, `CreateArchaea`, `ConverterUpdate`, `PurchaseOrganelle`, `CascadeTriggered`) | ⚠️ **Shared** — add remotes here |
 | `src/shared/WorldConfig.luau` | World/star/orbit constants + `SUN_KILL_MARGIN` | ⚠️ **Shared** — append, don't reorganize |
 | `src/shared/PlanetArchetypes.luau` | Archetype defs + trait ranges | ✅ Safe — planet-gen |
 | `src/shared/PlanetGenerator.luau` | Pure deterministic descriptor + surface/biome generator | ✅ Safe — don't reorder its rng calls |
