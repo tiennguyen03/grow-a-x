@@ -208,4 +208,6 @@ local EvolutionTiers = {
 
 **Toggle + transition:** **M** (or **Tab**) toggles the microscope. Opening tweens the panel up from the vessel's on-screen position (a "zoom in"); closing shrinks it back to the vessel ("zoom out"). The vessel keeps running underneath, so the two modes stay continuous.
 
-**Not in scope for 8E:** persistence, any server change (purely a client visualization of existing `ConverterUpdate` data), and real per-cell identity in the microscope (it's a representative sample, not a 1:1 render of owned cells). The high tiers (1e3+) are forward-looking — current play only reaches the low tiers.
+**Not in scope for 8E:** persistence, any server change (purely a client visualization of existing `ConverterUpdate` data). The high tiers (1e3+) are forward-looking — current play only reaches the low tiers.
+
+**Update (post-8E cleanup):** with the Biosphere View covering cell feedback, two now-redundant visuals were removed: the **C-key Matter Core panel** (`MatterConverterUI.luau` + its `Main.client` init) and the **orbiting planet cells** (`CellVisuals.client.luau`). `CellVisuals`'s evolution/cascade **celebration toasts moved into `BiosphereView`**, so the "Eukaryotic Cell Unlocked!" / "Eukaryotic Evolution Cascade!" moments survive. The Vessel and Microscope are also now **count-accurate**: the orb shows **one speckle per actual cell** (capped at 120) and the microscope shows **exactly the real cell count** (capped at 50) — they never display more cells than the player has created.

@@ -18,8 +18,9 @@
 
 local OrganelleData = {}
 
--- The ordered Archaea → Eukaryotic organelle path. `visual` is a key the
--- client-side CellVisuals script maps to a cosmetic layer on the cell.
+-- The ordered Archaea → Eukaryotic organelle path. `visual` is a per-organelle
+-- cosmetic key (used by the old orbiting-cell visuals, now removed; kept for any
+-- future per-organelle rendering).
 OrganelleData.ORGANELLES = {
 	{
 		id = "membrane",

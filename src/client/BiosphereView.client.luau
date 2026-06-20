@@ -18,9 +18,9 @@
 -- Toggle between them with M (or Tab): opening the microscope "zooms in" from the
 -- vessel; closing zooms back out. The vessel keeps running underneath the overlay.
 --
--- Self-contained LocalScript (like CellVisuals / PlanetStageVisuals): no Main
--- wiring. Cosmetic + client-only — nothing replicates. It NEVER touches the planet
--- visuals; it owns only its own orb (near the camera) and its own UI overlay.
+-- Self-contained LocalScript (like PlanetStageVisuals): no Main wiring. Cosmetic +
+-- client-only — nothing replicates. It NEVER touches the planet visuals; it owns
+-- only its own orb (near the camera), its UI overlay, and the celebration toasts.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -40,6 +40,9 @@ local VESSEL_BASE_SIZE = 2.2
 local VESSEL_FOLLOW_SPEED = 10  -- how snappily the orb chases its target spot
 local HEARTBEAT_RATE = 1.6      -- pulses per ~second (×2π handled below)
 local HEARTBEAT_AMPLITUDE = 0.05
+
+local VESSEL_SPECKLE_CAP = 120  -- max speckles drawn inside the orb (1 per cell up to here)
+local VESSEL_SPECKLE_SEED = 8675309 -- fixed so speckle positions are stable as cells grow
 
 local MICRO_MAX_CELLS = 50      -- hard cap on cells drawn in the microscope (perf)
 local MICRO_REGION = Vector3.new(22, 13, 9) -- swim box (studs) inside the viewport
@@ -149,19 +152,21 @@ burst.Transparency = NumberSequence.new({
 })
 burst.Parent = orb
 
--- Rebuild the internal speckles for the current tier (only when the tier changes).
+-- The internal speckles are a 1:1 stand-in for the player's actual cells: exactly
+-- one per cell (capped for performance), never more. A fixed seed means the first
+-- N speckle positions are stable, so growing the count just ADDS a speckle rather
+-- than reshuffling the whole cloud.
 local speckleParts: { Part } = {}
-local builtSpeckleTier = -1
+local builtSpeckleCount = -1
 
-local function rebuildSpeckles(tier: number, color: Color3)
+local function rebuildSpeckles(count: number, color: Color3)
 	for _, p in speckleParts do
 		p:Destroy()
 	end
 	table.clear(speckleParts)
 
-	local def = VESSEL_TIERS[tier]
-	local rng = Random.new()
-	for i = 1, def.speckles do
+	local rng = Random.new(VESSEL_SPECKLE_SEED)
+	for i = 1, count do
 		local s = Instance.new("Part")
 		s.Name = "Speckle" .. i
 		s.Shape = Enum.PartType.Ball
@@ -172,8 +177,8 @@ local function rebuildSpeckles(tier: number, color: Color3)
 		s.CastShadow = false
 		s.Material = Enum.Material.Neon
 		s.Color = color
-		s.Size = Vector3.one * (VESSEL_BASE_SIZE * rng:NextNumber(0.04, 0.11))
-		-- A stable random point inside the orb (kept as an attribute for placement).
+		s.Size = Vector3.one * (VESSEL_BASE_SIZE * rng:NextNumber(0.05, 0.12))
+		-- A stable point inside the orb (kept as an attribute for placement).
 		local dir = Vector3.new(rng:NextNumber(-1, 1), rng:NextNumber(-1, 1), rng:NextNumber(-1, 1))
 		if dir.Magnitude < 0.01 then dir = Vector3.yAxis end
 		local r = (VESSEL_BASE_SIZE * 0.42) * (rng:NextNumber() ^ (1 / 3))
@@ -181,7 +186,7 @@ local function rebuildSpeckles(tier: number, color: Color3)
 		s.Parent = vesselFolder
 		table.insert(speckleParts, s)
 	end
-	builtSpeckleTier = tier
+	builtSpeckleCount = count
 end
 
 -- Smoothly-approached display values so tier changes ease in rather than snap.
@@ -192,8 +197,10 @@ local function updateVesselAppearance()
 	local def = VESSEL_TIERS[state.tier]
 	local target = colorForDominant(state.dominant)
 
-	if builtSpeckleTier ~= state.tier then
-		rebuildSpeckles(state.tier, target)
+	-- One speckle per actual cell (capped). Rebuild only when the count changes.
+	local desired = math.min(state.totalCount, VESSEL_SPECKLE_CAP)
+	if builtSpeckleCount ~= desired then
+		rebuildSpeckles(desired, target)
 	else
 		for _, p in speckleParts do
 			p.Color = target
@@ -361,11 +368,10 @@ local microWorld = Instance.new("Model") -- holds the swimming cells inside the 
 microWorld.Name = "Cells"
 microWorld.Parent = viewport
 
--- How many cells to draw for a given population (log-ish; capped). Dense at the top.
+-- How many cells to draw: exactly the player's actual cell count, capped for perf.
+-- Never more than they really own — the sample is accurate, not inflated.
 local function microCountForPopulation(n: number): number
-	if n <= 0 then return 0 end
-	local c = math.floor(4 * (math.log10(n) + 1) + 0.5) -- 1→4, 10→8, 100→12 … 1e9→40
-	return math.clamp(c, 1, MICRO_MAX_CELLS)
+	return math.clamp(n, 0, MICRO_MAX_CELLS)
 end
 
 -- Build one microscope cell: a translucent body + nucleus + (for eukaryotes) a few
@@ -448,8 +454,26 @@ local function clearMicroCells()
 	table.clear(microCells)
 end
 
--- Rebuild the swimming sample to match the current population + dominant form.
+-- Accurate readout: shows the real cell count, and only notes "(capped)" when the
+-- population exceeds what we can draw — so the number never overstates the cells.
 local lastMicroCount = -1
+local function refreshMicroReadout()
+	if state.totalCount <= 0 then
+		readout.Text = "No life yet — create a cell to populate the sample."
+	elseif lastMicroCount < state.totalCount then
+		readout.Text = string.format(
+			"Cells: %d   ·   showing %d (capped)   ·   dominant: %s",
+			state.totalCount, lastMicroCount, state.dominant or "—"
+		)
+	else
+		readout.Text = string.format(
+			"Cells: %d   ·   dominant: %s",
+			state.totalCount, state.dominant or "—"
+		)
+	end
+end
+
+-- Rebuild the swimming sample to match the current population + dominant form.
 local function rebuildMicroSample()
 	local target = microCountForPopulation(state.totalCount)
 	local color = colorForDominant(state.dominant)
@@ -472,17 +496,7 @@ local function rebuildMicroSample()
 		table.insert(microCells, cell)
 	end
 	lastMicroCount = target
-
-	if target == 0 then
-		readout.Text = "No life yet — create a cell to populate the sample."
-	else
-		readout.Text = string.format(
-			"Population ~%d   ·   showing %d   ·   dominant: %s",
-			state.totalCount,
-			target,
-			state.dominant or "—"
-		)
-	end
+	refreshMicroReadout()
 end
 
 -- The viewport camera pulls BACK as the population climbs, showing a larger sample.
@@ -630,14 +644,89 @@ local function recomputeState(cells)
 	if microGui.Enabled and microCountForPopulation(total) ~= lastMicroCount then
 		rebuildMicroSample()
 	elseif microGui.Enabled then
-		readout.Text = string.format(
-			"Population ~%d   ·   showing %d   ·   dominant: %s",
-			total, lastMicroCount, dominant or "—"
-		)
+		refreshMicroReadout()
 	end
 end
 
 updateVesselAppearance()
+
+-- =================================================================================
+--  CELEBRATION TOASTS  (moved here from the removed CellVisuals; the vessel is now
+--  the single home for evolution feedback — bursts on the orb + a floating toast).
+-- =================================================================================
+local toastGui = Instance.new("ScreenGui")
+toastGui.Name = "BiosphereToasts"
+toastGui.ResetOnSpawn = false
+toastGui.IgnoreGuiInset = true
+toastGui.DisplayOrder = 40
+toastGui.Parent = playerGui
+
+local function playToast(text: string)
+	local label = Instance.new("TextLabel")
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Position = UDim2.fromScale(0.5, 0.32)
+	label.Size = UDim2.fromOffset(420, 44)
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 26
+	label.TextColor3 = EUKARYOTIC_COLOR
+	label.TextStrokeColor3 = Color3.fromRGB(10, 30, 18)
+	label.TextStrokeTransparency = 0.2
+	label.Text = text
+	label.Parent = toastGui
+
+	local rise = TweenService:Create(
+		label,
+		TweenInfo.new(2.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ Position = UDim2.fromScale(0.5, 0.22), TextTransparency = 1, TextStrokeTransparency = 1 }
+	)
+	rise:Play()
+	rise.Completed:Connect(function()
+		label:Destroy()
+	end)
+end
+
+-- Bigger two-line announcement for the one-time Eukaryotic Cascade.
+local function playCascadeToast(titleText: string, subtitle: string)
+	local holder = Instance.new("Frame")
+	holder.AnchorPoint = Vector2.new(0.5, 0.5)
+	holder.Position = UDim2.fromScale(0.5, 0.34)
+	holder.Size = UDim2.fromOffset(560, 76)
+	holder.BackgroundTransparency = 1
+	holder.Parent = toastGui
+
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, 0, 0, 44)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextSize = 32
+	titleLabel.TextColor3 = EUKARYOTIC_COLOR
+	titleLabel.TextStrokeColor3 = Color3.fromRGB(10, 30, 18)
+	titleLabel.TextStrokeTransparency = 0.15
+	titleLabel.Text = titleText
+	titleLabel.Parent = holder
+
+	local subLabel = Instance.new("TextLabel")
+	subLabel.Position = UDim2.fromOffset(0, 44)
+	subLabel.Size = UDim2.new(1, 0, 0, 26)
+	subLabel.BackgroundTransparency = 1
+	subLabel.Font = Enum.Font.GothamSemibold
+	subLabel.TextSize = 18
+	subLabel.TextColor3 = Color3.fromRGB(255, 220, 140)
+	subLabel.TextStrokeColor3 = Color3.fromRGB(30, 24, 8)
+	subLabel.TextStrokeTransparency = 0.3
+	subLabel.Text = subtitle
+	subLabel.Parent = holder
+
+	local riseInfo = TweenInfo.new(3.0, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	TweenService:Create(holder, riseInfo, { Position = UDim2.fromScale(0.5, 0.24) }):Play()
+	for _, lbl in { titleLabel, subLabel } do
+		TweenService:Create(lbl, riseInfo, { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+	end
+	task.delay(3.0, function()
+		holder:Destroy()
+	end)
+end
 
 task.spawn(function()
 	local Remotes = require(ReplicatedStorage:WaitForChild("Remotes"))
@@ -646,11 +735,21 @@ task.spawn(function()
 		recomputeState(data.cells or {})
 	end)
 
-	-- Evolution / cascade also flare the vessel (independent of count changes).
+	-- A single cell finished its organelle path → flare the vessel + announce it.
 	Remotes.CellEvolved.OnClientEvent:Connect(function()
 		burst:Emit(24)
+		playToast("Eukaryotic Cell Unlocked!")
 	end)
-	Remotes.CascadeTriggered.OnClientEvent:Connect(function()
+
+	-- The one-time Eukaryotic Cascade → bigger flare + two-line announcement.
+	Remotes.CascadeTriggered.OnClientEvent:Connect(function(data)
 		burst:Emit(40)
+		local count = data and data.count or 0
+		local mult = data and data.dustMultiplier or 1
+		local titleText = (count > 0) and "Eukaryotic Evolution Cascade!" or "First Eukaryotic Cell!"
+		local subtitle = (count > 0)
+			and string.format("%d cell%s evolved   ·   Dust Value ×%d", count, count == 1 and "" or "s", mult)
+			or string.format("Dust Value ×%d", mult)
+		playCascadeToast(titleText, subtitle)
 	end)
 end)
