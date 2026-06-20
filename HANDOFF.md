@@ -46,6 +46,7 @@ Then `CLAUDE.md` for architecture/rules.
 | 8C | Organelle upgrade path — cells upgrade organelle-by-organelle into Eukaryotic cells; unlimited cells; per-cell planet visuals + evolution celebration; **all UI in the inspect panel** | ✅ in `main` (#12, Nova); playtest pending |
 | 8D | Eukaryotic Cascade (first Eukaryote evolves all cells + future cells born Eukaryotic) + permanent Dust Multiplier (`floor((tier+1)²/2)` Matter/mote, Tier 1 → ×2) | 🔶 this branch → `main` (Nova); playtest pending |
 | 8E | Biosphere View — Life Vessel orb + Microscope `ViewportFrame` overlay (zoom progression, purchase-gated organelles, cell divisions); toggle **M**/**Tab**. Replaced the orbiting planet cells (`CellVisuals`) + the C-key Matter Core panel (`MatterConverterUI`), both **removed** | 🔶 this branch → `main` (Nova); playtest pending |
+| 1C | Multicellular Path + dynamic pricing (`Pricing`, `MulticellularData`, `PurchaseUpgrade`); cell cost grows with cells owned; six Eukaryotic→Multicellular upgrades | 🔶 `nova/dynamic-pricing-1c` (PR #14); playtest pending |
 | — | Footstep mute fix; marker render order | ✅ in `main` (#10, Nova) |
 | — | Misc polish (denser Matter, planet farther from sun, sun-death) + handoff split | 🔶 this branch → `main` |
 
@@ -87,8 +88,10 @@ Then `CLAUDE.md` for architecture/rules.
 | `src/client/PlanetInspectContext.luau` | Seam: publishes active planet context + `Changed`/`OpenRequested` (no economy logic) | ⚠️ **Tien↔Nova boundary** — coordinate before changing its shape |
 | `src/client/PlanetStageVisuals.client.luau` | Archaea life-glow when `EvolutionTier≥1`/`EvolutionStage=="Archaea"` | ✅ Safe — self-contained (Tien) |
 | `src/shared/OrganelleData.luau` | Ordered Tier-1 organelle path (Archaea → Eukaryotic): id/name/cost/bonus/visual + helpers (`TOTAL_COST`=240). Pure data (Epic 3 / 8C) | ✅ Safe — pure data (Nova) |
+| `src/shared/Pricing.luau` | Shared dynamic cost formulas: `cellCost(n)` (grows with cells owned) + `upgradeCost(base, bought)`. Pure functions (Epic 3 / 1C) | ✅ Safe — pure data (Nova) |
+| `src/shared/MulticellularData.luau` | The six Eukaryotic→Multicellular upgrades (id/name/baseCost/visual) + helpers (`next`, `COUNT`=6). Pure data (Epic 3 / 1C) | ✅ Safe — pure data (Nova) |
 | `src/shared/GameConfig.luau` | Shared tuning constants (`DUST_*`, `MATTER_CONVERTER_*`, `ARCHAEA_*`) | ⚠️ **Shared** — append, don't reorganize |
-| `src/shared/Remotes.luau` | All RemoteEvents (`MatterUpdate`, `CreateArchaea`, `ConverterUpdate`, `PurchaseOrganelle`, `CascadeTriggered`) | ⚠️ **Shared** — add remotes here |
+| `src/shared/Remotes.luau` | All RemoteEvents (`MatterUpdate`, `CreateArchaea`, `ConverterUpdate`, `PurchaseOrganelle`, `CascadeTriggered`, `PurchaseUpgrade`, `UpgradePurchased`) | ⚠️ **Shared** — add remotes here |
 | `src/shared/WorldConfig.luau` | World/star/orbit constants + `SUN_KILL_MARGIN` | ⚠️ **Shared** — append, don't reorganize |
 | `src/shared/PlanetArchetypes.luau` | Archetype defs + trait ranges | ✅ Safe — planet-gen |
 | `src/shared/PlanetGenerator.luau` | Pure deterministic descriptor + surface/biome generator | ✅ Safe — don't reorder its rng calls |

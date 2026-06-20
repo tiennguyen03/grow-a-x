@@ -126,6 +126,8 @@ src/shared/PlanetArchetypes.luau     → planet archetype definitions (trait ran
 src/shared/PlanetGenerator.luau      → pure, deterministic planet descriptor generator (seed → archetype + traits); no Instances (Epic 2)
 src/shared/DustField.luau            → universe-wide dust spawn helper (getSpawnPosition) used by WorldBuilder + PlayerManager (Epic 1/2)
 src/shared/OrganelleData.luau        → ordered Tier 1 organelle path (cost/bonus/visual) + helpers; pure data (Epic 3)
+src/shared/MulticellularData.luau    → ordered Tier 1C path (Eukaryotic → Multicellular): the six upgrades + helpers; pure data (Epic 3)
+src/shared/Pricing.luau              → dynamic cost formulas (cellCost, upgradeCost) shared by server + client; pure functions (Epic 3)
 ```
 
 > **Note:** the `*.client.luau` files marked "standalone LocalScript" (`SpaceMovement`, `DustAnimator`, `PlanetMarker`, `PlanetInteraction`, `PlanetStageVisuals`, `BiosphereView`) are self-contained — they do not follow the `Main → require → .init()` pattern because they need no coordination with other systems and run themselves.
@@ -137,10 +139,12 @@ All remotes are defined in `src/shared/Remotes.luau`. Server creates them on loa
 |---|---|---|
 | `MatterUpdate` | Server → Client | `{ matter: number }` (client shows a "+N" popup from the delta) |
 | `CreateArchaea` | Client → Server | *(none)* — request to spend Matter on one new cell (Epic 3) |
-| `ConverterUpdate` | Server → Client | `{ archaeaCount, totalProduction, cells = {…}, dustMultiplier }` — full converter/cell state (Epic 3) |
+| `ConverterUpdate` | Server → Client | `{ archaeaCount, totalProduction, cells = {…}, dustMultiplier, cascadeTriggered, cellCost, multicellularUpgrades, nextUpgradeCost }` — full converter/cell state + live dynamic prices (Epic 3) |
 | `PurchaseOrganelle` | Client → Server | `{ cellId, organelleId }` — buy the next organelle for a cell; server validates order + cost (Epic 3) |
 | `CellEvolved` | Server → Client | `{ cellId }` — a single cell became Eukaryotic; drives the unlock celebration (Epic 3) |
 | `CascadeTriggered` | Server → Client | `{ triggerCellId, cellIds, count, dustMultiplier }` — one-time Eukaryotic Cascade celebration + Dust Multiplier unlock (Epic 3) |
+| `PurchaseUpgrade` | Client → Server | *(none)* — buy the next player-wide multicellular upgrade; server validates gate/order/dynamic cost (Epic 3 / 1C) |
+| `UpgradePurchased` | Server → Client | `{ step, upgradeId }` — a multicellular upgrade was bought; drives the biosphere visual progression + a toast (Epic 3 / 1C) |
 
 ---
 
