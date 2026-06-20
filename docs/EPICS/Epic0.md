@@ -81,6 +81,8 @@ CENTERPIECE_RADIUS = 60
 
 **Footstep sound:** Muted in `SpaceMovement.client.luau` setup by setting the default `Running` Sound's `Volume = 0` (we're floating, not walking).
 
+> **Polish pass (2026-06-19) — sun death:** flying within `CENTERPIECE_STAR_RADIUS + WorldConfig.SUN_KILL_MARGIN` (=**215 studs**) of the star center kills the player (respawn at origin), so the star reads as dangerous. Implemented in `SpaceMovement.client.luau`'s `RenderStepped` (a simple distance check; tune via `SUN_KILL_MARGIN`). Also relaxed the humanoid state-forcer so it no longer fights the `Dead` state (otherwise death/respawn couldn't complete). Normal flight (spawn ~900 studs out, planets orbit hundreds of studs away) never enters the zone.
+
 ---
 
 ## Sprint 0C: Soaring Pose + Banking ✅ COMPLETE
