@@ -348,12 +348,13 @@ When resolving a merge (or reconciling two branches) that touches `CLAUDE.md`, `
 | Epic 3: Evolutionary Progression _(formerly Epic 8)_ | `docs/EPICS/Epic3.md` | In Progress (8B–8D built: converter, organelle path, Eukaryotic Cascade + Dust Multiplier; playtest pending) |
 | Epic 4: Planet Interaction & Inspection | `docs/EPICS/Epic4.md` | In Progress (4A–4G built; 4H playtest pending) |
 | Epic 5: Planet Upgrade System / Matter Core | `docs/EPICS/Epic5.md` | In Progress (5A audit done; MVP largely pre-built by Nova's Epic 3 — see 5A) |
-| Epic 6: Planet Era Visuals | `docs/EPICS/Epic6.md` | Not Started |
-| Epic 7: Events & Disasters | `docs/EPICS/Epic7.md` | Not Started |
-| Epic 8: DataStore / Saving | `docs/EPICS/Epic8.md` | Not Started |
-| Epic 9: Multi-Planet Expansion | `docs/EPICS/Epic9.md` | Not Started |
+| Epic 6: Ecosystem Interventions & Early Evolution | `docs/EPICS/Epic6.md` | In Progress (6A–6F + 6H built: Life Progress/Stability + ApplyIntervention; 6G event deferred; playtest pending) |
+| Epic 7: Planet Era Visuals | `docs/EPICS/Epic7.md` | Not Started |
+| Epic 8: Events & Disasters | `docs/EPICS/Epic8.md` | Not Started |
+| Epic 9: DataStore / Saving | `docs/EPICS/Epic9.md` | Not Started |
+| Epic 10: Multi-Planet Expansion | `docs/EPICS/Epic10.md` | Not Started |
 
-> **Numbering note:** epic docs run `0,1,2,3,…` with no gaps. The two built planet epics are **Epic 2** (was 7) and **Epic 3** (was 8); their sprint IDs keep their original `7x`/`8x` letters to stay aligned with git history. **Epic 4 is now the concrete "Planet Interaction & Inspection" spec** (Tien's lane — approach prompt, inspect camera, planet info panel, Matter Converter hook); the previously-reserved planned epics (Upgrade System, Era Visuals, Events, DataStore, Multi-Planet) shifted down one to **5–9**.
+> **Numbering note:** epic docs run `0,1,2,3,…` with no gaps. The two built planet epics are **Epic 2** (was 7) and **Epic 3** (was 8); their sprint IDs keep their original `7x`/`8x` letters to stay aligned with git history. **Epic 4 is now the concrete "Planet Interaction & Inspection" spec** (Tien's lane — approach prompt, inspect camera, planet info panel, Matter Converter hook). As Tien sends concrete specs, reserved planned epics shift down: **Epic 5 = Planet Upgrade System / Matter Core**, **Epic 6 = Ecosystem Interventions & Early Evolution**; the remaining reserved epics (Era Visuals, Events, DataStore, Multi-Planet) are now **7–10**.
 
 ### Documentation convention (keep this consistent)
 

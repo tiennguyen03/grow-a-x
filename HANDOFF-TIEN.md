@@ -4,14 +4,15 @@ Tien's active lane handoff. Fast-changing day-to-day notes. Global/integration
 state lives in [`HANDOFF.md`](HANDOFF.md).
 
 ## Current Branch
-`tien/epic5-matter-core` (off `main`). Epic 4 + the Matter Core integration + polish all merged to
-`main` (#10/#11). Now on **Epic 5 — Planet Upgrade System / Matter Core**.
+`tien/epic6-ecosystem-interventions` (off the Epic 5 branch, off `main`). Carries Epic 5 (Matter Core
+additive layer + overflow fix) **and** Epic 6.
 
 ## Current Focus
-**Epic 5.** 5A audit found the MVP is ~80% already built by Nova's Epic 3 (server-authoritative
-Create Life + organelles + inspect UI). Executing it **additively** (per the chosen scope): a
-generic intervention-definition format + read-only "Coming Soon" preview cards, **without** touching
-Nova's organelle code. Live generic purchase pipeline (5C–5F) deferred to coordinate with Nova / Epic 6.
+**Epic 6 — Ecosystem Interventions & Early Evolution.** The Epic 5 preview cards are now **live**:
+`lifeProgress`/`stability` server state + `ApplyIntervention` pipeline + interactive Life
+Progress/Stability UI. Built additively — Nova's cell economy untouched, but it **extends his
+`ConverterUpdate` payload + profile** (coordinate when his unmerged 1C lands). Design C for
+Multicellular (milestone only at 100, no transition). 6G (Mass Algae Bloom event) deferred.
 
 ## Active Sprint / Ticket
 - **Epic 5 5A** ✅ audit + **5B/5G** ✅ additive layer (`InterventionData` + `InterventionPreviewUI` + extension docs). Pending in-Studio playtest.

@@ -2159,3 +2159,48 @@ Ecosystem Interventions = what world that life grows inside
 ```
 
 That distinction keeps the game clear, casual, and expandable.
+
+---
+
+# Implementation — Epic 6 MVP (2026-06-20, Tien + Claude)
+
+Executed additively on `tien/epic6-ecosystem-interventions` (rides on the Epic 5 layer).
+**Nova's cell/organelle economy is untouched** — this adds new fields/remote/handler only.
+
+## 6A Audit (current base)
+Profile (`PlayerManager`): `{ matter, cells, nextCellId, cascadeTriggered, dustMultiplier, maxTierEvolved }`.
+`ConverterUpdate` payload: `{ archaeaCount, totalProduction, cells, dustMultiplier, cascadeTriggered }`.
+Remotes: `MatterUpdate, CreateArchaea, ConverterUpdate, PurchaseOrganelle, CellEvolved, CascadeTriggered`.
+Nova's **dynamic-pricing/Multicellular (1C)** + **dev-menu** are on **unmerged** branches — NOT in this base.
+
+## What shipped (6B–6F, 6H)
+- **6B data:** `profile.lifeProgress = 0`, `profile.stability = 75`; `ConverterUpdate` extended with `lifeProgress` / `lifeProgressMax (100)` / `stability`; planet attributes `LifeProgress` / `Stability` / `LifeProgressMax` synced on apply.
+- **6C pipeline:** new `ApplyIntervention` remote + `PlayerManager.onApplyIntervention` — validate state==Active → requirements (`lifeExists`, `minEvolutionTier`) → max guards → cost → deduct → apply effects clamped 0–100 → sync planet → push `MatterUpdate`+`ConverterUpdate`. Server-authoritative; rejects unknown/locked/unaffordable/maxed.
+- **6D/6E UI:** `EcosystemInterventionUI.luau` (replaces the read-only `InterventionPreviewUI`) — Life Progress + Stability bars + interactive cards (Available/Unaffordable/Locked/Maxed) firing `ApplyIntervention`; "Ecosystem Matured" milestone at 100.
+- **6F Multicellular:** **Design C** — at Life Progress 100 the UI shows the maturity milestone only; **no stage transition**, so Nova's Multicellular Path is not duplicated. Upgrade to Design A (unlock his path) later, by coordination.
+- **6G event (Mass Algae Bloom):** **deferred** (optional/stretch).
+
+## Coordination note (Nova)
+This extends the **shared** `ConverterUpdate` payload + the player profile + adds a remote. All additive,
+but Nova's unmerged **1C** branch also touches the profile/`ConverterUpdate` (`PurchaseUpgrade`,
+dynamic pricing) — expect a merge-union there; nothing here changes cell/organelle behavior.
+
+## Data shapes
+- Remote: `ApplyIntervention` (C→S) payload `{ interventionId = "nourish_microbes" }`.
+- Profile fields: `lifeProgress` (0–100), `stability` (0–100, starts 75).
+- Planet attributes: `LifeProgress`, `Stability`, `LifeProgressMax`.
+- Interventions (`InterventionData`, `category="Ecosystem"`, `state="Active"`):
+  `nourish_microbes` (20 → LifeProgress +20), `stabilize_oceans` (25 → Stability +15),
+  `accelerate_mutation` (25 → LifeProgress +35, Stability −10). Requirements: `lifeExists`, `minEvolutionTier=1`.
+
+## How to add a new ecosystem intervention
+Add one entry to `InterventionData` (`category="Ecosystem"`, `state="Active"`, cost/effects/requirements).
+If it uses a new effect key, add one branch in `onApplyIntervention`. UI + server pick it up automatically.
+
+## Test
+Create a cell (unlocks the section) → Apply Nourish Microbes (−20 Matter, Life Progress +20) / Stabilize
+Oceans (−25, Stability +15, clamp 100) / Accelerate Mutation (−25, Life +35, Stability −10, clamp 0);
+buttons grey out when unaffordable/maxed/before any cell; at Life Progress 100 the "Ecosystem Matured"
+milestone shows. Regression: Cell Cultures / organelles / Biosphere View unchanged.
+
+**Status:** 6A–6F + 6H ✅ (pending in-Studio playtest); 6G deferred.
