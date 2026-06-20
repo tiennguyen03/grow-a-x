@@ -2,10 +2,10 @@
 
 > **Formerly Epic 8** (file was `Epic8.md`) — renumbered to close the old `0,1,7,8` gap. Sprint IDs keep their original `8A`–`8H` labels; only the epic number changed.
 
-**Status:** 🔶 In Progress — Tier 1 organelle path built (Sprint 8C), pending in-Studio playtest  
+**Status:** 📋 Planned / Not Started  
 **Dependency:** Epic 1 (Matter Loop) must be complete (Sprint 1A ✅, Sprint 1B in progress)  
 **Estimated Sprints:** 8 sprints (8A–8H)  
-**Core Designer:** Nova (Matter / economy lane)
+**Core Designer:** TBD (coordinate with Nova on Matter integration)
 
 ---
 
@@ -117,44 +117,3 @@ local EvolutionTiers = {
 - A single shared timer (`PlayerManager.runProduction`) ticks every `ARCHAEA_PRODUCTION_INTERVAL` seconds and awards each player `archaeaCount × ARCHAEA_PRODUCTION_AMOUNT` Matter via the existing `addMatter` path (so passive income reuses the same `MatterUpdate` + "+N" popup feedback as dust collection).
 
 **Not in scope for 8B:** persistence (cells reset on rejoin — waits on Epic 5 DataStore), planet visual changes per tier, and Tiers 2–9. The full tier table above is the forward plan.
-
----
-
-### Sprint 8C: Organelle Upgrade Path (Archaea → Eukaryotic)
-
-**Goal:** Turn Tier 1 into the game's main early loop. A basic Archaea Cell is upgraded one **organelle** at a time, in a fixed order, each raising that cell's passive production. Buying the final organelle (the Nucleus) evolves the cell into a **Eukaryotic Cell**. Players may own **any number** of cells, each with its own independent organelle path — build wide (many basic cells) or deep (fully evolve one). All UI lives in the **planet inspect panel**; the old Matter Core panel is obsolete.
-
-**Owner/files (Nova):**
-- `src/shared/OrganelleData.luau` (NEW) — ordered organelle path: id, name, cost, productionBonus, visual key, description + helpers (`nextOrganelle`, `isComplete`, `indexOf`, `TOTAL_COST`).
-- `src/shared/GameConfig.luau` (⚠️ shared — appended) — `PRODUCTION_TICK_INTERVAL`, `ARCHAEA_BASE_PRODUCTION`.
-- `src/shared/Remotes.luau` (⚠️ shared — appended) — `PurchaseOrganelle` (C→S), `CellEvolved` (S→C).
-- `src/server/PlayerManager.luau` — per-cell state, `onPurchaseOrganelle`, summed per-second production.
-- `src/client/CellInterventionUI.luau` (NEW) — cell list + per-cell organelle detail UI, mounted into the inspect panel.
-- `src/client/CellVisuals.client.luau` (NEW) — per-cell, per-organelle planet visuals + evolution celebration + "Eukaryotic Cell Unlocked!" toast.
-- `src/client/PlanetInteraction.client.luau` (⚠️ **Tien's file** — cross-lane, by direction "do it all in the inspect panel") — replaced the inline "Create Life" block with a `CellInterventionUI.mount(...)`.
-
-**The organelle path (ordered; costs sum to 240 Matter):**
-
-| # | Organelle | Cost | +Production/sec | Visual layer |
-|---|---|---|---|---|
-| 1 | Cell Membrane | 5 | +0.2 | faint outer shell glow |
-| 2 | Cytoplasm | 10 | +0.2 | filled inner body |
-| 3 | Ribosomes | 15 | +0.3 | tiny green dots |
-| 4 | Nucleoid | 25 | +0.4 | brighter dense core |
-| 5 | Plasmids | 40 | +0.6 | ring of beads |
-| 6 | Mitochondria | 60 | +0.8 | warm orange-gold glow |
-| 7 | **Nucleus** | 85 | +1.0 | bright central core → **Eukaryotic** |
-
-**Key constants (`GameConfig`):**
-- `ARCHAEA_BASE_PRODUCTION = 0.2` — Matter/sec a fresh, organelle-less cell makes (= the legacy 1-per-5s feel).
-- `PRODUCTION_TICK_INTERVAL = 1` — production now ticks per second and sums fractional per-cell rates.
-- A fully evolved cell ≈ `0.2 + 3.5 = 3.7` Matter/sec (organelle bonuses sum to 3.5; "around 3.5").
-
-**How it works:**
-- Each player's profile now holds `cells = { { id, stage, purchased, purchasedCount, production }, … }` instead of a scalar count (`matter` is now a float for fractional production). `ConverterUpdate` carries `{ archaeaCount (= #cells, back-compat), totalProduction, cells }`.
-- `CreateArchaea` appends a fresh Archaea Cell (base production, no organelles) — no cap. The first ever cell still flips the planet to `EvolutionTier=1 / Archaea`.
-- `PurchaseOrganelle { cellId, organelleId }` is **server-authoritative and order-enforced**: the request must name the exact next organelle for that cell (`OrganelleData.nextOrganelle`), the server re-checks affordability, deducts, marks it, and raises that cell's production. The 7th purchase sets `stage = "Eukaryotic"` and fires `CellEvolved` for the client celebration.
-- `runProduction` ticks every second, summing each cell's `production` across all the player's cells.
-- `CellVisuals` renders each cell as a small glowing body orbiting the planet, adding a cosmetic layer per organelle; on `CellEvolved` it plays a green pulse + particle burst and floats the "Eukaryotic Cell Unlocked!" notification (capped at `MAX_RENDERED_CELLS` drawn cells for performance — the economy still counts them all).
-
-**Not in scope for 8C:** persistence (cells reset on rejoin — waits on the DataStore epic), Tier 2 (Bacteria) and beyond, and advancing the *planet* past Archaea when a cell becomes Eukaryotic (the planet-stage ladder is a later sprint). The Matter Core panel (`MatterConverterUI`) is left in place but vestigial.

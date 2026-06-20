@@ -33,7 +33,15 @@ return {
 
 	-- Matter Converter (Epic 8). CreateArchaea: client asks the server to spend
 	-- Matter on one Archaea Cell (no payload; server validates cost). ConverterUpdate:
-	-- server pushes the player's current converter state, e.g. { archaeaCount }.
+	-- server pushes the player's current converter state — now
+	-- { archaeaCount, totalProduction, cells = { {id, stage, purchased, purchasedCount, production}, … } }.
 	CreateArchaea   = get("CreateArchaea", "RemoteEvent"),
 	ConverterUpdate = get("ConverterUpdate", "RemoteEvent"),
+
+	-- Organelle upgrades (Epic 3, Tier 1). PurchaseOrganelle: client asks to buy the
+	-- next organelle for a specific cell — payload { cellId, organelleId }; the server
+	-- validates order + affordability. CellEvolved: server announces a cell finished
+	-- the path and became a Eukaryotic Cell — payload { cellId } (drives the celebration).
+	PurchaseOrganelle = get("PurchaseOrganelle", "RemoteEvent"),
+	CellEvolved       = get("CellEvolved", "RemoteEvent"),
 }

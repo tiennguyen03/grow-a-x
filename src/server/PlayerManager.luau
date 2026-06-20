@@ -5,6 +5,7 @@ local CollectionService = game:GetService("CollectionService")
 local GameConfig = require(ReplicatedStorage.GameConfig)
 local Remotes = require(ReplicatedStorage.Remotes)
 local DustField = require(ReplicatedStorage.DustField)
+local OrganelleData = require(ReplicatedStorage.OrganelleData)
 
 local DUST_TAG = "DustParticle"
 
@@ -19,16 +20,50 @@ local function fireUpdate(player, profile)
 	})
 end
 
--- Push the player's Matter Converter state (Archaea count, etc.) so the
--- converter UI can show how many cells they own.
+-- The Matter/sec a player produces across every cell they own.
+local function totalProduction(profile)
+	local sum = 0
+	for _, cell in ipairs(profile.cells) do
+		sum += cell.production
+	end
+	return sum
+end
+
+-- A replication-safe snapshot of one cell (no functions; `purchased` is a plain
+-- map of organelleId → true so the client can render slots in OrganelleData order).
+local function serializeCell(cell)
+	local purchased = {}
+	for id in pairs(cell.purchased) do
+		purchased[id] = true
+	end
+	return {
+		id = cell.id,
+		stage = cell.stage,
+		purchased = purchased,
+		purchasedCount = cell.purchasedCount,
+		production = cell.production,
+	}
+end
+
+-- Push the player's full converter state: how many cells they own, the summed
+-- production, and each cell's per-organelle state. `archaeaCount` is kept for the
+-- older read-only overview UI (it now means "number of cells").
 local function fireConverterUpdate(player, profile)
+	local cells = {}
+	for _, cell in ipairs(profile.cells) do
+		table.insert(cells, serializeCell(cell))
+	end
 	Remotes.ConverterUpdate:FireClient(player, {
-		archaeaCount = profile.archaeaCount,
+		archaeaCount = #profile.cells,
+		totalProduction = totalProduction(profile),
+		cells = cells,
 	})
 end
 
 local function createProfile(player)
-	local profile = { matter = 0, archaeaCount = 0 }
+	-- matter is a FLOAT now (production rates are fractional per second). cells is
+	-- an array of per-cell tables; nextCellId hands out stable ids for the UI.
+	local profile = { matter = 0, cells = {}, nextCellId = 1 }
 	profiles[player.UserId] = profile
 
 	-- Push initial state immediately so the HUD shows "Matter: 0" right away
@@ -144,10 +179,11 @@ local function findPlayerPlanet(player)
 	return nil
 end
 
--- Matter Converter: a player spends Matter to create one Archaea Cell. The
--- server is authoritative — it checks the player can afford it, deducts the
--- cost, and increments their cell count. Cheaters can't fake a cell because the
--- count never leaves the server.
+-- Matter Converter: a player spends Matter to create one basic Archaea Cell. The
+-- server is authoritative — it checks the player can afford it, deducts the cost,
+-- and appends a fresh cell to their list. There is NO cap on how many cells a
+-- player may own; each one carries its own organelle upgrade path. Cheaters can't
+-- fake a cell because the list never leaves the server.
 local function onCreateArchaea(player)
 	local profile = profiles[player.UserId]
 	if not profile then return end
@@ -156,13 +192,22 @@ local function onCreateArchaea(player)
 	if profile.matter < cost then return end -- can't afford it; ignore
 
 	profile.matter -= cost
-	profile.archaeaCount += 1
 
-	-- First cell sparks life: flip the planet to the Archaea stage so the inspect
-	-- panel reads "Archaea / Microbial" and PlanetStageVisuals shows the glow.
-	-- (Server owns this; the client only ever requested the purchase.) We don't
-	-- advance past tier 1 here — the full evolution tree is a later epic.
-	if profile.archaeaCount == 1 then
+	local cell = {
+		id = profile.nextCellId,
+		stage = OrganelleData.STAGE_ARCHAEA,
+		purchased = {},                              -- organelleId -> true
+		purchasedCount = 0,
+		production = GameConfig.ARCHAEA_BASE_PRODUCTION, -- Matter/sec; grows per organelle
+	}
+	profile.nextCellId += 1
+	table.insert(profile.cells, cell)
+
+	-- The very first cell sparks life: flip the planet to the Archaea stage so the
+	-- inspect panel reads "Archaea / Microbial" and PlanetStageVisuals shows the
+	-- glow. (Server owns this; the client only ever requested the purchase.) We
+	-- don't advance the planet past tier 1 here — later tiers are a future epic.
+	if #profile.cells == 1 then
 		local planet = findPlayerPlanet(player)
 		if planet then
 			planet:SetAttribute("EvolutionTier", 1)
@@ -171,20 +216,83 @@ local function onCreateArchaea(player)
 	end
 
 	fireUpdate(player, profile)          -- Matter went down
-	fireConverterUpdate(player, profile) -- cell count went up
+	fireConverterUpdate(player, profile) -- a new cell appeared
 end
 
--- Passive Matter income: every ARCHAEA_PRODUCTION_INTERVAL seconds, each player
--- earns ARCHAEA_PRODUCTION_AMOUNT Matter per Archaea Cell they own. One shared
--- timer drives every player's production so it stays cheap as cells grow.
+-- Find one of a player's cells by id, or nil.
+local function findCell(profile, cellId)
+	for _, cell in ipairs(profile.cells) do
+		if cell.id == cellId then
+			return cell
+		end
+	end
+	return nil
+end
+
+-- Organelle upgrade: a player spends Matter to add the NEXT organelle to a
+-- specific cell, raising that cell's production. The order is fixed (OrganelleData)
+-- and enforced here — the request must name the exact next organelle for that
+-- cell, so the client can never skip ahead or double-buy. When the final organelle
+-- (the Nucleus) is bought, the cell evolves Archaea → Eukaryotic and we announce it.
+local function onPurchaseOrganelle(player, payload)
+	local profile = profiles[player.UserId]
+	if not profile then return end
+	if typeof(payload) ~= "table" then return end
+
+	local cellId = payload.cellId
+	local organelleId = payload.organelleId
+	if typeof(cellId) ~= "number" or typeof(organelleId) ~= "string" then return end
+
+	local cell = findCell(profile, cellId)
+	if not cell then return end
+	if OrganelleData.isComplete(cell.purchasedCount) then return end -- already a Eukaryote
+
+	-- Must be exactly the next organelle in the path for this cell.
+	local expected = OrganelleData.nextOrganelle(cell.purchasedCount)
+	if not expected or expected.id ~= organelleId then return end
+	if cell.purchased[organelleId] then return end -- defensive: never double-buy
+
+	if profile.matter < expected.cost then return end -- can't afford it; ignore
+
+	profile.matter -= expected.cost
+	cell.purchased[organelleId] = true
+	cell.purchasedCount += 1
+	cell.production += expected.productionBonus
+
+	-- Final organelle completes the evolution into a Eukaryotic Cell.
+	local evolved = false
+	if OrganelleData.isComplete(cell.purchasedCount) then
+		cell.stage = OrganelleData.STAGE_EUKARYOTIC
+		evolved = true
+	end
+
+	fireUpdate(player, profile)          -- Matter went down
+	fireConverterUpdate(player, profile) -- this cell's state changed
+
+	if evolved then
+		-- One-shot announcement for the client celebration (green pulse, burst,
+		-- "Eukaryotic Cell Unlocked!" toast). The authoritative state already went
+		-- out via ConverterUpdate above; this is purely the feedback trigger.
+		Remotes.CellEvolved:FireClient(player, { cellId = cell.id })
+	end
+end
+
+-- Passive Matter income: every PRODUCTION_TICK_INTERVAL seconds, each player earns
+-- their summed per-second production (across all cells) × the elapsed interval. One
+-- shared timer drives every player's production so it stays cheap as cell counts
+-- grow. Matter accrues as a float; the HUD floors it for display.
 local function runProduction()
 	task.spawn(function()
+		local interval = GameConfig.PRODUCTION_TICK_INTERVAL
 		while true do
-			task.wait(GameConfig.ARCHAEA_PRODUCTION_INTERVAL)
+			task.wait(interval)
 			for _, player in Players:GetPlayers() do
 				local profile = profiles[player.UserId]
-				if profile and profile.archaeaCount > 0 then
-					addMatter(player, profile.archaeaCount * GameConfig.ARCHAEA_PRODUCTION_AMOUNT)
+				if profile and #profile.cells > 0 then
+					local gain = totalProduction(profile) * interval
+					if gain > 0 then
+						addMatter(player, gain)
+					end
 				end
 			end
 		end
@@ -200,6 +308,7 @@ function PlayerManager.init()
 	end
 
 	Remotes.CreateArchaea.OnServerEvent:Connect(onCreateArchaea)
+	Remotes.PurchaseOrganelle.OnServerEvent:Connect(onPurchaseOrganelle)
 
 	runCollection()
 	runProduction()

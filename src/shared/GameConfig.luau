@@ -22,6 +22,15 @@ return {
 	-- life forms that then produce Matter passively. The first life form is the
 	-- Archaea Cell. Server is authoritative over cost, counts, and production.
 	MATTER_CONVERTER_COST_ARCHAEA = 15, -- Matter to create one Archaea Cell
-	ARCHAEA_PRODUCTION_INTERVAL   = 5,  -- seconds between each passive production tick
-	ARCHAEA_PRODUCTION_AMOUNT     = 1,  -- Matter produced per cell per tick
+	ARCHAEA_PRODUCTION_INTERVAL   = 5,  -- (legacy display) seconds the inspect "Create Life" text references
+	ARCHAEA_PRODUCTION_AMOUNT     = 1,  -- (legacy display) Matter a base cell makes over that interval (= 0.2/sec)
+
+	-- Organelle upgrade path (Epic 3, Tier 1 — Archaea → Eukaryotic). Each player
+	-- owns any number of cells; each cell upgrades its organelles individually (see
+	-- OrganelleData.luau for the ordered path, costs, and per-organelle bonuses).
+	-- Production is now PER SECOND and summed across every cell a player owns.
+	PRODUCTION_TICK_INTERVAL = 1,   -- seconds between passive production ticks (per-second rates)
+	ARCHAEA_BASE_PRODUCTION  = 0.2, -- Matter/sec a fresh, organelle-less Archaea Cell makes (= legacy 1 per 5s)
+	-- A fully evolved cell makes ARCHAEA_BASE_PRODUCTION + 3.5 (sum of all organelle
+	-- bonuses) ≈ 3.7 Matter/sec; the Nucleus is the big late jump that completes it.
 }

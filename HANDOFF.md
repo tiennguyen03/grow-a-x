@@ -15,15 +15,11 @@ Then `CLAUDE.md` for architecture/rules.
 
 ## Current Integration State
 
-**`main` integration is in flight via PR #10** (`tien/integration-matter-planets` → `main`,
-https://github.com/tiennguyen03/grow-a-x/pull/10). It combines **everything current**:
+**Already in `main`:** PR #10 (Epic 4 + Nova's #7/#8/#9 + Matter Core integration) and **PR #12 — Nova's Sprint 8C organelle upgrade path** (Archaea cells upgrade organelle-by-organelle into Eukaryotic cells; unlimited cells; the **whole intervention UI now lives in the inspect panel** via `CellInterventionUI`, making the old Matter Core panel obsolete).
 
-- **Tien — Epic 4 Planet Interaction (4A–4G):** approach prompt, inspect camera (player rides along with the orbiting planet), info panel, Archaea life-glow, marker/prompt coordination, own-planet-only.
-- **Nova — folded in via PRs #7/#8/#9:** Sprint 8B Matter Converter (server-authoritative Archaea spend + passive production), footstep-mute fix, marker render order.
-- **Matter Core ↔ Inspect integration (v0):** Create Life is a planet intervention inside the inspect panel; the global button is the read-only **"Matter Core"** overview; on first cell the server sets `EvolutionTier=1`/`EvolutionStage="Archaea"`.
-- **Misc polish:** denser Matter, planet orbit distance 340→460, sun-death.
+**In flight (this branch → `main`):** the post-#10 commits that didn't make the #10 merge — **misc polish** (denser Matter 360/1050, planet orbit 340→**460**, **sun-death** at star radius + `SUN_KILL_MARGIN`) and the **handoff split** (this global file + `HANDOFF-TIEN.md`/`HANDOFF-NOVA.md` + the `CLAUDE.md` workflow). `origin/main` (incl. 8C) has been merged into this branch and reconciled (only `HANDOFF.md` needed manual union).
 
-> Once **#10 merges to `main`**, both devs branch off that same base for async work. PRs #7/#8/#9 are superseded by #10 (close them after merge).
+> After this lands, both devs branch off `main`. PRs #7/#8/#9 are superseded by #10 (close them).
 
 ---
 
@@ -31,8 +27,8 @@ https://github.com/tiennguyen03/grow-a-x/pull/10). It combines **everything curr
 
 | Developer | Current lane | Branch | Lane handoff |
 |---|---|---|---|
-| **Tien** | Epic 4 Planet Interaction + Matter Core integration (4H playtest) | `tien/integration-matter-planets` (PR #10) | [`HANDOFF-TIEN.md`](HANDOFF-TIEN.md) |
-| **Nova** | Matter Core / upgrade system (writing upgrade docs next) | `matter-converter` etc. (folded into PR #10) | [`HANDOFF-NOVA.md`](HANDOFF-NOVA.md) |
+| **Tien** | Epic 4 polish + handoff split → `main` (then 4H playtest) | `tien/integration-matter-planets` | [`HANDOFF-TIEN.md`](HANDOFF-TIEN.md) |
+| **Nova** | Epic 3 organelle upgrades (8C shipped); next evolution tier | `nova/organelle-upgrades` (merged #12) | [`HANDOFF-NOVA.md`](HANDOFF-NOVA.md) |
 
 ---
 
@@ -45,16 +41,18 @@ https://github.com/tiennguyen03/grow-a-x/pull/10). It combines **everything curr
 | 1A | Matter via dust motes; HUD + "+1" popup | ✅ (integrated) |
 | 7A | Procedural planet **descriptor** foundation | ✅ in `main` |
 | 7B–7H | Per-player procedural planets, noise continents, biomes, server orbit/spin, star-system composition, universe dust, planet marker | ✅ (in `main` / PR #10) |
-| 4A–4G | Planet interaction (prompt, inspect camera, info panel, Converter seam, life-glow, coordination, own-planet-only) | 🔶 in PR #10; **4H playtest pending** |
-| 8B | Matter Converter — Archaea Cell + passive income; "Create Life" / **C** | ✅ in PR #10 (Nova) |
-| — | Footstep mute fix; marker render order | ✅ in PR #10 (Nova) |
+| 4A–4G | Planet interaction (prompt, inspect camera, info panel, Converter seam, life-glow, coordination, own-planet-only) | ✅ in `main` (#10); 4H playtest pending |
+| 8B | Matter Converter — Archaea Cell + passive income | ✅ in `main` (#10, Nova) |
+| 8C | Organelle upgrade path — cells upgrade organelle-by-organelle into Eukaryotic cells; unlimited cells; per-cell planet visuals + evolution celebration; **all UI in the inspect panel** | ✅ in `main` (#12, Nova); playtest pending |
+| — | Footstep mute fix; marker render order | ✅ in `main` (#10, Nova) |
+| — | Misc polish (denser Matter, planet farther from sun, sun-death) + handoff split | 🔶 this branch → `main` |
 
 ---
 
 ## Current Global Blockers
 
-- **PR #10 not merged yet** — needs an in-Studio playtest sign-off (Epic 4 4H + Matter Core flow + polish), then merge so both devs share the base.
-- Nova's **upgrade-system / Matter Core documentation** is in progress (Tien is doing polish/QA while waiting).
+- **In-Studio playtest sign-off pending** for the merged work (Epic 4 4H + 8C organelle flow + polish).
+- The post-#10 polish + handoff-split (this branch) still needs to land on `main`.
 
 ---
 
@@ -80,11 +78,14 @@ https://github.com/tiennguyen03/grow-a-x/pull/10). It combines **everything curr
 | `src/client/SpaceMovement.client.luau` | Floaty movement + pose + banking; honors `PlanetInspectLocked` (rides the orbit during inspect); **sun-death** kill check | ✅ Safe — self-contained (Tien) |
 | `src/client/DustAnimator.client.luau` | Bobs dust motes locally (cosmetic) | ✅ Safe — self-contained |
 | `src/client/MatterUI.luau` | HUD, listens to `MatterUpdate`, "+N" popup | ✅ Safe — Matter UI |
-| `src/client/MatterConverterUI.luau` | **Matter Core** panel (**C** / button): read-only overview (balance/owned/production) + inspected-planet context. Create Life lives in the inspect panel | ✅ Safe — Nova's converter UI |
+| `src/client/MatterConverterUI.luau` | **Obsolete** "Matter Core" panel — all interventions moved into the inspect panel (8C). Left in place, no interactive role; slated for removal | ✅ Safe — Nova, slated for removal |
+| `src/client/CellInterventionUI.luau` | Interactive cell-list + per-cell organelle-detail UI (create cells, buy organelles in order, progress-to-Eukaryotic bar). **Mounted into the inspect panel** by `PlanetInteraction`; server-authoritative via `PurchaseOrganelle` (Epic 3 / 8C) | ✅ Safe — self-contained (Nova) |
+| `src/client/CellVisuals.client.luau` | Per-cell, per-organelle planet visuals (cells orbit the planet) + "Eukaryotic Cell Unlocked!" celebration (Epic 3 / 8C) | ✅ Safe — self-contained LocalScript (Nova) |
 | `src/client/PlanetMarker.client.luau` | Screen marker to the local orbiting planet; hides during prompt/inspect (`PlanetPromptVisible`/`InspectingPlanet`) | ✅ Safe — self-contained (Tien) |
-| `src/client/PlanetInteraction.client.luau` | Approach prompt + inspect camera + info panel + **Create Life** intervention (fires `CreateArchaea`) | ✅ Safe — self-contained (Tien) |
+| `src/client/PlanetInteraction.client.luau` | Approach prompt + inspect camera + info panel; **mounts `CellInterventionUI`** so the full organelle/cell UI lives in the inspect panel (Epic 4 + 8C) | ⚠️ **Tien file, edited cross-lane by Nova (8C)** — coordinate before further edits |
 | `src/client/PlanetInspectContext.luau` | Seam: publishes active planet context + `Changed`/`OpenRequested` (no economy logic) | ⚠️ **Tien↔Nova boundary** — coordinate before changing its shape |
 | `src/client/PlanetStageVisuals.client.luau` | Archaea life-glow when `EvolutionTier≥1`/`EvolutionStage=="Archaea"` | ✅ Safe — self-contained (Tien) |
+| `src/shared/OrganelleData.luau` | Ordered Tier-1 organelle path (Archaea → Eukaryotic): id/name/cost/bonus/visual + helpers (`TOTAL_COST`=240). Pure data (Epic 3 / 8C) | ✅ Safe — pure data (Nova) |
 | `src/shared/GameConfig.luau` | Shared tuning constants (`DUST_*`, `MATTER_CONVERTER_*`, `ARCHAEA_*`) | ⚠️ **Shared** — append, don't reorganize |
 | `src/shared/Remotes.luau` | All RemoteEvents (`MatterUpdate`, `CreateArchaea`, `ConverterUpdate`) | ⚠️ **Shared** — add remotes here |
 | `src/shared/WorldConfig.luau` | World/star/orbit constants + `SUN_KILL_MARGIN` | ⚠️ **Shared** — append, don't reorganize |

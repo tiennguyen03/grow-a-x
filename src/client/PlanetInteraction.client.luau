@@ -49,9 +49,11 @@ end
 -- Nova's Converter UI consumes it. Sibling client ModuleScript.
 local PlanetInspectContext = require(script.Parent:WaitForChild("PlanetInspectContext"))
 
--- Matter Converter integration: cost/production constants for the in-panel
--- "Create Life" intervention (the actual spend is server-authoritative).
-local GameConfig = require(ReplicatedStorage:WaitForChild("GameConfig"))
+-- Organelle / cell-management UI (Epic 3, Tier 1). The whole life-intervention
+-- interface (create cells, buy organelles, watch a cell evolve into a Eukaryote)
+-- is mounted into this inspect panel below — the old Matter Core panel is obsolete.
+-- All spends are server-authoritative; this module only requests + reflects them.
+local CellInterventionUI = require(script.Parent:WaitForChild("CellInterventionUI"))
 
 local PROMPT_DISTANCE    = 170  -- show the prompt at/under this distance (studs)
 local PROMPT_HIDE_BUFFER = 20   -- ...and hide once you pass distance + this (=190)
@@ -371,92 +373,16 @@ local rowAtmos      = makeInfoLabel(10)
 local debugLabel    = makeInfoLabel(11, { wrap = true, size = 13, color = Color3.fromRGB(150, 170, 190) })
 makeDivider(12)
 
--- Intervention section (Matter Core integration) — Create Life is a PLANET
--- intervention shown right here in the inspect panel, not a detached global
--- button. The spend is server-authoritative (PlayerManager validates + deducts);
--- this UI only requests it and reflects the server-pushed numbers. Powered by the
--- same Matter Core economy Nova owns.
+-- Intervention section — the full organelle/cell-management UI (create cells, buy
+-- organelles in order, watch a cell evolve Archaea → Eukaryotic) is built by the
+-- CellInterventionUI module and mounted right here in the inspect panel. All spends
+-- are server-authoritative; the module only requests them and re-renders from the
+-- server's ConverterUpdate. It owns its own remote subscriptions and state.
 local interventionHeader = makeInfoLabel(13, { font = Enum.Font.GothamBold, size = 15, color = CYAN })
 interventionHeader.Text = "Intervention"
-local createTitle  = makeInfoLabel(14, { font = Enum.Font.GothamSemibold, color = Color3.fromRGB(170, 255, 200) })
-createTitle.Text = "Create Life"
-local createCost   = makeInfoLabel(15, { size = 14 })
-local createEffect = makeInfoLabel(16, { size = 14 })
-local createOwned  = makeInfoLabel(17, { size = 14 })
-local createProd   = makeInfoLabel(18, { size = 14 })
-
-local createButton = Instance.new("TextButton")
-createButton.Name = "CreateLife"
-createButton.LayoutOrder = 19
-createButton.Size = UDim2.new(1, 0, 0, 34)
-createButton.BackgroundColor3 = Color3.fromRGB(40, 96, 64)
-createButton.BorderSizePixel = 0
-createButton.AutoButtonColor = true
-createButton.Font = Enum.Font.GothamBold
-createButton.TextSize = 15
-createButton.TextColor3 = Color3.fromRGB(220, 255, 235)
-createButton.Text = "Create Life"
-createButton.Parent = infoPanel
-
-local createCorner = Instance.new("UICorner")
-createCorner.CornerRadius = UDim.new(0, 8)
-createCorner.Parent = createButton
-
-local createStroke = Instance.new("UIStroke")
-createStroke.Color = CYAN
-createStroke.Transparency = 0.55
-createStroke.Thickness = 1
-createStroke.Parent = createButton
+CellInterventionUI.mount(infoPanel, { layoutOrder = 14 })
 
 local exitLabel = makeInfoLabel(20, { size = 13, color = Color3.fromRGB(150, 170, 190) })
-
--- Static recipe text (cost/effect/production never change); owned + affordability
--- are refreshed live by the remotes below.
-local ARCHAEA_COST = GameConfig.MATTER_CONVERTER_COST_ARCHAEA
-createCost.Text = field("Cost", string.format("%d Matter", ARCHAEA_COST))
-createEffect.Text = field("Effect", "First Archaea Cell")
-createProd.Text = field("Production", string.format(
-	"+%d Matter / %ds",
-	GameConfig.ARCHAEA_PRODUCTION_AMOUNT,
-	GameConfig.ARCHAEA_PRODUCTION_INTERVAL
-))
-
--- Live converter state (server-owned; mirrored here for button enable + "Owned").
-local localMatter = 0
-local localArchaea = 0
-local remotesRef = nil
-
-local function refreshIntervention()
-	createOwned.Text = field("Owned", tostring(localArchaea))
-	local canAfford = localMatter >= ARCHAEA_COST
-	createButton.AutoButtonColor = canAfford
-	createButton.BackgroundColor3 = canAfford and Color3.fromRGB(40, 96, 64) or Color3.fromRGB(40, 44, 56)
-	createButton.TextColor3 = canAfford and Color3.fromRGB(220, 255, 235) or Color3.fromRGB(140, 150, 165)
-end
-refreshIntervention()
-
-createButton.Activated:Connect(function()
-	-- Visual guard only; the server re-checks affordability and owns the decision.
-	if remotesRef and localMatter >= ARCHAEA_COST then
-		remotesRef.CreateArchaea:FireServer()
-	end
-end)
-
--- Subscribe to the server's Matter + converter pushes off the main thread so the
--- panel builds instantly and never blocks on replication.
-task.spawn(function()
-	local Remotes = require(ReplicatedStorage:WaitForChild("Remotes"))
-	remotesRef = Remotes
-	Remotes.MatterUpdate.OnClientEvent:Connect(function(data)
-		localMatter = math.max(0, math.floor(data.matter))
-		refreshIntervention()
-	end)
-	Remotes.ConverterUpdate.OnClientEvent:Connect(function(data)
-		localArchaea = math.max(0, math.floor(data.archaeaCount))
-		refreshIntervention()
-	end)
-	refreshIntervention()
-end)
 
 -- ---- Formatting helpers -------------------------------------------------------
 -- "TemperateOcean" / "young_habitable" -> "Temperate Ocean" / "Young Habitable"
