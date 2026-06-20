@@ -407,6 +407,17 @@ function PlayerManager.init()
 	Remotes.CreateArchaea.OnServerEvent:Connect(onCreateArchaea)
 	Remotes.PurchaseOrganelle.OnServerEvent:Connect(onPurchaseOrganelle)
 
+	-- ⚠️ DEV/TESTING ONLY — remove before launch (along with the DevGrantMatter remote
+	-- and DevMenu.client.luau). Grants the requesting player Matter so we don't have to
+	-- replay every stage to test late-game. Capped so a stray value can't break things.
+	Remotes.DevGrantMatter.OnServerEvent:Connect(function(player, amount)
+		if typeof(amount) ~= "number" or amount ~= amount then return end -- nil/NaN guard
+		amount = math.clamp(math.floor(amount), 0, 1e9)
+		if amount > 0 then
+			addMatter(player, amount)
+		end
+	end)
+
 	runCollection()
 	runProduction()
 end
