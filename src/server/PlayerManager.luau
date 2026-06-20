@@ -6,6 +6,7 @@ local GameConfig = require(ReplicatedStorage.GameConfig)
 local Remotes = require(ReplicatedStorage.Remotes)
 local DustField = require(ReplicatedStorage.DustField)
 local OrganelleData = require(ReplicatedStorage.OrganelleData)
+local InterventionData = require(ReplicatedStorage.InterventionData) -- Epic 6 ecosystem interventions
 
 local DUST_TAG = "DustParticle"
 
@@ -96,6 +97,10 @@ local function fireConverterUpdate(player, profile)
 		cells = cells,
 		dustMultiplier = profile.dustMultiplier,   -- Matter awarded per dust mote (UI "Dust Value")
 		cascadeTriggered = profile.cascadeTriggered, -- once true, new cells are born Eukaryotic (drives the Create button label)
+		-- Epic 6 ecosystem state (drives the Ecosystem Interventions UI).
+		lifeProgress = profile.lifeProgress,
+		lifeProgressMax = 100,
+		stability = profile.stability,
 	})
 end
 
@@ -113,6 +118,10 @@ local function createProfile(player)
 		cascadeTriggered = false,
 		dustMultiplier = 1,
 		maxTierEvolved = 0,
+		-- Epic 6 ecosystem progression (planet-level, distinct from the cell economy).
+		-- Initialized here but only meaningful/shown once life exists. 0–100 each.
+		lifeProgress = 0,
+		stability = 75,
 	}
 	profiles[player.UserId] = profile
 
@@ -374,6 +383,69 @@ local function onPurchaseOrganelle(player, payload)
 	end
 end
 
+-- Ecosystem interventions (Epic 6): a single server-authoritative path for the
+-- planet-level interventions (Nourish Microbes / Stabilize Oceans / Accelerate
+-- Mutation). Reads InterventionData; validates state/requirements/cost; applies the
+-- LifeProgress / Stability effects (clamped 0–100); syncs the planet model and pushes
+-- ConverterUpdate. It never touches cells, so it can't conflict with the cell economy.
+local LIFE_PROGRESS_MAX = 100
+
+local function interventionRequirementsMet(profile, player, def)
+	local req = def.requirements or {}
+	if req.lifeExists and #profile.cells <= 0 then
+		return false
+	end
+	if req.minEvolutionTier then
+		local planet = findPlayerPlanet(player)
+		local tier = (planet and planet:GetAttribute("EvolutionTier")) or 0
+		if tier < req.minEvolutionTier then
+			return false
+		end
+	end
+	return true
+end
+
+local function onApplyIntervention(player, payload)
+	local profile = profiles[player.UserId]
+	if not profile then return end
+
+	local id = (typeof(payload) == "table" and payload.interventionId) or payload
+	if typeof(id) ~= "string" then return end
+
+	local def = InterventionData.get(id)
+	if not def or def.state ~= "Active" then return end -- unknown or not live
+
+	if not interventionRequirementsMet(profile, player, def) then return end
+
+	local effects = def.effects or {}
+	-- Don't run a Life-Progress action once maxed; don't run a pure Stability action at max.
+	if (effects.addLifeProgress or 0) > 0 and profile.lifeProgress >= LIFE_PROGRESS_MAX then return end
+	if (effects.addStability or 0) > 0 and not effects.addLifeProgress and profile.stability >= 100 then return end
+
+	local cost = (def.cost and def.cost.Matter) or 0
+	if profile.matter < cost then return end -- can't afford
+
+	-- Validated → deduct, then apply (clamped). Never deduct before all checks pass.
+	profile.matter -= cost
+	if effects.addLifeProgress then
+		profile.lifeProgress = math.clamp(profile.lifeProgress + effects.addLifeProgress, 0, LIFE_PROGRESS_MAX)
+	end
+	if effects.addStability then
+		profile.stability = math.clamp(profile.stability + effects.addStability, 0, 100)
+	end
+
+	-- Mirror to the planet so the inspect UI / visuals can read it (own planet only).
+	local planet = findPlayerPlanet(player)
+	if planet then
+		planet:SetAttribute("LifeProgress", profile.lifeProgress)
+		planet:SetAttribute("Stability", profile.stability)
+		planet:SetAttribute("LifeProgressMax", LIFE_PROGRESS_MAX)
+	end
+
+	fireUpdate(player, profile)          -- Matter changed
+	fireConverterUpdate(player, profile) -- lifeProgress / stability changed
+end
+
 -- Passive Matter income: every PRODUCTION_TICK_INTERVAL seconds, each player earns
 -- their summed per-second production (across all cells) × the elapsed interval. One
 -- shared timer drives every player's production so it stays cheap as cell counts
@@ -406,6 +478,7 @@ function PlayerManager.init()
 
 	Remotes.CreateArchaea.OnServerEvent:Connect(onCreateArchaea)
 	Remotes.PurchaseOrganelle.OnServerEvent:Connect(onPurchaseOrganelle)
+	Remotes.ApplyIntervention.OnServerEvent:Connect(onApplyIntervention)
 
 	runCollection()
 	runProduction()

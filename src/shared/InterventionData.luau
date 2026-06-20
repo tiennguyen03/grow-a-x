@@ -49,10 +49,9 @@ local DEFS = {
 		flavor = "Patient nutrients turn a spark into an ecosystem.",
 		cost = { Matter = 20 },
 		repeatable = true,
-		requirements = { evolutionStage = "Archaea" },
+		requirements = { lifeExists = true, minEvolutionTier = 1 },
 		effects = { addLifeProgress = 20 },
-		state = "ComingSoon",
-		unlockEpic = 6,
+		state = "Active",
 		sortOrder = 100,
 	},
 	{
@@ -63,10 +62,9 @@ local DEFS = {
 		flavor = "A steady sea is a cradle, not a grave.",
 		cost = { Matter = 25 },
 		repeatable = true,
-		requirements = { evolutionStage = "Archaea" },
+		requirements = { lifeExists = true, minEvolutionTier = 1 },
 		effects = { addStability = 15 },
-		state = "ComingSoon",
-		unlockEpic = 6,
+		state = "Active",
 		sortOrder = 110,
 	},
 	{
@@ -77,10 +75,9 @@ local DEFS = {
 		flavor = "Evolution loves a gamble — so do you.",
 		cost = { Matter = 25 },
 		repeatable = true,
-		requirements = { evolutionStage = "Archaea" },
+		requirements = { lifeExists = true, minEvolutionTier = 1 },
 		effects = { addLifeProgress = 35, addStability = -10 },
-		state = "ComingSoon",
-		unlockEpic = 6,
+		state = "Active",
 		sortOrder = 120,
 	},
 }
@@ -107,6 +104,18 @@ function InterventionData.getPreviews()
 	local out = {}
 	for _, d in DEFS do
 		if d.state ~= "Active" then
+			table.insert(out, d)
+		end
+	end
+	return out
+end
+
+-- Live, interactive ecosystem interventions (Epic 6): Active + category "Ecosystem".
+-- (Excludes `create_life`, which is category "Life" and owned by Nova's cell flow.)
+function InterventionData.getEcosystemActive()
+	local out = {}
+	for _, d in DEFS do
+		if d.state == "Active" and d.category == "Ecosystem" then
 			table.insert(out, d)
 		end
 	end

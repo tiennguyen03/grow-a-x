@@ -53,4 +53,11 @@ return {
 	-- "Dust Value ×N" announcement. The authoritative state already arrived via
 	-- ConverterUpdate (which now also carries dustMultiplier); this is feedback only.
 	CascadeTriggered = get("CascadeTriggered", "RemoteEvent"),
+
+	-- Ecosystem interventions (Epic 6). ApplyIntervention: client asks to apply a
+	-- planet-level intervention — payload { interventionId } (e.g. "nourish_microbes");
+	-- the server validates against InterventionData and updates LifeProgress/Stability.
+	-- Result state arrives via the existing ConverterUpdate (extended with
+	-- lifeProgress / lifeProgressMax / stability), so no separate result remote.
+	ApplyIntervention = get("ApplyIntervention", "RemoteEvent"),
 }
